@@ -1,0 +1,155 @@
+{
+  "__type": "unoDocV1",
+  "name": "캡핑기",
+  "seqs": [
+    {
+      "name": "센서 신호를 받을때  1 타이머 작동",
+      "trigCh": 1,
+      "trigCond": "OFF",
+      "condMode": "AND",
+      "conds": [
+        {
+          "ch": 1,
+          "state": "OFF"
+        },
+        {
+          "ch": 6,
+          "state": "ON"
+        }
+      ],
+      "steps": [
+        {
+          "relay": 1,
+          "state": "ON",
+          "delay": 0,
+          "wait": {
+            "ch": 2,
+            "state": "ON"
+          }
+        },
+        {
+          "relay": 3,
+          "state": "ON",
+          "delay": 0,
+          "wait": {
+            "ch": 3,
+            "state": "ON"
+          }
+        },
+        {
+          "relay": 4,
+          "state": "ON",
+          "delay": 0,
+          "wait": {
+            "ch": 4,
+            "state": "ON"
+          }
+        },
+        {
+          "relay": 2,
+          "state": "ON",
+          "delay": 0,
+          "wait": {
+            "ch": 5,
+            "state": "ON"
+          }
+        },
+        {
+          "relay": 4,
+          "state": "OFF",
+          "delay": 0,
+          "wait": null
+        }
+      ],
+      "orderExempt": false
+    },
+    {
+      "name": "올림 SET",
+      "trigCh": 6,
+      "trigCond": "BOTH",
+      "condMode": "AND",
+      "conds": [
+        {
+          "ch": 5,
+          "state": "ON"
+        },
+        {
+          "ch": 6,
+          "state": "ON"
+        }
+      ],
+      "steps": [
+        {
+          "relay": 1,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 3,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 4,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 2,
+          "state": "OFF",
+          "delay": 0
+        }
+      ],
+      "orderExempt": false
+    },
+    {
+      "name": "스위치 1",
+      "trigCh": 2,
+      "trigCond": "ON",
+      "condMode": "AND",
+      "conds": [
+        {
+          "ch": 2,
+          "state": "ON"
+        },
+        {
+          "ch": 6,
+          "state": "ON"
+        }
+      ],
+      "steps": [
+        {
+          "relay": 4,
+          "state": "ON",
+          "delay": 0,
+          "wait": {
+            "ch": 3,
+            "state": "ON"
+          }
+        },
+        {
+          "relay": 3,
+          "state": "ON",
+          "delay": 0,
+          "wait": {
+            "ch": 6,
+            "state": "ON"
+          }
+        },
+        {
+          "relay": 3,
+          "state": "OFF",
+          "delay": 0,
+          "wait": null
+        },
+        {
+          "relay": 4,
+          "state": "OFF",
+          "delay": 0,
+          "wait": null
+        }
+      ],
+      "orderExempt": false
+    }
+  ]
+}
