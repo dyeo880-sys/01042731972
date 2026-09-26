@@ -1,0 +1,186 @@
+{
+  "자동백업 2026. 9. 24. 오후 7:14:43": [
+    {
+      "name": "전원",
+      "trigType": "channel",
+      "trigCh": 10,
+      "trigCond": "ON",
+      "trigCode": "",
+      "steps": [
+        {
+          "relay": 6,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 5,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 12,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 11,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 8,
+          "state": "ON",
+          "delay": 0
+        }
+      ]
+    },
+    {
+      "name": "광센서 1 신호 받음",
+      "trigType": "channel",
+      "trigCh": 1,
+      "trigCond": "BOTH",
+      "trigCode": "",
+      "steps": [
+        {
+          "relay": 1,
+          "state": "ON",
+          "delay": 0
+        }
+      ]
+    },
+    {
+      "name": "T 1 신호  용기 출구 막음",
+      "trigType": "channel",
+      "trigCh": 5,
+      "trigCond": "ON",
+      "trigCode": "",
+      "steps": [
+        {
+          "relay": 5,
+          "state": "ON",
+          "delay": 0
+        },
+        {
+          "relay": 2,
+          "state": "ON",
+          "delay": 0
+        }
+      ]
+    },
+    {
+      "name": "계수계 신호  T 2 작동",
+      "trigType": "channel",
+      "trigCh": 7,
+      "trigCond": "ON",
+      "trigCode": "",
+      "steps": [
+        {
+          "relay": 2,
+          "state": "ON",
+          "delay": 0
+        }
+      ]
+    },
+    {
+      "name": "타이머 2 신호받음",
+      "trigType": "channel",
+      "trigCh": 7,
+      "trigCond": "ON",
+      "trigCode": "",
+      "steps": [
+        {
+          "relay": 6,
+          "state": "ON",
+          "delay": 0
+        },
+        {
+          "relay": 3,
+          "state": "ON",
+          "delay": 0
+        }
+      ]
+    },
+    {
+      "name": "T3 신호 충진 실린더 내림",
+      "trigType": "channel",
+      "trigCh": 9,
+      "trigCond": "ON",
+      "trigCode": "",
+      "steps": [
+        {
+          "relay": 7,
+          "state": "ON",
+          "delay": 0
+        }
+      ]
+    },
+    {
+      "name": "충진 실린더 내림 센서 신호받음",
+      "trigType": "channel",
+      "trigCh": 14,
+      "trigCond": "ON",
+      "trigCode": "",
+      "steps": [
+        {
+          "relay": 11,
+          "state": "ON",
+          "delay": 0
+        },
+        {
+          "relay": 13,
+          "state": "ON",
+          "delay": 1500
+        }
+      ]
+    },
+    {
+      "name": "OFF",
+      "trigType": "channel",
+      "trigCh": 11,
+      "trigCond": "ON",
+      "trigCode": "",
+      "steps": [
+        {
+          "relay": 1,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 2,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 3,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 5,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 6,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 8,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 9,
+          "state": "OFF",
+          "delay": 0
+        },
+        {
+          "relay": 13,
+          "state": "OFF",
+          "delay": 0
+        }
+      ]
+    }
+  ]
+}
