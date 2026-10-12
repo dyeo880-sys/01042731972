@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>모터 부하 감지 자동 설정 v2 (Uno)</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b1f24;--mu:#5b6570;--bd:#d9dee4;--ac:#1a73e8;--wr:#c62828;--ok:#2e7d32;--code:#0f1720;--codetx:#d6e2f0}
+@media (prefers-color-scheme:dark){:root{--bg:#12161b;--card:#1b2129;--tx:#e6eaee;--mu:#9aa5b1;--bd:#2f3843;--ac:#6ea8ff;--wr:#ff8a80;--ok:#81c784}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Noto Sans KR","Malgun Gothic",sans-serif;line-height:1.5}
+.w{max-width:960px;margin:0 auto;padding:16px}h1{font-size:1.3rem;margin:.2em 0}h2{font-size:1.05rem;margin:0 0 .5em}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px;overflow-x:auto}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+label{display:block;font-size:.8rem;color:var(--mu)}
+input,select{width:100%;padding:6px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx);font-size:.92rem}
+input[type=checkbox]{width:auto}
+table{border-collapse:collapse;width:100%;font-size:.85rem}td,th{border-bottom:1px solid var(--bd);padding:5px 8px;text-align:left;vertical-align:top}
+.warn{border-left:4px solid var(--wr);padding:7px 12px;background:var(--card);border-radius:6px;margin-bottom:8px;font-size:.88rem}
+.mc{border:1px dashed var(--bd);border-radius:8px;padding:10px;margin-top:10px}
+button{background:var(--ac);color:#fff;border:0;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;margin:6px 6px 0 0}
+pre{background:var(--code);color:var(--codetx);padding:12px;border-radius:8px;overflow-x:auto;font-size:.78rem;max-height:420px}
+small{color:var(--mu)}
+</style></head><body><div class="w">
+<h1>⚙ 모터 부하 감지 자동 설정 v2</h1>
+<small>모터 사양을 입력하면 센서·임계값·핀·부품표·배선·아두이노 코드가 자동으로 만들어집니다 (Arduino Uno)</small>
+
+<div class="warn" style="margin-top:10px"><b>⚠ 감전 주의</b> 전원을 끄고 작업하세요. 전류센서는 모터 전원선 <b>한 가닥</b>만 통과시키고, 아두이노와 고전압 배선은 절연하세요.</div>
+
+<div class="c"><h2>1. 공통 설정</h2><div class="g">
+<div><label>모터 대수 (1~4)</label><select id="n"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+<div><label>지속시간 (ms)</label><input id="hold" type="number" value="1000"></div>
+<div><label>기동 무시시간 (ms)</label><input id="ign" type="number" value="3000"></div>
+<div><label>출력 극성</label><select id="pol"><option value="1">HIGH = 경보</option><option value="0">LOW = 경보 (릴레이 모듈 대부분)</option></select></div>
+<div><label>래치(버튼 D12로 해제)</label><select id="latch"><option value="0">사용 안 함</option><option value="1">사용</option></select></div>
+</div><div id="cards"></div></div>
+
+<div id="warns"></div>
+<div class="c"><h2>2. 자동 설정 결과</h2><div id="sum"></div></div>
+<div class="c"><h2>3. 부품 구매 목록</h2><div id="parts"></div></div>
+<div class="c"><h2>4. 배선표</h2><div id="wire"></div></div>
+<div class="c"><h2>5. 아두이노 코드</h2>
+<button onclick="dl('motor_load.ino',code)">.ino 다운로드</button><button onclick="dl('부품_배선표.txt',rep)">부품·배선표 다운로드(.txt)</button><button onclick="navigator.clipboard&&navigator.clipboard.writeText(code)">코드 복사</button>
+<pre id="code"></pre></div>
+<div class="c"><h2>6. 실시간 모니터 (USB 9600bps, Chrome/Edge)</h2>
+<button onclick="conn()">Uno 연결</button><small id="st"> 미연결</small>
+<table id="mon" style="margin-top:8px"></table></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const card=i=>`<div class="mc"><b>모터 ${i+1}</b><div class="g">
+<div><label>이름</label><input id="nm${i}" value="모터${i+1}"></div>
+<div><label>상(Phase)</label><select id="ph${i}"><option value="1">단상</option><option value="3">3상</option></select></div>
+<div><label>전압 (V)</label><input id="v${i}" type="number" value="220"></div>
+<div><label>주파수 (Hz)</label><select id="hz${i}"><option>60</option><option>50</option></select></div>
+<div><label>정격 출력 (W)</label><input id="w${i}" type="number" value="180"></div>
+<div><label>명판 정격전류 (A, 모르면 비움)</label><input id="ia${i}" type="number" step="0.01"></div>
+<div><label>속도제어 방식</label><select id="sc${i}"><option value="0">없음(직결)</option><option value="1">위상제어 컨트롤러(TRIAC)</option><option value="2">인버터(VFD)</option></select></div>
+<div><label>운전 설정 RPM (출력축)</label><input id="rp${i}" type="number" value="100"></div>
+<div><label>전류 한계 여유율 (%)</label><input id="mg${i}" type="number" value="25"></div>
+<div><label>RPM 저하 허용 (%)</label><input id="rd${i}" type="number" value="20"></div>
+<div><label>축 1회전당 펄스(자석 수)</label><input id="pp${i}" type="number" value="1"></div>
+<div><label><input type="checkbox" id="ro${i}" checked> RPM 감시(홀센서)</label></div>
+</div></div>`;
+function cards(){const n=+$('n').value,c=$('cards');while(c.children.length<n)c.insertAdjacentHTML('beforeend',card(c.children.length));while(c.children.length>n)c.lastChild.remove()}
+const F=(k,i)=>$(k+i).value;
+let code='',rep='';
+function plan(){
+ const n=+$('n').value,W=[],ms=[];let hu=0;
+ for(let i=0;i<n;i++){
+  const m={nm:F('nm',i),ph:+F('ph',i),v:+F('v',i),w:+F('w',i),ia:+F('ia',i),sc:+F('sc',i),rp:+F('rp',i),mg:+F('mg',i),rd:+F('rd',i),pp:Math.max(1,+F('pp',i)),ro:$('ro'+i).checked};
+  const e=m.w<=400?.65:m.w<=1500?.75:.8,pf=m.w<=400?.8:.82;
+  m.est=m.w/((m.ph==3?1.732:1)*m.v*e*pf);m.ir=m.ia>0?m.ia:m.est;
+  m.lim=+(m.ir*(1+m.mg/100)).toFixed(2);
+  if(m.lim<=4.5)Object.assign(m,{s:'ZMCT103C 5A 모듈',cal:0.01,rg:5,cd:0});
+  else if(m.lim<=27)Object.assign(m,{s:'SCT-013-030 (30A/1V)',cal:+(30/204.6).toFixed(4),rg:30,cd:1});
+  else if(m.lim<=54)Object.assign(m,{s:'SCT-013-060 (60A/1V)',cal:+(60/204.6).toFixed(4),rg:60,cd:1});
+  else{Object.assign(m,{s:'범위 초과',cal:0.1,rg:0,cd:0});W.push(`${m.nm}: 전류 ${m.lim}A는 SCT-013-060 범위(54A)를 넘습니다. 산업용 CT + 전류변환기(4-20mA)를 별도 검토하세요.`)}
+  m.hall=-1;if(m.ro){if(hu<2)m.hall=2+hu++;else{W.push(`${m.nm}: Uno는 인터럽트 핀이 D2, D3뿐이라 RPM 감시는 2대까지입니다. 이 모터는 전류만 감시합니다.`)}}
+  m.ig=Math.max(+$('ign').value,m.sc==2?5000:0);
+  if(m.sc==1)W.push(`${m.nm}: 위상제어 방식은 전류 파형이 왜곡되어 RMS 오차가 큽니다. RPM 감시를 켜고 전류 한계는 실측으로 보정하세요.`);
+  if(m.sc==2)W.push(`${m.nm}: 인버터는 출력측(모터쪽) 대신 인버터 입력 전원선에 CT를 다는 것을 권장합니다(고주파 노이즈). 기동 무시시간을 5초 이상으로 했습니다.`);
+  if(m.sc&&m.hall<0)W.push(`${m.nm}: 속도제어를 쓰면 RPM 감시(홀센서)를 함께 쓰는 것이 훨씬 정확합니다.`);
+  if(m.sc&&m.hall>=0)W.push(`${m.nm}: 속도를 바꾸면 "운전 설정 RPM"도 함께 바꾸고 코드를 다시 생성해야 합니다.`);
+  if(m.v>=380)W.push(`${m.nm}: ${m.v}V 계통입니다. 배선은 전기 자격자와 함께 진행하세요.`);
+  if(m.ph==3)W.push(`${m.nm}: 3상은 한 상(1가닥)만 측정하며, 3상 평형을 가정합니다.`);
+  m.ct='A'+i;m.out=8+i;ms.push(m)}
+ return{ms,W,n}}
+function render(){
+ cards();const {ms,W,n}=plan();
+ $('warns').innerHTML=W.map(x=>`<div class="warn">${x}</div>`).join('');
+ $('sum').innerHTML='<table><tr><th>모터</th><th>사양</th><th>추정 정격전류</th><th>전류 한계</th><th>전류센서</th><th>전류 핀</th><th>RPM 핀</th><th>신호 출력 핀</th></tr>'+ms.map(m=>`<tr><td>${m.nm}</td><td>${m.ph==3?'3상':'단상'} ${m.v}V ${m.w}W</td><td>${m.ir.toFixed(2)}A${m.ia>0?' (명판)':' (추정)'}</td><td><b>${m.lim}A</b></td><td>${m.s}</td><td>${m.ct}</td><td>${m.hall<0?'-':'D'+m.hall}</td><td><b>D${m.out}</b></td></tr>`).join('')+'</table><small>정격전류는 효율·역률을 가정한 추정값입니다. 명판 전류를 입력하면 더 정확합니다. RPM이 설정값보다 저하 허용 %만큼 떨어져도 신호가 나옵니다.</small>';
+ const cnt={};ms.forEach(m=>cnt[m.s]=(cnt[m.s]||0)+1);
+ const sct=ms.filter(m=>m.cd).length,hl=ms.filter(m=>m.hall>=0).length,ch=n<=1?1:n==2?2:4;
+ const P=[['Arduino Uno + USB 케이블',1,'제어'],...Object.entries(cnt).map(([k,v])=>[k,v,'모터 전류 측정']),
+ ...(sct?[['3.5mm 스테레오 잭 커넥터(SCT용)',sct,'CT 연결'],['10kΩ 저항 (바이어스)',sct*2,'2.5V 기준'],['10µF 전해 커패시터',sct,'바이어스 안정화']]:[]),
+ ...(hl?[['A3144 홀센서',hl,'RPM'],['네오디뮴 자석',hl*1,'회전축 부착'],['10kΩ 저항 (풀업)',hl,'홀센서 OUT↔5V']]:[]),
+ ['릴레이 모듈 5V 광절연 '+ch+'채널',1,'경보/정지 신호 (n대분)'],
+ ...($('latch').value=='1'?[['푸시버튼',1,'경보 해제(D12↔GND)']]:[]),
+ ['클램프 전류계(선택)',1,'캘리브레이션 기준'],['점퍼선/케이스/터미널',1,'절연 필수']];
+ $('parts').innerHTML='<table><tr><th>부품</th><th>수량</th><th>용도</th></tr>'+P.map(p=>`<tr><td>${p[0]}</td><td>${p[1]}</td><td>${p[2]}</td></tr>`).join('')+'</table>';
+ const R=[['5V/GND','모든 센서·릴레이 모듈 전원 공통']];
+ ms.forEach(m=>{R.push([m.ct,`${m.nm} 전류센서 OUT`+(m.cd?' (SCT: 한쪽→10k분압 중간점(2.5V)+10µF→GND, 반대쪽→'+m.ct+')':'')]);
+  R.push(['D'+m.out,`${m.nm} 신호 출력 → 릴레이 IN${m.out-7}`]);
+  if(m.hall>=0)R.push(['D'+m.hall,`${m.nm} 홀센서 OUT (+10kΩ→5V)`]);
+  R.push(['(모터선)',`${m.nm}: 전원선 한 가닥만 CT 관통`])});
+ if($('latch').value=='1')R.push(['D12','해제 버튼(반대쪽 GND)']);
+ $('wire').innerHTML='<table><tr><th>Uno 핀</th><th>연결</th></tr>'+R.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')+'</table>';
+ rep='[부품]\n'+P.map(p=>`${p[0]} x${p[1]} (${p[2]})`).join('\n')+'\n\n[배선]\n'+R.map(r=>`${r[0]} : ${r[1]}`).join('\n')+'\n\n[설정]\n'+ms.map(m=>`${m.nm}: 한계 ${m.lim}A, 센서 ${m.s}, 출력 D${m.out}`).join('\n');
+ gen(ms,n);$('code').textContent=code}
+function gen(ms,n){
+ const a=(f)=>ms.map(f).join(', '),on=$('pol').value=='1';
+ code=`// 모터 부하 감지 다채널 (Uno) - 자동 생성, ${n}대
+#define N ${n}
+const uint8_t PIN_CT[N]  = {${a(m=>m.ct)}};
+const uint8_t PIN_OUT[N] = {${a(m=>m.out)}};
+const int8_t  HALL[N]    = {${a(m=>m.hall<0?-1:m.hall-2)}}; // -1=RPM 미사용, 0=D2, 1=D3
+const float CAL[N]       = {${a(m=>m.cal)}};   // A per RAW (캘리브레이션 필요)
+const float I_LIMIT[N]   = {${a(m=>m.lim)}};
+const float RPM_SET[N]   = {${a(m=>m.rp)}};
+const float RPM_DROP[N]  = {${a(m=>m.hall<0?0:m.rd)}}; // 0=RPM 감시 끔
+const int   PPR[N]       = {${a(m=>m.pp)}};
+const unsigned long HOLD_MS = ${$('hold').value};
+const unsigned long IGN_MS[N] = {${a(m=>m.ig)}};
+const bool ACTIVE_HIGH = ${on};
+const bool LATCH = ${$('latch').value=='1'};
+#define PIN_RST 12
+
+volatile unsigned long pulses[2] = {0, 0};
+void isr0(){ pulses[0]++; }
+void isr1(){ pulses[1]++; }
+float amps[N], raw[N], rpm[N];
+unsigned long condSince[N], lastRpm = 0;
+bool ovl[N];
+
+void setOut(int i, bool a){ digitalWrite(PIN_OUT[i], (a == ACTIVE_HIGH) ? HIGH : LOW); }
+
+void setup(){
+  Serial.begin(9600);
+  pinMode(PIN_RST, INPUT_PULLUP);
+  pinMode(2, INPUT_PULLUP); pinMode(3, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(2), isr0, FALLING);
+  attachInterrupt(digitalPinToInterrupt(3), isr1, FALLING);
+  for (int i = 0; i < N; i++){ pinMode(PIN_OUT[i], OUTPUT); setOut(i, false); }
+  lastRpm = millis();
+}
+
+float readRms(uint8_t pin){   // 100ms = 50/60Hz 정수 주기
+  unsigned long t0 = millis(); long c = 0; double s = 0, s2 = 0;
+  while (millis() - t0 < 100){ int v = analogRead(pin); s += v; s2 += (double)v * v; c++; }
+  double m = s / c, var = s2 / c - m * m;
+  return var > 0 ? sqrt(var) : 0;
+}
+
+void loop(){
+  for (int i = 0; i < N; i++){ raw[i] = readRms(PIN_CT[i]); amps[i] = raw[i] * CAL[i]; }
+  unsigned long now = millis();
+  if (now - lastRpm >= 500){
+    noInterrupts(); unsigned long p[2] = {pulses[0], pulses[1]}; pulses[0] = pulses[1] = 0; interrupts();
+    for (int i = 0; i < N; i++) if (HALL[i] >= 0) rpm[i] = p[HALL[i]] * 60000.0 / (now - lastRpm) / PPR[i];
+    lastRpm = now;
+  }
+  if (LATCH && digitalRead(PIN_RST) == LOW) for (int i = 0; i < N; i++){ ovl[i] = false; condSince[i] = 0; }
+  for (int i = 0; i < N; i++){
+    bool cond = amps[i] > I_LIMIT[i] || (RPM_DROP[i] > 0 && rpm[i] < RPM_SET[i] * (1.0 - RPM_DROP[i] / 100.0));
+    if (now > IGN_MS[i]){
+      if (cond){ if (condSince[i] == 0) condSince[i] = now; if (now - condSince[i] >= HOLD_MS) ovl[i] = true; }
+      else { condSince[i] = 0; if (!LATCH) ovl[i] = false; }
+    }
+    setOut(i, ovl[i]);
+    Serial.print("M"); Serial.print(i + 1);
+    Serial.print(":I="); Serial.print(amps[i], 2);
+    Serial.print(",RPM="); Serial.print(rpm[i], 1);
+    Serial.print(",RAW="); Serial.print(raw[i], 2);
+    Serial.print(",OVL="); Serial.println(ovl[i] ? 1 : 0);
+  }
+}`}
+function dl(f,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download=f;a.click()}
+const mon={};
+async function conn(){try{const p=await navigator.serial.requestPort();await p.open({baudRate:9600});$('st').textContent=' 연결됨';
+ const r=p.readable.pipeThrough(new TextDecoderStream()).getReader();let b='';
+ for(;;){const{value,done}=await r.read();if(done)break;b+=value;let k;while((k=b.indexOf('\n'))>=0){const l=b.slice(0,k).trim();b=b.slice(k+1);const q=l.split(':');if(q.length==2){mon[q[0]]=q[1]}}
+  $('mon').innerHTML='<tr><th>모터</th><th>값</th></tr>'+Object.entries(mon).map(([k,v])=>`<tr><td>${k}</td><td style="color:${v.endsWith('OVL=1')?'var(--wr)':'var(--ok)'}">${v}</td></tr>`).join('')}
+}catch(e){$('st').textContent=' 실패: '+(e.message||e)}}
+document.addEventListener('input',render);render();
+</script></div></body></html>

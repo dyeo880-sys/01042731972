@@ -1,15 +1,15 @@
 {
   "__type": "unoDocV1",
-  "name": "캡핑기2026_ 09 26",
+  "name": "캡핑기2026_ 09 27 리셋후 1번째 작동후 스위치 작동",
   "seqs": [
     {
-      "name": "센서 신호를 받을때  1 타이머 작동",
+      "name": "타이머 1 작동",
       "trigCh": 1,
-      "trigCond": "ON",
+      "trigCond": "BOTH",
       "condMode": "AND",
       "conds": [
         {
-          "ch": 6,
+          "ch": 5,
           "state": "ON"
         }
       ],
@@ -24,7 +24,7 @@
           }
         },
         {
-          "relay": 2,
+          "relay": 3,
           "state": "ON",
           "delay": 0,
           "wait": {
@@ -33,7 +33,7 @@
           }
         },
         {
-          "relay": 3,
+          "relay": 2,
           "state": "ON",
           "delay": 0,
           "wait": {
@@ -44,15 +44,6 @@
         {
           "relay": 4,
           "state": "ON",
-          "delay": 0,
-          "wait": {
-            "ch": 5,
-            "state": "ON"
-          }
-        },
-        {
-          "relay": 3,
-          "state": "OFF",
           "delay": 0,
           "wait": {
             "ch": 6,
@@ -74,6 +65,12 @@
         {
           "relay": 4,
           "state": "OFF",
+          "delay": 1000,
+          "wait": null
+        },
+        {
+          "relay": 3,
+          "state": "OFF",
           "delay": 0,
           "wait": null
         }
@@ -82,61 +79,42 @@
     },
     {
       "name": "1번스위치",
-      "trigCh": 2,
-      "trigCond": "ON",
-      "condMode": "AND",
-      "conds": [
-        {
-          "ch": 6,
-          "state": "ON"
-        }
-      ],
-      "steps": [
-        {
-          "relay": 2,
-          "state": "ON",
-          "delay": 0,
-          "wait": null
-        }
-      ],
-      "orderExempt": true
-    },
-    {
-      "name": "2번 스위치",
       "trigCh": 3,
       "trigCond": "ON",
       "condMode": "AND",
       "conds": [
         {
-          "ch": 6,
+          "ch": 5,
           "state": "ON"
         }
       ],
       "steps": [
         {
+          "relay": 2,
+          "state": "ON",
+          "delay": 0,
+          "wait": {
+            "ch": 2,
+            "state": "ON"
+          }
+        },
+        {
           "relay": 3,
           "state": "ON",
           "delay": 0,
-          "wait": null
-        }
-      ],
-      "orderExempt": false
-    },
-    {
-      "name": "스위치 3",
-      "trigCh": 6,
-      "trigCond": "ON",
-      "condMode": "AND",
-      "conds": [],
-      "steps": [
+          "wait": {
+            "ch": 5,
+            "state": "ON"
+          }
+        },
         {
-          "relay": 3,
+          "relay": 2,
           "state": "OFF",
           "delay": 0,
           "wait": null
         },
         {
-          "relay": 2,
+          "relay": 3,
           "state": "OFF",
           "delay": 0,
           "wait": null
@@ -148,8 +126,8 @@
   "names": {
     "relay": [
       "타이머 1",
-      "용기잡음작동",
-      "캡핑기 ",
+      "캡핑기",
+      "용기 잡음",
       "타이머 2"
     ],
     "inp": [
@@ -157,8 +135,8 @@
       "1 타이머 신호",
       "용기 누름 센서 신호",
       "캡핑기 내림 도착 신호",
-      "2 타이머  신호",
-      "캡핑기 올림 도착 신호",
+      "캡핑기 올림신호",
+      "타이머 2신호",
       "",
       "",
       "3 번 복귀",
@@ -175,22 +153,22 @@
       0,
       0,
       0,
-      0,
-      0,
-      0,
-      0
+      1,
+      1,
+      1,
+      1
     ],
     "boot": [
       0,
       0,
-      1,
+      0,
       0
     ],
     "outinv": [
-      0,
-      0,
-      0,
-      0
+      1,
+      1,
+      1,
+      1
     ]
   }
 }

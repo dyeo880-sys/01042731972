@@ -159,7 +159,26 @@ button.btnFlash{animation:btnFlashKey .32s ease}
  .sideStack:not(.expanded) .fRelays .rc{font-size:10px;padding:0 4px}
  .sideStack.expanded{width:380px;box-shadow:0 6px 24px #0003;background:#f5f6fa;padding:6px;border-radius:10px;border:1px solid #93c5fd}
  .sideStack.expanded .mGrid{grid-template-columns:1fr 1fr}
+ .sideStack .simGrid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px;margin:6px 0}
+ .sideStack .simCh{padding:5px 7px;font-size:11.5px;gap:4px}
+ .sideStack .simTbl{font-size:11px}
+ .sideStack .simTbl th,.sideStack .simTbl td{padding:4px 5px}
+ .sideStack #simTl{max-height:150px;font-size:10.5px;padding:5px 6px}
+ .sideStack .simVerdict{padding:7px 9px;font-size:12px;margin:6px 0;line-height:1.5}
+ .sideStack .simLamps{grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:4px;margin-top:4px}
+ .sideStack .simLamp{padding:5px 7px;font-size:11.5px}
+ .sideStack .simRel{padding:4px 9px;font-size:11.5px}
+ .sideStack.expanded .simGrid{grid-template-columns:1fr 1fr}
+ .sideStack:not(.expanded) .simGrid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr))}
+ .sideStack:not(.expanded) .simCh .nm,.sideStack:not(.expanded) .simCh .use{display:none}
+ .sideStack:not(.expanded) .simTblWrap{display:none}
+ .sideStack:not(.expanded) #simTl{display:none}
 }
+#liveMon .simGrid{grid-template-columns:1fr 1fr;gap:5px;margin:6px 0}
+#liveMon .simCh{padding:6px 8px;font-size:12px;gap:5px;flex-wrap:nowrap}
+#liveMon .simCh input{width:16px;height:16px}
+#liveMon .simCh .nm,#liveMon .simCh .use{display:none}
+#liveMon .simCh .ordBadge{font-size:10px;padding:0 5px}
 .foldHead{cursor:pointer;user-select:none;padding:2px 0}
 .foldHead:hover{color:#2563eb}
 .foldArrow{display:inline-block;width:14px;color:#64748b}
@@ -249,9 +268,8 @@ button.btnFlash{animation:btnFlashKey .32s ease}
 <div class="tabNav">
  <button class="tabBtn active" data-tab="tab1" onclick="showTab('tab1')">① 연결<span class="tn">동작 모드</span></button>
  <button class="tabBtn" data-tab="tab2" onclick="showTab('tab2')">② 릴레이·입력<span class="tn">이름·실시간 상태</span></button>
- <button class="tabBtn" data-tab="tab3" onclick="showTab('tab3')">③ 시퀀스<span class="tn">동작 만들기</span></button>
- <button class="tabBtn" data-tab="tab5" onclick="showTab('tab5')">④ 가상 테스트<span class="tn">신호 미리 확인</span></button>
- <button class="tabBtn" data-tab="tab4" onclick="showTab('tab4')">⑤ 통신 로그<span class="tn">기록 확인</span></button>
+ <button class="tabBtn" data-tab="tab3" onclick="showTab('tab3')">③ 시퀀스<span class="tn">동작 만들기 · 가상 테스트</span></button>
+ <button class="tabBtn" data-tab="tab4" onclick="showTab('tab4')">④ 통신 로그<span class="tn">기록 확인</span></button>
  <div class="tabLive" title="어느 탭에서든 연결·작업 상태 확인"><i class="liveLed"></i><span class="workPill">연결 안 됨</span></div>
 </div>
 
@@ -422,30 +440,34 @@ button.btnFlash{animation:btnFlashKey .32s ease}
    <div class="sideStack" id="sideStack">
     <div class="sideBar"><span class="small" style="display:flex;align-items:center;gap:5px"><i class="liveLed" title="실시간 수신 표시"></i><span class="workPill">연결 안 됨</span></span><button type="button" class="gray" onclick="toggleSideExp(this)" title="크게/작게 보기">⤢ 크게</button></div>
    <div class="box" id="liveMon">
-    <div class="row" style="margin:0 0 4px"><b>📡 실시간 신호 모니터<span class="mTitleLong"> (릴레이 · 디지털 입력 · 들어온 순서)</span></b></div>
-    <div class="small" data-help="모니터 보는 법">
-     <b>릴레이 R1~R4</b>: 지금 켜진(ON) 릴레이는 <b>초록색</b>으로 전부 표시됩니다.<br>
-     <b>디지털 입력 CH1~CH12</b>: 신호가 들어온(눌린) 채널은 <b>주황색</b>으로 바뀝니다. <span class="tagUse">사용중</span> 태그는 지금 편집 중인 시퀀스에서 트리거/조건/대기로 쓰는 채널입니다.<br>
-     <b>순서 번호(#1, #2 …)</b>: 신호가 바뀔 때마다 번호가 붙습니다. 시퀀스에 넣을 순서대로 실제 버튼·센서를 눌러보면 어떤 순서로 들어오는지 바로 보입니다. 채널 옆 파란 번호는 <b>마지막으로 눌린 순서</b>입니다.<br>
-     상태 확인은 0.3초마다 하므로 <b>0.3초 안에 동시에 바뀐 신호는 같은 번호</b>로 묶여 표시됩니다. 보드에 연결되어 있고 "② 릴레이·입력" 탭의 <b>상태 자동 갱신</b>이 켜져 있어야 실제 신호가 들어옵니다.<br>
-     <b>🧪 가상 누르기</b>: 보드가 연결되어 있지 않아도, 아래 CH 칸을 누르고 있거나 "② 릴레이·입력" 탭의 "가상 누르기" 버튼을 누르고 있으면 그 채널이 눌린 것처럼 시뮬레이션됩니다. 이 상태로 "▶ PC 자동 감시"를 켜면 실제 하드웨어 없이도 시퀀스 동작을 테스트할 수 있습니다.
+    <div class="row" style="margin:0 0 4px"><b>🧪 가상 테스트<span class="mTitleLong"> (신호 미리 확인 · 화면 계산만, 보드엔 안 보냄)</span></b></div>
+    <div class="row" style="margin:2px 0 6px;gap:8px">
+     <label class="small" style="display:flex;gap:3px;align-items:center;cursor:pointer"><input type="radio" name="simKind" value="live" checked onchange="simKindChanged()">🔒 유지</label>
+     <label class="small" style="display:flex;gap:3px;align-items:center;cursor:pointer"><input type="radio" name="simKind" value="batch" onchange="simKindChanged()">📊 한번에</label>
+     <span style="margin-left:auto;display:flex;gap:4px">
+      <button class="light" id="simRelBtn" style="padding:2px 7px;font-size:11px" onclick="simLiveReleaseAll()" title="눌려 있는 신호를 전부 떼면서 '뗄 때' 동작하는 시퀀스도 확인">⏏ 떼기</button>
+      <button class="red" style="padding:2px 7px;font-size:11px" onclick="simClear()" title="신호 전부 OFF · 릴레이는 시작 상태로">🔄 리셋</button>
+     </span>
     </div>
-    <div id="liveStat" class="liveStat"></div>
-    <label class="small" style="display:block;margin:2px 0"><input type="checkbox" id="livePoll2" checked onchange="$('livePoll').checked=this.checked;setLive();updateLiveStat()"> 상태 자동 갱신</label>
-    <div class="mLbl">릴레이 상태 (켜진 것 = 초록)</div>
-    <div class="mGrid" id="mRelays"></div>
-    <div class="row" style="margin:10px 0 4px">
-     <span class="mLbl" style="margin:0">디지털 입력 (신호 들어옴 = 주황)</span>
-     <label class="small"><input type="checkbox" id="monUsedOnly" checked onchange="renderMonitor()"> 이름 지정·사용 중인 채널만 보기</label>
+    <div class="small mTitleLong" id="simKindHelp"></div>
+    <div class="simGrid" id="simIn"></div>
+    <div id="simBatchOpt" style="margin:4px 0">
+     <div class="row" style="margin:2px 0">
+      <label class="small" style="display:flex;gap:4px;align-items:center;cursor:pointer"><input type="radio" name="simMode" value="sim" checked onchange="simChanged()">동시에</label>
+      <label class="small" style="display:flex;gap:4px;align-items:center;cursor:pointer"><input type="radio" name="simMode" value="seq" onchange="simChanged()">순서대로<input type="number" id="simGap" value="500" min="0" step="100" style="width:55px" onchange="simChanged()">ms</label>
+     </div>
+     <label class="small" style="display:flex;gap:4px;align-items:center;cursor:pointer;min-width:0"><input type="checkbox" id="simRel" checked onchange="simChanged()">뗄 때도 확인<input type="number" id="simHold" value="3000" min="0" step="500" style="width:55px" onchange="simChanged()">ms 뒤</label>
     </div>
-    <div class="mGrid" id="mInputs"></div>
-    <div class="row" style="margin:10px 0 4px">
-     <span class="mLbl" style="margin:0">신호가 들어온 순서</span>
-     <label class="small"><input type="checkbox" id="ordRec" checked> 순서 기록</label>
-     <button class="gray" onclick="resetOrder()">순서 번호 초기화</button>
+    <div class="row" style="margin:2px 0">
+     <label class="small" style="display:flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" id="simRealSend" onchange="simRealSendChanged()">🔌 실제 보드에도 보내기</label>
     </div>
-    <div id="ordSum" class="small" style="margin-bottom:4px"></div>
-    <div id="ordLog"></div>
+    <div class="small" id="simRealSendWarn" style="display:none;color:#b45309;font-weight:bold">⚠ 켜져 있으면 실제 릴레이가 움직입니다.</div>
+    <label class="small" style="display:flex;gap:5px;align-items:center;cursor:pointer;margin:6px 0 0"><input type="checkbox" id="simExpToggle" onchange="$('simExpBox').classList.toggle('hidden',!this.checked)">🎯 켜지길 원하는 릴레이 지정<span class="mTitleLong">(선택 — 예상과 다르게 동작하면 알려줍니다)</span></label>
+    <div class="row hidden" id="simExpBox">
+     <div class="row" id="simExp"></div>
+    </div>
+    <div class="mLbl">결과</div>
+    <div id="simResult"></div>
    </div>
    <div class="box" id="flowBox">
     <b>🔀 순서도 <span class="fTitleLong">(지금 편집 중인 시퀀스)</span></b>
@@ -485,55 +507,6 @@ button.btnFlash{animation:btnFlashKey .32s ease}
 
 
 
-<!-- 4. 가상 신호 테스트 -->
-<div class="card tabPanel" id="tab5">
- <h3>4. 가상 신호 테스트 (기계 연결 전 미리 확인)</h3>
- <div class="small" data-help="가상 테스트 사용법" style="margin-top:0">기계에서 들어오는 신호(CH)를 <b>체크만 해두면 눌린 채로 유지</b>되고, 어떤 릴레이가 움직이는지 미리 확인할 수 있습니다. 마우스를 누르고 있을 필요가 없고 3개든 4개든 동시에 눌러 둘 수 있습니다.<br>
- <span id="simRealSendDesc">✅ 화면 안에서 계산만 하므로 <b>보드에는 아무 명령도 보내지 않습니다</b>(보드가 연결된 상태에서도 릴레이가 실제로 켜지지 않습니다).</span> 기준은 ③에서 <b>“저장”한 시퀀스 목록</b>입니다.</div>
- <div class="box"><div class="row" style="margin-top:0"><label style="min-width:0"><b>모드</b></label>
-  <label class="small" style="display:flex;gap:4px;align-items:center;cursor:pointer"><input type="radio" name="simKind" value="live" checked onchange="simKindChanged()"> 🔒 <b>유지 모드</b> (체크 = 눌린 채 유지 · 리셋 = 전부 OFF)</label>
-  <label class="small" style="display:flex;gap:4px;align-items:center;cursor:pointer"><input type="radio" name="simKind" value="batch" onchange="simKindChanged()"> 📊 한 번에 계산</label></div>
-  <div class="row" style="margin:6px 0 0">
-   <label class="small" style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="simRealSend" onchange="simRealSendChanged()"> 🔌 <b>실제 보드에도 신호 보내기</b>(연결된 경우 · 유지 모드에서만 동작)</label>
-  </div>
-  <div class="small" id="simRealSendWarn" style="display:none;color:#b45309;font-weight:bold">⚠ 켜져 있으면 여기서 체크하는 신호가 실제 보드로도 “PIN n ON/OFF”로 전송되어 진짜 릴레이가 움직입니다. 기계에 물려 있는 상태라면 안전을 확인한 뒤 켜세요.</div>
-  <div class="small" id="simKindHelp"></div></div>
-
- <div class="box">
-  <div class="row" style="margin-top:0"><b>① 기계에서 받는 신호를 체크하세요</b> <span class="small" data-help="체크 순서란?">(체크한 순서가 신호가 들어오는 순서입니다)</span>
-   <span style="margin-left:auto;display:flex;gap:6px"><button class="light" id="simRelBtn" style="padding:5px 10px" onclick="simLiveReleaseAll()" title="눌려 있는 신호를 전부 떼면서 '뗄 때' 동작하는 시퀀스도 확인">⏏ 전부 떼기</button><button class="red" style="padding:5px 12px" onclick="simClear()" title="신호 전부 OFF · 릴레이는 시작 상태 · 기록 지움">🔄 리셋</button></span></div>
-  <div class="simGrid" id="simIn"></div>
-  <div class="row">
-   <label style="min-width:0">들어오는 방식 <span class="small" data-help="들어오는 방식이란?">(조합 불러오기·한 번에 계산에 사용)</span></label>
-   <label class="small" style="display:flex;gap:4px;align-items:center;cursor:pointer"><input type="radio" name="simMode" value="sim" checked onchange="simChanged()"> 동시에</label>
-   <label class="small" style="display:flex;gap:4px;align-items:center;cursor:pointer"><input type="radio" name="simMode" value="seq" onchange="simChanged()"> 체크한 순서대로, 간격 <input type="number" id="simGap" value="500" min="0" step="100" style="width:80px" onchange="simChanged()"> ms</label>
-  </div>
-  <div class="row" id="simBatchOpt">
-   <label class="small" style="display:flex;gap:6px;align-items:center;cursor:pointer;min-width:0"><input type="checkbox" id="simRel" checked onchange="simChanged()"> 신호를 <b>뗄 때</b>도 확인 (유지 시간 <input type="number" id="simHold" value="3000" min="0" step="500" style="width:80px" onchange="simChanged()"> ms 뒤에 뗌)</label>
-  </div>
-  <div class="small" data-help="간격 관련 주의">※ “순서대로”에서 간격이 0.3초보다 짧으면, 실제 PC 자동 감시(0.3초마다 읽음)에서는 두 신호가 같은 순간에 읽힐 수 있습니다.</div>
- </div>
-
- <div class="box">
-  <div class="row" style="margin-top:0"><b>② 켜지길 원하는 릴레이</b> <span class="small" data-help="선택 사항 설명">(선택 — 체크하면 “원하지 않은 릴레이가 같이 움직였는지” 바로 알려줍니다)</span></div>
-  <div class="row" id="simExp"></div>
- </div>
-
- <div class="box">
-  <div class="row" style="margin-top:0"><b>💾 신호 조합 저장</b>
-   <input id="simScnName" placeholder="이름 (예: 기계 1사이클)" style="width:190px">
-   <button class="gray" onclick="simScnSave()">저장</button>
-   <select id="simScnSel" style="max-width:220px"></select>
-   <button class="light" onclick="simScnLoad()">조합 불러오기</button>
-   <button class="light" onclick="simScnDel()">삭제</button>
-  </div>
-  <div class="small" data-help="신호 조합 저장 설명">자주 쓰는 신호 3개 조합을 이름 붙여 저장해 두면 다음에 한 번에 불러올 수 있습니다(이 컴퓨터 브라우저에만 저장).</div>
- </div>
-
- <h3 style="margin:16px 0 4px;font-size:17px">③ 결과</h3>
- <div id="simResult"></div>
-</div>
-
 <div class="card tabPanel" id="tab4">
  <h3>통신 로그</h3>
  <div id="log"></div>
@@ -566,7 +539,7 @@ function showTab(id){
  document.querySelectorAll('.tabPanel').forEach(p=>p.classList.toggle('active',p.id===id));
  document.querySelectorAll('.tabBtn').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
  try{localStorage.setItem('unoActiveTabV1',id)}catch(e){}
- if(id==='tab5'&&typeof simRefresh==='function') simRefresh();
+ if(id==='tab3'&&typeof simRefresh==='function') simRefresh();
  window.scrollTo({top:0,behavior:'instant'});
 }
 
@@ -607,11 +580,18 @@ document.addEventListener('pointerdown', function(e){
 });
 
 /* ---------- 저장 ---------- */
+const AUTO_DOC_KEY='unoAutoDocV1';   // 새로고침·재접속해도 마지막 작업 내용을 그대로 이어서 볼 수 있도록 자동 저장/복원
+function autoSaveDoc(){ try{ localStorage.setItem(AUTO_DOC_KEY, JSON.stringify({docName:docName||'', seqs:seqs, docDirty:!!docDirty})) }catch(e){} }
 function loadLocal(){
- try{   // 시작할 때는 항상 "새 문서"(이름 없음)로 시작합니다 — 마지막에 저장한 문서를 자동으로 불러오지는 않습니다
+ try{
   seqs=[]; docName=null; docDirty=false;
   try{localStorage.removeItem('unoLastDocV1')}catch(e){}
-  if(!localStorage.getItem('unoLegacyDoneV1')){   // 이전 버전이 자동 저장해 둔 내용이 있으면 한 번만 되살려서 저장 여부를 묻는다
+  let restored=false;
+  try{
+   const ad=JSON.parse(localStorage.getItem(AUTO_DOC_KEY)||'null');
+   if(ad && Array.isArray(ad.seqs) && ad.seqs.length){ seqs=ad.seqs; docName=ad.docName||null; docDirty=!!ad.docDirty; restored=true }
+  }catch(e){}
+  if(!restored && !localStorage.getItem('unoLegacyDoneV1')){   // 이전 버전이 자동 저장해 둔 내용이 있으면 한 번만 되살려서 저장 여부를 묻는다
    const lg=JSON.parse(localStorage.getItem('unoSeqV1')||'[]');
    if(Array.isArray(lg)&&lg.length){ seqs=lg; docName=null; docDirty=true; docNote='이전 버전이 자동으로 보관해 둔 내용을 불러왔습니다. 💾 저장(또는 다른 이름으로 저장)을 누르지 않으면 창을 닫을 때 사라집니다.' }
   }
@@ -632,7 +612,7 @@ function loadLocal(){
   }
  }catch(e){}
 }
-function saveLocal(){ docDirty=true; if(typeof docUI==='function') docUI() }   // 자동 저장하지 않음 — "저장됨" 표시만 "저장 안 됨"으로 바꿉니다
+function saveLocal(){ docDirty=true; autoSaveDoc(); if(typeof docUI==='function') docUI() }   // 이제 시퀀스도 이름표처럼 이 브라우저에 자동 저장됩니다(새로고침해도 유지)
 function saveSeqOrderLocal(){try{localStorage.setItem('unoSeqOrderV1',JSON.stringify(seqOrderMode))}catch(e){}}
 function saveNames(){try{localStorage.setItem('unoNamesV1',JSON.stringify(names))}catch(e){}}
 
@@ -1834,7 +1814,6 @@ function updateLiveStat(){
 setInterval(updateLiveStat,700);
 function setHTMLIfChanged(el,h){ if(el && el._h!==h){ el.innerHTML=h; el._h=h } }
 function renderMonitor(){
- if(!$('mRelays')) return;
  updateLiveStat();
  // 릴레이: 전부 표시 (켜진 것은 초록)
  setHTMLIfChanged($('mRelays'),[0,1,2,3].map(i=>`<div class="chip${relayState[i]?' on':''}"><div class="cTop"><span class="dot${relayState[i]?' on':''}"></span>R${i+1} <span class="small">D${outPins[i]}</span><span class="cSt">${relayState[i]?'<span class="sparkle">✦</span> ON':'OFF'}</span></div>${names.relay[i]?`<div class="cNm">${esc(names.relay[i])}</div>`:''}</div>`).join(''));
@@ -1943,7 +1922,7 @@ function vhToSim(){   // 지금 유지 중인 신호를 ④ 가상 테스트(원
  if(!held.length){ alert('먼저 “🔒 눌린 채 유지”로 신호를 하나 이상 유지해 두세요.'); return }
  simKind='live'; const r=document.querySelector('input[name=simKind][value=live]'); if(r) r.checked=true;
  simLiveReset(); simLiveSet(held,1);
- showTab('tab5'); simChanged();
+ showTab('tab3'); simChanged();
 }
 
 /* ---------- 가상 신호 테스트 (화면 안에서 계산만 함 — 보드에 아무 명령도 보내지 않음) ---------- */
@@ -2121,7 +2100,7 @@ function simLivePressList(list){   // 저장한 조합 불러오기: 방식(동�
 function simLiveReleaseAll(){ if(simKind!=='live') return; simLiveSet(simSel.slice(),0); simChanged() }
 function simTick(){
  if(simKind!=='live'||!simLive) return;
- const active=($('tab5')||{}).classList&&$('tab5').classList.contains('active');
+ const active=($('tab3')||{}).classList&&$('tab3').classList.contains('active');
  if(simLive.sig!==JSON.stringify(seqs)){ simLiveReset(); if(active) simRefresh(); return }   // 시퀀스가 바뀌면 유지 모드도 새로 시작
  simLiveSync();
  if(simLive.dirty && active) simRender();
@@ -2153,48 +2132,27 @@ function simOpenSeq(i){ showTab('tab3'); selectSeq(i) }
 function simRefresh(){
  simApplyKindUI();
  const u=simUse();
- $('simIn').innerHTML=chRange().map(i=>{
+ const list=chRange().filter(i=>u[i].trig||u[i].cond||u[i].wait||names.inp[i]||simSel.includes(i+1));
+ $('simIn').innerHTML=list.length?list.map(i=>{
   const ch=i+1, k=simSel.indexOf(ch), on=k>=0, x=u[i];
-  const use=[x.trig?'트리거 '+x.trig:'',x.cond?'조건 '+x.cond:'',x.wait?'대기 '+x.wait:''].filter(Boolean).join(' · ')||'어디에도 안 쓰임';
+  const use=[x.trig?'트리거 '+x.trig:'',x.cond?'조건 '+x.cond:'',x.wait?'대기 '+x.wait:''].filter(Boolean).join(' · ')||'';
   return `<label class="simCh${on?' sel':''}"><input type="checkbox" ${on?'checked':''} onchange="simToggle(${ch},this.checked)"><b>CH${ch}</b><span class="nm">${esc(names.inp[i]||'')}</span>${on?`<span class="ordBadge">${simKind==='live'?'🔒 ':''}${k+1}번째</span>`:''}<span class="use">${use}</span></label>`;
- }).join('');
+ }).join(''):'<span class="small">③에서 트리거·조건·대기로 쓰거나 이름을 지정한 채널이 없습니다.</span>';
  $('simExp').innerHTML=[0,1,2,3].map(i=>`<label class="simRel${simExp[i]?' sel':''}"><input type="checkbox" ${simExp[i]?'checked':''} onchange="simToggleExp(${i},this.checked)">${esc(simRName(i+1))}</label>`).join('');
- const nm=Object.keys(simScn);
- $('simScnSel').innerHTML=nm.length?nm.map(n=>`<option>${esc(n)}</option>`).join(''):'<option value="">(저장된 조합 없음)</option>';
  simRender();
 }
-function simScnSave(){
- const n=$('simScnName').value.trim(); if(!n){alert('조합 이름을 입력하세요.');return}
- if(!simSel.length){alert('먼저 신호를 하나 이상 체크하세요.');return}
- simScn[n]={sel:simSel.slice(),exp:simExp.slice(),mode:simMode(),gap:$('simGap').value,hold:$('simHold').value,rel:$('simRel').checked};
- try{ localStorage.setItem(SIM_SCN_KEY,JSON.stringify(simScn)) }catch(e){}
- simRefresh(); $('simScnSel').value=n;
-}
-function simScnLoad(){
- const n=$('simScnSel').value; if(!n||!simScn[n]) return;
- simApply(simScn[n]);
- if(simKind==='live'){ const sel=simSel.slice(); simLiveReset(); simLivePressList(sel) }
- simChanged();
-}
-function simScnDel(){
- const n=$('simScnSel').value; if(!n||!simScn[n]) return;
- if(!confirm('조합 "'+n+'"을(를) 삭제할까요?')) return;
- delete simScn[n]; try{ localStorage.setItem(SIM_SCN_KEY,JSON.stringify(simScn)) }catch(e){}
- simRefresh();
-}
-
 /* ===== 결과 화면 (두 모드 공용) ===== */
 function simRender(){
  const box=$('simResult'); if(!box) return;
  const live=(simKind==='live');
  if(!seqs.length){ box.innerHTML='<div class="simVerdict bad">저장된 시퀀스가 없습니다. ③ 시퀀스 탭에서 시퀀스를 만들고 “저장”을 누른 뒤 다시 확인하세요.</div>'; return }
- let R;
+ let R, hint='';
  if(live){
   R=simLive; R.dirty=false;
-  if(!R.tl.length){ box.innerHTML='<div class="simVerdict info">위 ①에서 신호를 체크하면 <b>눌린 채로 유지</b>되고, 어떤 릴레이가 움직이는지 여기에 바로 표시됩니다. 처음부터 다시 하려면 🔄 리셋을 누르세요.</div>'; return }
+  if(!R.tl.length) hint='<div class="simVerdict info">위 ①에서 신호를 체크하면 <b>눌린 채로 유지</b>되고, 어떤 릴레이가 움직이는지 여기 릴레이 표시가 바로 바뀝니다. 지금은 신호를 체크하기 전(전원 투입 시 시작 상태)입니다. 처음부터 다시 하려면 🔄 리셋을 누르세요.</div>';
  } else {
-  if(!simSel.length){ box.innerHTML='<div class="simVerdict info">위 ①에서 기계가 보내는 신호를 체크하면, 어떤 릴레이가 움직이는지 여기에 바로 표시됩니다.</div>'; return }
-  R=simRun(simEvents());
+  R=simSel.length ? simRun(simEvents()) : simRun([]);
+  if(!simSel.length) hint='<div class="simVerdict info">위 ①에서 기계가 보내는 신호를 체크하면, 어떤 릴레이가 움직이는지 여기 릴레이 표시가 바로 바뀝니다. 지금은 신호가 없는 시작 상태입니다.</div>';
  }
  const idxs=[0,1,2,3];
  const exp=idxs.filter(i=>simExp[i]);
@@ -2213,11 +2171,13 @@ function simRender(){
  };
 
  let h='';
- if(live){   // 릴레이 램프 + 지금 눌려 있는 신호 + 실행 중인 시퀀스
+ // 릴레이 램프: 신호를 체크했는지와 상관없이 항상 지금 상태(시작 상태 포함)를 보여줌
+ h+='<div class="simLamps">'+idxs.map(i=>`<div class="simLamp${R.relay[i]?' on':''}"><span class="dot${R.relay[i]?' on':''}"></span><b>${esc(simRName(i+1))}</b> <span>${R.relay[i]?'ON':'OFF'}</span></div>`).join('')+'</div>';
+ if(live){   // 지금 눌려 있는 신호 + 실행 중인 시퀀스
   const runs=R.running();
-  h+='<div class="simLamps">'+idxs.map(i=>`<div class="simLamp${R.relay[i]?' on':''}"><span class="dot${R.relay[i]?' on':''}"></span><b>${esc(simRName(i+1))}</b> <span>${R.relay[i]?'ON':'OFF'}</span></div>`).join('')+'</div>';
   h+=`<div class="small" style="margin:4px 0 0">🔒 눌려 있는 신호: <b>${simSel.length?simSel.map(c=>esc(simChName(c))).join(' + '):'없음'}</b>`+(runs.length?' · ▶ 실행 중: '+runs.map(o=>esc(seqs[o.i].name)+(o.wait?'('+esc(simChName(o.wait.ch))+' '+(o.wait.state==='ON'?'눌림':'뗌')+' 대기)':'(지연 중)')).join(', '):'')+`</div>`;
  }
+ if(hint) h+=hint;
  const sigTxt=simSel.length?simSel.map(simChName).join(' + '):'없음';
  const operated=idxs.filter(anyChg);
  let v='';
@@ -2234,7 +2194,7 @@ function simRender(){
    v+='</ul></div>';
   }
  } else {
-  v=`<div class="simVerdict info"><b>${live?'리셋 후 지금까지':'신호 '+esc(sigTxt)+' →'}</b> 동작한 릴레이: <b>${operated.length?operated.map(i=>esc(simRName(i+1))).join(', '):'없음'}</b><br><span class="small" style="color:inherit">②에서 “켜지길 원하는 릴레이”를 체크하면 원하지 않은 릴레이가 같이 움직였는지 자동으로 비교해 드립니다.</span></div>`;
+  v=`<div class="simVerdict info"><b>${live?'리셋 후 지금까지':'신호 '+esc(sigTxt)+' →'}</b> 동작한 릴레이: <b>${operated.length?operated.map(i=>esc(simRName(i+1))).join(', '):'없음'}</b><br><span class="small" style="color:inherit">③에서 “켜지길 원하는 릴레이”를 체크하면 원하지 않은 릴레이가 같이 움직였는지 자동으로 비교해 드립니다.</span></div>`;
  }
  h+=v;
  if(seqOrderMode) h+='<div class="warn">ⓘ 시퀀스 “순서대로 실행”이 켜져 있어 1번 시퀀스부터 차례로만 실행되는 것으로 계산했습니다.</div>';
@@ -2276,6 +2236,9 @@ function simInit(){
  simRestore();
  const r=document.querySelector('input[name=simKind][value='+simKind+']'); if(r) r.checked=true;
  if(simKind==='live') simLiveReset();
+ const hasExp=simExp.some(Boolean);
+ if($('simExpToggle')) $('simExpToggle').checked=hasExp;
+ if($('simExpBox')) $('simExpBox').classList.toggle('hidden',!hasExp);
  simRefresh();
  setInterval(simTick,100);
 }
@@ -2299,6 +2262,7 @@ function edDirty(){   // 편집칸에서 고쳤지만 아직 목록에 반영(�
 }
 const isDirty=()=>docDirty||edDirty();
 function docUI(){
+ autoSaveDoc();
  const t=$('docTitle'); if(!t) return;
  const d=isDirty();
  t.textContent=docName||'제목 없음';
