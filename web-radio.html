@@ -44,6 +44,10 @@ button,select,input{font:inherit}
 .chathead input,.chatform input{background:#1a0f08;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:7px 10px}
 .chathead input{width:120px}
 .chathead select{background:#1a0f08;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:7px 8px;font-size:13px}
+.chathead{flex-wrap:wrap}
+.roomform{display:flex;gap:8px;margin-bottom:8px}
+.roomform[hidden]{display:none}
+.roomform input{flex:1;min-width:0;background:#1a0f08;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:7px 10px}
 .chatnote{font-size:12px;opacity:.7;margin-top:6px}
 .chatlog{height:180px;overflow-y:auto;background:#1a0f08;border-radius:6px;padding:8px 10px;font-size:14px;line-height:1.6}
 .chatlog .m b{color:var(--amber);margin-right:6px}
@@ -97,7 +101,12 @@ button,select,input{font:inherit}
   <div class="count" id="count"></div>
   <div class="list" id="list" role="list"></div>
   <section class="chat" aria-label="채팅">
-    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"></div>
+    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">＋ 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"></div>
+    <div class="roomform" id="roomform" hidden>
+      <input id="roomname" maxlength="20" placeholder="새 채팅방 이름 (최대 20자)" aria-label="새 채팅방 이름">
+      <button id="roomok" class="addhome" style="margin:0" type="button">만들기</button>
+      <button id="roomcancel" class="addhome" style="margin:0" type="button">취소</button>
+    </div>
     <div class="chatlog" id="chatlog" role="log" aria-live="polite"></div>
     <div class="chatform">
       <input id="chatin" maxlength="200" placeholder="메시지를 입력하세요" aria-label="메시지">
@@ -250,13 +259,22 @@ let chat = [], lastSig = '';
 const DB = FIREBASE_URL.replace(/\/+$/, '');
 try { $('nick').value = localStorage.getItem('radio_nick') || ''; } catch(e){}
 if (!DB){
-  try { chat = JSON.parse(localStorage.getItem('radio_chat') || '[]'); } catch(e){}
   $('chatnote').textContent = '지금은 내 기기에서만 보이는 채팅입니다. FIREBASE_URL을 설정하면 다른 사람과 함께 쓸 수 있습니다.';
 }
 const hhmm = ts => { const d = new Date(ts); return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0'); };
 function roomPath(){
+  const v = $('room').value;
+  if (v.indexOf('r:') === 0) return 'room_' + v.slice(2);
   if ($('room').value === 'station' && cur >= 0 && stations[cur]) return 'st_' + stations[cur].stationuuid;
   return 'lobby';
+}
+function loadLocal(){
+  const p = roomPath();
+  try {
+    let raw = localStorage.getItem('radio_chat_' + p);
+    if (raw === null && p === 'lobby') raw = localStorage.getItem('radio_chat');
+    chat = JSON.parse(raw || '[]');
+  } catch(e){ chat = []; }
 }
 function renderChat(){
   const log = $('chatlog');
@@ -273,7 +291,7 @@ function renderChat(){
   if (near) log.scrollTop = log.scrollHeight;
 }
 async function fetchChat(force){
-  if (!DB) { if (force) renderChat(); return; }
+  if (!DB) { if (force) { loadLocal(); renderChat(); } return; }
   try {
     const r = await fetch(`${DB}/chat/${roomPath()}.json?orderBy="$key"&limitToLast=60`);
     if (!r.ok) throw new Error(r.status);
@@ -299,7 +317,7 @@ async function sendChat(){
   inp.value = '';
   if (!DB){
     chat.push(msg); chat = chat.slice(-100);
-    try { localStorage.setItem('radio_chat', JSON.stringify(chat)); } catch(e){}
+    try { localStorage.setItem('radio_chat_' + roomPath(), JSON.stringify(chat)); } catch(e){}
     renderChat(); return;
   }
   try {
@@ -314,8 +332,67 @@ async function sendChat(){
 $('chatsend').onclick = sendChat;
 $('chatin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) sendChat(); });
 $('room').onchange = () => { lastSig = ''; chat = []; renderChat(); fetchChat(true); };
+let rooms = [], roomsSig = '';
+if (!DB){ try { rooms = JSON.parse(localStorage.getItem('radio_rooms') || '[]'); } catch(e){} }
+function renderRooms(keep){
+  const sel = $('room'), val = keep || sel.value;
+  sel.innerHTML = '<option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option>';
+  rooms.forEach(r => {
+    const o = document.createElement('option');
+    o.value = 'r:' + r.id; o.textContent = '# ' + r.name; sel.append(o);
+  });
+  sel.value = val;
+  if (sel.value !== val) sel.value = 'lobby';
+}
+async function loadRooms(){
+  if (!DB) return;
+  try {
+    const r = await fetch(`${DB}/rooms.json?orderBy="$key"&limitToLast=100`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json() || {};
+    const list = Object.keys(d).sort().map(k => ({id: k, name: String(d[k] && d[k].name || '').slice(0, 20)})).filter(x => x.name);
+    const sig = list.map(x => x.id).join(',');
+    if (sig !== roomsSig){ roomsSig = sig; rooms = list; renderRooms(); }
+  } catch(e){}
+}
+function openRoomForm(show){
+  $('roomform').hidden = !show;
+  if (show){ $('roomname').value = ''; $('roomname').focus(); }
+}
+async function createRoom(){
+  const name = $('roomname').value.trim().replace(/\s+/g, ' ');
+  if (!name){ $('chatnote').textContent = '채팅방 이름을 입력하세요.'; return; }
+  const dup = rooms.find(r => r.name.toLowerCase() === name.toLowerCase());
+  let id;
+  if (dup){ id = dup.id; }
+  else if (DB){
+    try {
+      const r = await fetch(`${DB}/rooms.json`, {method: 'POST', body: JSON.stringify({name, ts: Date.now()})});
+      if (!r.ok) throw new Error(r.status);
+      id = (await r.json()).name;
+      rooms.push({id, name});
+    } catch(e){
+      $('chatnote').textContent = '채팅방을 만들지 못했습니다. 데이터베이스 규칙(rooms 쓰기 허용)을 확인하세요.'; return;
+    }
+  } else {
+    id = 'l' + Date.now().toString(36);
+    rooms.push({id, name});
+    try { localStorage.setItem('radio_rooms', JSON.stringify(rooms)); } catch(e){}
+  }
+  renderRooms('r:' + id);
+  openRoomForm(false);
+  $('chatnote').textContent = dup ? '이미 있는 방이라 그 방으로 이동했습니다.' : '';
+  lastSig = ''; chat = []; renderChat(); fetchChat(true);
+  $('chatin').focus();
+}
+$('newroom').onclick = () => openRoomForm($('roomform').hidden);
+$('roomok').onclick = createRoom;
+$('roomcancel').onclick = () => openRoomForm(false);
+$('roomname').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) createRoom(); if (e.key === 'Escape') openRoomForm(false); });
+
+renderRooms(); loadRooms();
 renderChat(); fetchChat(true);
-setInterval(() => { if (!document.hidden) fetchChat(false); }, 3000);
+setInterval(() => { if (!document.hidden){ fetchChat(false); loadRooms(); } }, 3000);
 
 $('addhome').onclick = () => {
   const ua = navigator.userAgent, m = $('addmsg');
