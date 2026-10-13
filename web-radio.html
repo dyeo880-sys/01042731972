@@ -253,11 +253,23 @@ $('country').onchange = () => { curView = -1; loadStations(); };
 
 // ★ Firebase Realtime Database 주소를 아래 따옴표 안에 넣으면 모두가 함께 쓰는 채팅이 됩니다.
 // 예) 'https://my-radio-default-rtdb.firebaseio.com'
-const FIREBASE_URL = '';
+const FIREBASE_URL = 'https://project-4230942543796585572-default-rtdb.firebaseio.com';
 
 let chat = [], lastSig = '';
 const DB = FIREBASE_URL.replace(/\/+$/, '');
-try { $('nick').value = localStorage.getItem('radio_nick') || ''; } catch(e){}
+const NICK_ADJ = ['졸린','용감한','수줍은','느긋한','엉뚱한','씩씩한','반짝이는','조용한','신나는','포근한'];
+const NICK_ANI = ['여우','고양이','너구리','펭귄','수달','부엉이','토끼','다람쥐','고래','판다'];
+const fakeNick = () => NICK_ADJ[Math.floor(Math.random()*NICK_ADJ.length)] + ' ' + NICK_ANI[Math.floor(Math.random()*NICK_ANI.length)] + (10 + Math.floor(Math.random()*90));
+try {
+  let n = localStorage.getItem('radio_nick');
+  if (!n){ n = fakeNick(); localStorage.setItem('radio_nick', n); }
+  $('nick').value = n;
+} catch(e){ $('nick').value = fakeNick(); }
+$('nick').addEventListener('change', () => {
+  const v = $('nick').value.trim() || fakeNick();
+  $('nick').value = v;
+  try { localStorage.setItem('radio_nick', v); } catch(e){}
+});
 if (!DB){
   $('chatnote').textContent = '지금은 내 기기에서만 보이는 채팅입니다. FIREBASE_URL을 설정하면 다른 사람과 함께 쓸 수 있습니다.';
 }
@@ -312,8 +324,9 @@ async function fetchChat(force){
 async function sendChat(){
   const inp = $('chatin'), text = inp.value.trim();
   if (!text) return;
-  const msg = {n: $('nick').value.trim() || '손님', t: text, ts: Date.now()};
-  try { localStorage.setItem('radio_nick', $('nick').value.trim()); } catch(e){}
+  if (!$('nick').value.trim()) $('nick').value = fakeNick();
+  const msg = {n: $('nick').value.trim(), t: text, ts: Date.now()};
+  try { localStorage.setItem('radio_nick', msg.n); } catch(e){}
   inp.value = '';
   if (!DB){
     chat.push(msg); chat = chat.slice(-100);
