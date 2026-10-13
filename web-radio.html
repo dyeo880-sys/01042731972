@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radiola 웹 라디오</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.8/hls.min.js"></script>
+<style>
+:root{--wood:#3b2417;--wood2:#5a3822;--brass:#b99a5b;--amber:#ffcf7a;--glass:#2a1a08;--ink:#f0e2c4;--panel:#241610}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#6b4a2e,#1d120b 70%);color:var(--ink);font-family:"Noto Serif KR",Georgia,serif;padding:20px}
+.set{max-width:960px;margin:0 auto;background:linear-gradient(180deg,var(--wood2),var(--wood));border:2px solid #2a190e;border-radius:18px;box-shadow:0 20px 50px #000a,inset 0 0 0 4px #00000030;padding:22px}
+.top{display:grid;grid-template-columns:120px 1fr;gap:20px;align-items:center}
+.speaker{height:150px;border:3px solid var(--brass);border-radius:8px;background:repeating-linear-gradient(45deg,#8a7a55 0 3px,#6d5f3f 3px 6px)}
+.dial{background:linear-gradient(#ffd98f,#e8a64a);color:#2a1a08;border:3px solid var(--brass);border-radius:10px;padding:12px 16px;box-shadow:inset 0 0 25px #8a4b0099,0 0 25px #ffb54d55}
+.dial h1{margin:0;font-size:12px;letter-spacing:.4em;text-align:center;opacity:.7}
+.now{font-size:24px;font-weight:700;margin:6px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:13px;opacity:.8;min-height:18px}
+.scale{height:10px;margin-top:8px;background:repeating-linear-gradient(90deg,#2a1a08 0 1px,transparent 1px 14px);opacity:.6}
+.ctrl{display:flex;gap:14px;align-items:center;margin-top:14px;flex-wrap:wrap}
+button,select,input{font:inherit}
+.knob{width:54px;height:54px;border-radius:50%;border:2px solid var(--brass);background:radial-gradient(circle at 35% 30%,#6a4a35,#2a170c);color:var(--amber);font-size:20px;cursor:pointer}
+.knob:hover{filter:brightness(1.3)}
+.knob:focus-visible,.st:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.vol{display:flex;align-items:center;gap:8px;font-size:13px}
+.vol input{accent-color:var(--brass);width:140px}
+.status{margin-left:auto;font-size:13px;color:var(--amber)}
+.filters{display:flex;gap:10px;margin:18px 0 10px;flex-wrap:wrap}
+.filters input,.filters select{background:var(--panel);color:var(--ink);border:1px solid var(--brass);border-radius:6px;padding:8px 10px}
+.filters input{flex:1;min-width:160px}
+.count{font-size:13px;opacity:.8;margin-bottom:6px}
+.list{max-height:50vh;overflow-y:auto;background:var(--panel);border:1px solid #00000066;border-radius:8px}
+.st{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #ffffff12;color:var(--ink);padding:9px 12px;cursor:pointer}
+.st:hover{background:#ffffff0d}
+.st.on{background:#b99a5b33;color:var(--amber)}
+.st img{width:28px;height:28px;border-radius:4px;object-fit:cover;background:#000}
+.st .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st .t{font-size:12px;opacity:.6;max-width:35%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fav{background:none;border:0;color:var(--brass);font-size:18px;cursor:pointer}
+.fav.on{color:var(--amber)}
+.msg{padding:24px;text-align:center;opacity:.8}
+.chat{margin-top:18px;background:var(--panel);border:1px solid var(--brass);border-radius:8px;padding:12px}
+.chathead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.chathead input,.chatform input{background:#1a0f08;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:7px 10px}
+.chathead input{width:120px}
+.chathead select{background:#1a0f08;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:7px 8px;font-size:13px}
+.chatnote{font-size:12px;opacity:.7;margin-top:6px}
+.chatlog{height:180px;overflow-y:auto;background:#1a0f08;border-radius:6px;padding:8px 10px;font-size:14px;line-height:1.6}
+.chatlog .m b{color:var(--amber);margin-right:6px}
+.chatlog .m small{opacity:.5;margin-left:6px}
+.chatlog .empty{opacity:.6;text-align:center;margin-top:60px}
+.chatform{display:flex;gap:8px;margin-top:8px}
+.chatform input{flex:1;min-width:0}
+.chat input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.foot{text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid #b99a5b55}
+.foot a{color:var(--amber);font-size:15px;text-decoration:none;border-bottom:1px solid var(--brass)}
+.foot a:hover{filter:brightness(1.2)}
+.addhome{margin-top:12px;background:var(--panel);color:var(--amber);border:1px solid var(--brass);border-radius:6px;padding:8px 14px;cursor:pointer;font-size:14px}
+.addhome:hover{filter:brightness(1.3)}
+.addhome:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.addmsg{font-size:13px;margin-top:8px;opacity:.85;min-height:18px}
+.foot a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+.note{font-size:12px;opacity:.65;margin-top:12px;line-height:1.6}
+@media(max-width:600px){.top{grid-template-columns:1fr}.speaker{height:50px}.status{margin-left:0;width:100%}}
+</style>
+</head>
+<body>
+<main class="set">
+  <div class="top">
+    <div class="speaker" aria-hidden="true"></div>
+    <div class="dial">
+      <h1>RADIOLA</h1>
+      <div class="now" id="now">방송국을 선택하세요</div>
+      <div class="meta" id="meta"></div>
+      <div class="scale"></div>
+    </div>
+  </div>
+  <div class="ctrl">
+    <button class="knob" id="prev" title="이전 방송국" aria-label="이전 방송국">⏮</button>
+    <button class="knob" id="play" title="재생/정지" aria-label="재생 또는 정지">▶</button>
+    <button class="knob" id="next" title="다음 방송국" aria-label="다음 방송국">⏭</button>
+    <label class="vol">볼륨 <input type="range" id="vol" min="0" max="1" step="0.01" value="0.8"></label>
+    <span class="status" id="status"></span>
+  </div>
+
+  <div class="filters">
+    <select id="country" aria-label="국가"></select>
+    <input id="q" type="search" placeholder="방송국 이름 검색 (예: KBS, 클래식, jazz)">
+    <select id="tag" aria-label="장르">
+      <option value="">모든 장르</option><option>pop</option><option>news</option><option>classical</option>
+      <option>jazz</option><option>rock</option><option>talk</option><option>music</option><option>kpop</option>
+    </select>
+    <select id="mode" aria-label="보기">
+      <option value="all">전체</option><option value="fav">즐겨찾기</option>
+    </select>
+  </div>
+  <div class="count" id="count"></div>
+  <div class="list" id="list" role="list"></div>
+  <section class="chat" aria-label="채팅">
+    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"></div>
+    <div class="chatlog" id="chatlog" role="log" aria-live="polite"></div>
+    <div class="chatform">
+      <input id="chatin" maxlength="200" placeholder="메시지를 입력하세요" aria-label="메시지">
+      <button id="chatsend" class="addhome" style="margin:0">보내기</button>
+    </div>
+    <div class="chatnote" id="chatnote"></div>
+  </section>
+  <footer class="foot"><a href="https://blog.naver.com/fb1234" target="_blank" rel="noopener noreferrer">이진주방산업</a>
+    <div><button id="addhome" class="addhome">바탕화면에 바로가기 만들기</button></div>
+    <div class="addmsg" id="addmsg" role="status"></div>
+  </footer>
+  <p class="note">※ 실제 AM/FM 전파가 아니라, 각 방송국이 인터넷으로 송출하는 스트림을 radio-browser.info 공개 목록에서 불러옵니다. 일부 방송국은 지역 제한이나 주소 변경으로 재생되지 않을 수 있습니다. 이 파일을 내 컴퓨터에서 직접 열어 사용하세요.</p>
+</main>
+<audio id="audio" preload="none"></audio>
+
+<script>
+const $ = id => document.getElementById(id);
+const audio = $('audio');
+const SERVERS = ['https://de1.api.radio-browser.info','https://at1.api.radio-browser.info','https://nl1.api.radio-browser.info'];
+let stations = [], view = [], cur = -1, hls = null;
+let favs = [];
+try { favs = JSON.parse(localStorage.getItem('radio_favs') || '[]'); } catch(e){}
+const saveFavs = () => { try { localStorage.setItem('radio_favs', JSON.stringify(favs)); } catch(e){} };
+
+async function api(path){
+  for (const s of SERVERS){
+    try {
+      const r = await fetch(s + path);
+      if (r.ok) return await r.json();
+    } catch(e){}
+  }
+  throw new Error('방송국 서버에 연결할 수 없습니다. 인터넷 연결을 확인하세요.');
+}
+
+async function loadCountries(){
+  const sel = $('country');
+  try {
+    const list = await api('/json/countries?order=stationcount&reverse=true&hidebroken=true');
+    sel.innerHTML = list.filter(c => c.iso_3166_1 && c.stationcount > 0)
+      .map(c => `<option value="${c.iso_3166_1}">${c.name} (${c.stationcount})</option>`).join('');
+  } catch(e){
+    sel.innerHTML = '<option value="KR">South Korea</option>';
+  }
+  sel.value = 'KR';
+  if (sel.value !== 'KR') sel.selectedIndex = 0;
+}
+
+async function loadStations(){
+  $('list').innerHTML = '<div class="msg">방송국 목록을 불러오는 중…</div>';
+  $('count').textContent = '';
+  try {
+    stations = await api(`/json/stations/search?countrycode=${$('country').value}&hidebroken=true&order=votes&reverse=true&limit=3000`);
+    stations = stations.filter(s => s.url_resolved || s.url);
+    render();
+  } catch(e){
+    $('list').innerHTML = `<div class="msg">${e.message}</div>`;
+  }
+}
+
+function render(){
+  const q = $('q').value.trim().toLowerCase();
+  const tag = $('tag').value;
+  const favOnly = $('mode').value === 'fav';
+  view = stations.filter(s =>
+    (!q || s.name.toLowerCase().includes(q) || (s.tags||'').toLowerCase().includes(q)) &&
+    (!tag || (s.tags||'').toLowerCase().includes(tag)) &&
+    (!favOnly || favs.includes(s.stationuuid)));
+  $('count').textContent = `방송국 ${view.length}개`;
+  const box = $('list');
+  box.innerHTML = '';
+  if (!view.length){ box.innerHTML = '<div class="msg">조건에 맞는 방송국이 없습니다.</div>'; return; }
+  const frag = document.createDocumentFragment();
+  view.slice(0, 600).forEach((s, i) => {
+    const row = document.createElement('div');
+    row.style.display = 'flex'; row.setAttribute('role','listitem');
+    const b = document.createElement('button');
+    b.className = 'st' + (cur >= 0 && stations[cur] && stations[cur].stationuuid === s.stationuuid ? ' on' : '');
+    b.innerHTML = `<img alt="" loading="lazy" src="${s.favicon || ''}" onerror="this.style.visibility='hidden'"><span class="n"></span><span class="t"></span>`;
+    b.querySelector('.n').textContent = s.name.trim() || '(이름 없음)';
+    b.querySelector('.t').textContent = (s.tags || '').split(',').slice(0,2).join(', ');
+    b.onclick = () => playView(i);
+    const f = document.createElement('button');
+    f.className = 'fav' + (favs.includes(s.stationuuid) ? ' on' : '');
+    f.textContent = favs.includes(s.stationuuid) ? '★' : '☆';
+    f.title = '즐겨찾기'; f.setAttribute('aria-label','즐겨찾기 토글');
+    f.onclick = e => {
+      e.stopPropagation();
+      favs = favs.includes(s.stationuuid) ? favs.filter(x => x !== s.stationuuid) : [...favs, s.stationuuid];
+      saveFavs(); render();
+    };
+    row.style.alignItems = 'center';
+    b.style.flex = '1';
+    row.append(b, f); frag.append(row);
+  });
+  box.append(frag);
+}
+
+let curView = -1;
+function playView(i){
+  const s = view[i]; if (!s) return;
+  curView = i;
+  cur = stations.indexOf(s);
+  const url = s.url_resolved || s.url;
+  $('now').textContent = s.name.trim();
+  $('meta').textContent = [s.country, (s.codec||'').toUpperCase(), s.bitrate ? s.bitrate + 'kbps' : ''].filter(Boolean).join(' · ');
+  setStatus('연결 중…');
+  if (hls){ hls.destroy(); hls = null; }
+  audio.pause();
+  const isHls = /\.m3u8(\?|$)/i.test(url) || (s.hls === 1);
+  if (isHls && window.Hls && Hls.isSupported()){
+    hls = new Hls(); hls.loadSource(url); hls.attachMedia(audio);
+    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) setStatus('재생할 수 없는 방송국입니다'); });
+  } else {
+    audio.src = url;
+  }
+  audio.play().catch(() => setStatus('재생할 수 없습니다. 다른 방송국을 선택하세요'));
+  document.querySelectorAll('.st').forEach((el, k) => el.classList.toggle('on', k === i));
+  if ($('room').value === 'station' && typeof fetchChat === 'function') { lastSig = ''; fetchChat(true); }
+  if (navigator.mediaSession){
+    navigator.mediaSession.metadata = new MediaMetadata({title: s.name.trim(), artist: 'Radiola'});
+  }
+}
+const setStatus = t => $('status').textContent = t;
+
+audio.addEventListener('playing', () => { setStatus('● 방송 중'); $('play').textContent = '⏸'; });
+audio.addEventListener('pause', () => { $('play').textContent = '▶'; if (audio.src) setStatus('정지'); });
+audio.addEventListener('waiting', () => setStatus('버퍼링…'));
+audio.addEventListener('error', () => { if (!hls) setStatus('재생할 수 없는 방송국입니다 (주소 만료 또는 지역 제한)'); });
+
+$('play').onclick = () => {
+  if (curView < 0){ if (view.length) playView(0); return; }
+  audio.paused ? audio.play().catch(()=>{}) : audio.pause();
+};
+$('next').onclick = () => { if (view.length) playView((curView + 1) % view.length); };
+$('prev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length); };
+$('vol').oninput = e => audio.volume = +e.target.value;
+audio.volume = 0.8;
+
+let timer;
+$('q').oninput = () => { clearTimeout(timer); timer = setTimeout(render, 200); };
+$('tag').onchange = render;
+$('mode').onchange = render;
+$('country').onchange = () => { curView = -1; loadStations(); };
+
+// ★ Firebase Realtime Database 주소를 아래 따옴표 안에 넣으면 모두가 함께 쓰는 채팅이 됩니다.
+// 예) 'https://my-radio-default-rtdb.firebaseio.com'
+const FIREBASE_URL = '';
+
+let chat = [], lastSig = '';
+const DB = FIREBASE_URL.replace(/\/+$/, '');
+try { $('nick').value = localStorage.getItem('radio_nick') || ''; } catch(e){}
+if (!DB){
+  try { chat = JSON.parse(localStorage.getItem('radio_chat') || '[]'); } catch(e){}
+  $('chatnote').textContent = '지금은 내 기기에서만 보이는 채팅입니다. FIREBASE_URL을 설정하면 다른 사람과 함께 쓸 수 있습니다.';
+}
+const hhmm = ts => { const d = new Date(ts); return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0'); };
+function roomPath(){
+  if ($('room').value === 'station' && cur >= 0 && stations[cur]) return 'st_' + stations[cur].stationuuid;
+  return 'lobby';
+}
+function renderChat(){
+  const log = $('chatlog');
+  const near = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
+  log.innerHTML = '';
+  if (!chat.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
+  chat.forEach(c => {
+    const d = document.createElement('div'); d.className = 'm';
+    const b = document.createElement('b'); b.textContent = c.n;
+    const t = document.createElement('span'); t.textContent = c.t;
+    const s = document.createElement('small'); s.textContent = hhmm(c.ts);
+    d.append(b, t, s); log.append(d);
+  });
+  if (near) log.scrollTop = log.scrollHeight;
+}
+async function fetchChat(force){
+  if (!DB) { if (force) renderChat(); return; }
+  try {
+    const r = await fetch(`${DB}/chat/${roomPath()}.json?orderBy="$key"&limitToLast=60`);
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json() || {};
+    const keys = Object.keys(data).sort();
+    const sig = roomPath() + '|' + keys.join(',');
+    if (sig !== lastSig || force){
+      lastSig = sig;
+      chat = keys.map(k => data[k]);
+      renderChat();
+      const log = $('chatlog'); log.scrollTop = log.scrollHeight;
+    }
+    $('chatnote').textContent = '';
+  } catch(e){
+    $('chatnote').textContent = '채팅 서버에 연결하지 못했습니다. 주소와 데이터베이스 규칙을 확인하세요.';
+  }
+}
+async function sendChat(){
+  const inp = $('chatin'), text = inp.value.trim();
+  if (!text) return;
+  const msg = {n: $('nick').value.trim() || '손님', t: text, ts: Date.now()};
+  try { localStorage.setItem('radio_nick', $('nick').value.trim()); } catch(e){}
+  inp.value = '';
+  if (!DB){
+    chat.push(msg); chat = chat.slice(-100);
+    try { localStorage.setItem('radio_chat', JSON.stringify(chat)); } catch(e){}
+    renderChat(); return;
+  }
+  try {
+    const r = await fetch(`${DB}/chat/${roomPath()}.json`, {method: 'POST', body: JSON.stringify(msg)});
+    if (!r.ok) throw new Error(r.status);
+    fetchChat(true);
+  } catch(e){
+    $('chatnote').textContent = '메시지를 보내지 못했습니다. 데이터베이스 규칙(쓰기 허용)을 확인하세요.';
+    inp.value = text;
+  }
+}
+$('chatsend').onclick = sendChat;
+$('chatin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) sendChat(); });
+$('room').onchange = () => { lastSig = ''; chat = []; renderChat(); fetchChat(true); };
+renderChat(); fetchChat(true);
+setInterval(() => { if (!document.hidden) fetchChat(false); }, 3000);
+
+$('addhome').onclick = () => {
+  const ua = navigator.userAgent, m = $('addmsg');
+  if (/iPhone|iPad|iPod/i.test(ua)){
+    m.textContent = 'Safari 하단의 공유 버튼을 누른 뒤 "홈 화면에 추가"를 선택하세요.';
+  } else if (/Android/i.test(ua)){
+    m.textContent = 'Chrome 오른쪽 위 메뉴(⋮)에서 "홈 화면에 추가"를 선택하세요.';
+  } else {
+    const blob = new Blob(['[InternetShortcut]\r\nURL=' + location.href + '\r\n'], {type: 'application/octet-stream'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Radiola 웹 라디오.url';
+    document.body.appendChild(a); a.click(); a.remove();
+    m.textContent = '내려받은 "Radiola 웹 라디오.url" 파일을 바탕화면으로 옮기면 바로가기가 됩니다. (Windows)';
+  }
+};
+
+(async () => { await loadCountries(); await loadStations(); })();
+</script>
+</body>
+</html>
