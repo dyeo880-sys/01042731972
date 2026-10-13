@@ -270,6 +270,7 @@ const FIREBASE_URL = 'https://project-4230942543796585572-default-rtdb.firebasei
 
 let chat = [], lastSig = '';
 const DB = FIREBASE_URL.replace(/\/+$/, '');
+let chatAllowed = !DB;
 const NICK_ADJ = ['졸린','용감한','수줍은','느긋한','엉뚱한','씩씩한','반짝이는','조용한','신나는','포근한'];
 const NICK_ANI = ['여우','고양이','너구리','펭귄','수달','부엉이','토끼','다람쥐','고래','판다'];
 const fakeNick = () => NICK_ADJ[Math.floor(Math.random()*NICK_ADJ.length)] + ' ' + NICK_ANI[Math.floor(Math.random()*NICK_ANI.length)] + (10 + Math.floor(Math.random()*90));
@@ -419,9 +420,92 @@ $('roomok').onclick = createRoom;
 $('roomcancel').onclick = () => openRoomForm(false);
 $('roomname').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) createRoom(); if (e.key === 'Escape') openRoomForm(false); });
 
-renderRooms(); loadRooms();
-renderChat(); fetchChat(true);
-setInterval(() => { if (!document.hidden){ fetchChat(false); loadRooms(); } }, 3000);
+// ===== 동시 접속 인원 제한 (채팅에만 적용, 라디오 재생은 영향 없음) =====
+const TOTAL_CAP = 30;      // 채팅 동시 접속 최대 인원 (관리자 자리 포함)
+const ADMIN_SLOTS = 3;     // 일반 사용자가 꽉 찼을 때만 쓰는 관리자 전용 자리
+const ADMIN_PW = '0088';   // 관리자 비밀번호 (이 파일을 열면 누구나 볼 수 있습니다)
+const PRES_TTL = 45000, BEAT = 15000;
+const myId = Math.random().toString(36).slice(2, 10);
+let isAdmin = false, joinTs = 0, gateBusy = false;
+const presUrl = id => `${DB}/presence/${id}.json`;
+
+async function presenceTouch(){
+  const sv = {'.sv': 'timestamp'};
+  const w = await fetch(presUrl(myId), {method: 'PUT', body: JSON.stringify({ts: sv, j: joinTs || sv, a: isAdmin})});
+  if (!w.ok) throw new Error(w.status);
+  const r = await fetch(`${DB}/presence.json`);
+  if (!r.ok) throw new Error(r.status);
+  const all = await r.json() || {};
+  const me = all[myId];
+  if (!me) throw new Error('presence');
+  joinTs = me.j;
+  const now = me.ts;
+  const stale = Object.keys(all).filter(id => now - all[id].ts > 300000);
+  if (stale.length){
+    const o = {}; stale.forEach(id => o[id] = null);
+    fetch(`${DB}/presence.json`, {method: 'PATCH', body: JSON.stringify(o)}).catch(() => {});
+  }
+  return Object.keys(all).map(id => Object.assign({id}, all[id])).filter(p => now - p.ts < PRES_TTL);
+}
+function leave(){
+  joinTs = 0;
+  try { return fetch(presUrl(myId), {method: 'DELETE', keepalive: true}).catch(() => {}); } catch(e){}
+}
+function setAllowed(ok, count, adminFull){
+  const was = chatAllowed;
+  chatAllowed = ok;
+  $('gate').hidden = ok;
+  $('chatlog').hidden = !ok;
+  $('chatform').hidden = !ok;
+  if (!ok){
+    $('gatemsg').textContent = adminFull
+      ? '관리자 자리도 모두 찼습니다. 잠시 후 다시 시도해 주세요.'
+      : `채팅 접속 인원이 가득 찼습니다 (현재 ${count}/${TOTAL_CAP}명). 자리가 나면 자동으로 입장합니다. (라디오는 계속 들을 수 있습니다)`;
+  } else if (!was){
+    lastSig = ''; loadRooms(); fetchChat(true);
+  }
+}
+async function admit(){
+  if (!DB || gateBusy) return;
+  gateBusy = true;
+  try {
+    const live = await presenceTouch();
+    const order = (a, b) => (a.j - b.j) || (a.id < b.id ? -1 : 1);
+    let ok;
+    if (isAdmin){
+      ok = live.filter(p => p.a).sort(order).findIndex(p => p.id === myId) < ADMIN_SLOTS;
+    } else {
+      ok = live.filter(p => !p.a).sort(order).findIndex(p => p.id === myId) < TOTAL_CAP - ADMIN_SLOTS;
+    }
+    if (!ok) await leave();
+    setAllowed(ok, live.length, isAdmin);
+  } catch(e){
+    // 규칙에 presence 쓰기가 없거나 서버 오류면 제한 없이 채팅을 허용합니다.
+    console.warn('접속 인원 제한을 확인하지 못했습니다:', e);
+    if (!chatAllowed) setAllowed(true);
+  } finally { gateBusy = false; }
+}
+$('gateretry').onclick = admit;
+$('adminok').onclick = () => {
+  if ($('adminpw').value !== ADMIN_PW){
+    $('gatemsg').textContent = '관리자 비밀번호가 맞지 않습니다.';
+    return;
+  }
+  isAdmin = true; $('adminpw').value = '';
+  admit();
+};
+$('adminpw').addEventListener('keydown', e => { if (e.key === 'Enter') $('adminok').click(); });
+addEventListener('pagehide', () => { if (DB && chatAllowed) leave(); });
+
+renderRooms();
+renderChat();
+if (DB){
+  $('chatlog').hidden = true; $('chatform').hidden = true;
+  $('gate').hidden = false; $('gatemsg').textContent = '채팅에 접속하는 중…';
+  admit();
+  setInterval(() => { if (chatAllowed || !document.hidden) admit(); }, BEAT);
+} else { fetchChat(true); }
+setInterval(() => { if (!document.hidden && chatAllowed){ fetchChat(false); loadRooms(); } }, 5000);
 
 $('addhome').onclick = () => {
   const ua = navigator.userAgent, m = $('addmsg');
