@@ -304,12 +304,18 @@ function loadLocal(){
     chat = JSON.parse(raw || '[]');
   } catch(e){ chat = []; }
 }
-function renderChat(){
+let pending = [], es = null, esPath = '', esOk = false, chatMap = {};
+const hasES = typeof EventSource !== 'undefined';
+function dropSeen(){
+  pending = pending.filter(q => !chat.some(c => c.ts === q.ts && c.n === q.n && c.t === q.t));
+}
+function renderChat(forceBottom){
   const log = $('chatlog');
-  const near = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
+  const near = forceBottom === true || log.scrollHeight - log.scrollTop - log.clientHeight < 40;
   log.innerHTML = '';
-  if (!chat.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
-  chat.forEach(c => {
+  const all = chat.concat(pending);
+  if (!all.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
+  all.forEach(c => {
     const d = document.createElement('div'); d.className = 'm';
     const b = document.createElement('b'); b.textContent = c.n;
     const t = document.createElement('span'); t.textContent = c.t;
@@ -318,9 +324,51 @@ function renderChat(){
   });
   if (near) log.scrollTop = log.scrollHeight;
 }
+function stopStream(){ if (es){ es.close(); es = null; esPath = ''; } }
+// 서버가 새 글을 바로 밀어주는 실시간 연결(SSE). 지원되지 않거나 끊기면 아래 폴링이 대신합니다.
+function startStream(){
+  if (!DB || !chatAllowed || !hasES) return;
+  const p = roomPath();
+  if (es && esPath === p) return;
+  stopStream();
+  esPath = p; chatMap = {}; chat = []; pending = []; esOk = true;
+  const e = new EventSource(`${DB}/chat/${p}.json?orderBy="$key"&limitToLast=40`);
+  es = e;
+  const onData = ev => {
+    if (es !== e) return;
+    let m; try { m = JSON.parse(ev.data); } catch(_){ return; }
+    if (!m) return;
+    const path = m.path || '/', data = m.data;
+    if (path === '/'){
+      if (ev.type === 'put') chatMap = (data && typeof data === 'object') ? data : {};
+      else if (data) Object.keys(data).forEach(k => { if (data[k] === null) delete chatMap[k]; else chatMap[k] = data[k]; });
+    } else {
+      const seg = path.split('/');
+      if (seg[1] && seg.length === 2){ if (data === null) delete chatMap[seg[1]]; else chatMap[seg[1]] = data; }
+    }
+    chat = Object.keys(chatMap).sort().slice(-40).map(k => chatMap[k]).filter(c => c && c.t);
+    dropSeen();
+    esOk = true;
+    $('chatnote').textContent = '';
+    renderChat();
+  };
+  e.addEventListener('put', onData);
+  e.addEventListener('patch', onData);
+  e.addEventListener('cancel', () => {
+    if (es === e){ stopStream(); esOk = false; $('chatnote').textContent = '채팅 서버에 연결하지 못했습니다. 주소와 데이터베이스 규칙을 확인하세요.'; }
+  });
+  e.onopen = () => { if (es === e) esOk = true; };
+  e.onerror = () => { if (es === e) esOk = false; };
+}
 async function fetchChat(force){
   if (!DB) { if (force) { loadLocal(); renderChat(); } return; }
   if (!chatAllowed) return;
+  if (hasES){
+    if (es && es.readyState === 2) stopStream();
+    startStream();
+    if (force) renderChat();
+    if (es && esOk) return;
+  }
   try {
     const r = await fetch(`${DB}/chat/${roomPath()}.json?orderBy="$key"&limitToLast=40`);
     if (!r.ok) throw new Error(r.status);
@@ -330,6 +378,7 @@ async function fetchChat(force){
     if (sig !== lastSig || force){
       lastSig = sig;
       chat = keys.map(k => data[k]);
+      dropSeen();
       renderChat();
       const log = $('chatlog'); log.scrollTop = log.scrollHeight;
     }
@@ -351,18 +400,21 @@ async function sendChat(){
     renderChat(); return;
   }
   if (!chatAllowed) return;
+  const path = roomPath();
+  pending.push(msg); renderChat(true);
   try {
-    const r = await fetch(`${DB}/chat/${roomPath()}.json`, {method: 'POST', body: JSON.stringify(msg)});
+    const r = await fetch(`${DB}/chat/${path}.json`, {method: 'POST', body: JSON.stringify(msg)});
     if (!r.ok) throw new Error(r.status);
-    fetchChat(true);
+    if (!(es && esOk)) fetchChat(true);
   } catch(e){
+    pending = pending.filter(x => x !== msg); renderChat();
     $('chatnote').textContent = '메시지를 보내지 못했습니다. 데이터베이스 규칙(쓰기 허용)을 확인하세요.';
     inp.value = text;
   }
 }
 $('chatsend').onclick = sendChat;
 $('chatin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) sendChat(); });
-$('room').onchange = () => { lastSig = ''; chat = []; renderChat(); fetchChat(true); };
+$('room').onchange = () => { lastSig = ''; chat = []; pending = []; renderChat(); fetchChat(true); };
 let rooms = [], roomsSig = '';
 if (!DB){ try { rooms = JSON.parse(localStorage.getItem('radio_rooms') || '[]'); } catch(e){} }
 function renderRooms(keep){
@@ -468,6 +520,7 @@ function setAllowed(ok, count, adminFull){
   $('chatlog').hidden = !ok;
   $('chatform').hidden = !ok;
   if (!ok){
+    stopStream();
     $('gatemsg').textContent = adminFull
       ? '관리자 자리도 모두 찼습니다. 잠시 후 다시 시도해 주세요.'
       : `채팅 접속 인원이 가득 찼습니다 (현재 ${count}/${TOTAL_CAP}명). 자리가 나면 자동으로 입장합니다. (라디오는 계속 들을 수 있습니다)`;
