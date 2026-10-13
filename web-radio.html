@@ -423,7 +423,15 @@ $('roomname').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isC
 // ===== 동시 접속 인원 제한 (채팅에만 적용, 라디오 재생은 영향 없음) =====
 const TOTAL_CAP = 30;      // 채팅 동시 접속 최대 인원 (관리자 자리 포함)
 const ADMIN_SLOTS = 3;     // 일반 사용자가 꽉 찼을 때만 쓰는 관리자 전용 자리
-const ADMIN_PW = '0088';   // 관리자 비밀번호 (이 파일을 열면 누구나 볼 수 있습니다)
+// 관리자 비밀번호는 원문이 아니라 소금(salt)+PBKDF2-SHA256 해시로만 저장됩니다.
+const ADMIN_SALT = '35311a82d486a1f397ef9e7c5d74ca99';
+const ADMIN_HASH = 'd19648936642e2979491bca30f854c7f69d640be7194cdf61c2a0a986c95c46a';
+async function pwHash(pw){
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(ADMIN_SALT), iterations: 200000}, key, 256);
+  return Array.from(new Uint8Array(bits)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 const PRES_TTL = 45000, BEAT = 15000;
 const myId = Math.random().toString(36).slice(2, 10);
 let isAdmin = false, joinTs = 0, gateBusy = false;
@@ -486,8 +494,13 @@ async function admit(){
   } finally { gateBusy = false; }
 }
 $('gateretry').onclick = admit;
-$('adminok').onclick = () => {
-  if ($('adminpw').value !== ADMIN_PW){
+$('adminok').onclick = async () => {
+  const pw = $('adminpw').value;
+  if (!pw) return;
+  let ok = false;
+  try { ok = (await pwHash(pw)) === ADMIN_HASH; }
+  catch(e){ $('gatemsg').textContent = '이 브라우저/주소에서는 관리자 확인을 쓸 수 없습니다. (https 또는 파일 열기 필요)'; return; }
+  if (!ok){
     $('gatemsg').textContent = '관리자 비밀번호가 맞지 않습니다.';
     return;
   }
