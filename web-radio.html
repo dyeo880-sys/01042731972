@@ -158,7 +158,9 @@ async function loadCountries(){
   const sel = $('country');
   try {
     const list = await api('/json/countries?order=stationcount&reverse=true&hidebroken=true');
-    sel.innerHTML = list.filter(c => c.iso_3166_1 && c.stationcount > 0)
+    const ok = list.filter(c => c.iso_3166_1 && c.stationcount > 0);
+    const kr = ok.filter(c => c.iso_3166_1 === 'KR');
+    sel.innerHTML = kr.concat(ok.filter(c => c.iso_3166_1 !== 'KR'))
       .map(c => `<option value="${c.iso_3166_1}">${c.name} (${c.stationcount})</option>`).join('');
   } catch(e){
     sel.innerHTML = '<option value="KR">South Korea</option>';
