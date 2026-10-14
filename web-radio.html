@@ -154,6 +154,34 @@ button,select,input{font:inherit}
   </div>
   <div class="count" id="count"></div>
   <div class="list" id="list" role="list"></div>
+  <section class="chat" id="tvsec" aria-label="TV 보기">
+    <div class="chathead"><strong>📺 TV·위성 방송</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvadm">🔒 관리자</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvopen">나라별 채널 펼치기</button></span></div>
+    <div class="gate" id="tvadmin" hidden style="text-align:left;margin-bottom:8px">
+      <div style="color:var(--amber);font-weight:700;font-size:14px;margin-bottom:6px">⭐ 기타 방송 추가 (관리자)</div>
+      <div class="chatform" style="flex-wrap:wrap"><input id="tvan" maxlength="60" placeholder="방송 이름" aria-label="방송 이름"><input id="tvau" placeholder="주소 (m3u8 · mp4 · 유튜브 링크)" aria-label="방송 주소"></div>
+      <div class="chatform"><button id="tvaadd" class="addhome" style="margin:0" type="button">＋ 추가</button><button id="tvaout" class="addhome" style="margin:0" type="button">관리자 끝내기</button></div>
+      <div class="chatnote" id="tvamsg"></div>
+    </div>
+    <div id="tvbox" hidden>
+      <div id="tvplayer" hidden style="margin-bottom:8px">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span id="tvnow" style="flex:1;color:var(--amber);font-weight:700;font-size:14px"></span><button class="addhome" style="margin:0;padding:4px 10px" type="button" id="tvclose">■ 끄기</button></div>
+        <video id="tvvid" controls autoplay playsinline style="width:100%;max-height:60vh;background:#000;border-radius:8px" hidden></video>
+        <div id="tvyt" style="display:none;aspect-ratio:16/9;width:100%"></div>
+        <div id="tvctl" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;padding:8px;background:#1a0f08;border-radius:6px">
+          <button class="addhome" style="margin:0;padding:6px 12px;font-size:15px" type="button" id="tvpp">⏸ 멈춤</button>
+          <button class="addhome" style="margin:0;padding:6px 12px;font-size:15px" type="button" id="tvmute">🔊 소리 켜짐</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:14px">볼륨 <input type="range" id="tvvol" min="0" max="1" step="0.05" value="1" style="width:130px"></label>
+          <button class="addhome" style="margin:0;padding:6px 12px;font-size:15px" type="button" id="tvfs">⛶ 전체화면</button>
+        </div>
+        <div id="tvsubrow" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px"><label class="addhome" style="margin:0;cursor:pointer;padding:4px 10px;font-size:13px">📄 한글 자막 파일 (.srt · .vtt)<input id="tvsubf" type="file" accept=".srt,.vtt,text/vtt" hidden></label><select id="tvsub" hidden aria-label="방송 자막 고르기" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:4px 8px;font-size:13px"></select></div>
+        <div class="chatnote" id="tvmsg"></div>
+      </div>
+      <div id="tvchips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+      <input id="tvq" type="search" placeholder="채널 이름 거르기 (펼친 나라 안에서)" aria-label="채널 이름 거르기" style="width:100%;margin-bottom:6px;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:7px 10px;font-size:14px">
+      <div class="chatnote" id="tvfmsg"></div>
+      <div class="vres" id="tvlist" style="max-height:60vh"></div>
+    </div>
+  </section>
   <section class="chat" id="musicroom" aria-label="음악 방">
     <div class="chathead"><strong>🎵 음악 방</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="mkopen">＋ 음악 방 만들기</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="livereload">새로고침</button></span></div>
     <div class="gate" id="mkform" hidden style="text-align:left;margin-bottom:8px">
@@ -249,7 +277,8 @@ button,select,input{font:inherit}
       <div class="mwsearch">
         <input id="vq" placeholder="영상 검색 (예: 안전 교육, science, 지게차)" aria-label="영상 검색">
         <select id="vsrc" aria-label="검색할 곳"><option value="all">전체 (해외 사이트 한꺼번에)</option><option value="ia">Internet Archive</option><option value="pre">Prelinger (옛 교육·산업 영화)</option><option value="nasa">NASA</option><option value="wm">Wikimedia Commons</option><option value="pt">PeerTube (세계 각국 영상)</option><option value="tv">📺 TV·위성 방송 (나라별 · 무료)</option><option value="yt">유튜브 (무료 키 필요)</option><option value="px">Pexels (무료 키 필요)</option><option value="pb">Pixabay (무료 키 필요)</option></select>
-        <select id="vtvc" aria-label="TV 나라" hidden><option value="kr">한국</option><option value="kp">북한</option><option value="jp">일본</option><option value="cn">중국</option><option value="tw">대만</option><option value="hk">홍콩</option><option value="us">미국</option><option value="ca">캐나다</option><option value="gb">영국</option><option value="ie">아일랜드</option><option value="au">호주</option><option value="nz">뉴질랜드</option><option value="de">독일</option><option value="fr">프랑스</option><option value="es">스페인</option><option value="it">이탈리아</option><option value="pt">포르투갈</option><option value="nl">네덜란드</option><option value="be">벨기에</option><option value="ch">스위스</option><option value="at">오스트리아</option><option value="se">스웨덴</option><option value="no">노르웨이</option><option value="dk">덴마크</option><option value="fi">핀란드</option><option value="pl">폴란드</option><option value="cz">체코</option><option value="gr">그리스</option><option value="tr">튀르키예</option><option value="ru">러시아</option><option value="ua">우크라이나</option><option value="sg">싱가포르</option><option value="my">말레이시아</option><option value="th">태국</option><option value="vn">베트남</option><option value="id">인도네시아</option><option value="ph">필리핀</option><option value="in">인도</option><option value="pk">파키스탄</option><option value="bd">방글라데시</option><option value="lk">스리랑카</option><option value="np">네팔</option><option value="mn">몽골</option><option value="kz">카자흐스탄</option><option value="uz">우즈베키스탄</option><option value="ir">이란</option><option value="iq">이라크</option><option value="il">이스라엘</option><option value="sa">사우디</option><option value="ae">아랍에미리트</option><option value="qa">카타르</option><option value="kw">쿠웨이트</option><option value="eg">이집트</option><option value="ma">모로코</option><option value="dz">알제리</option><option value="tn">튀니지</option><option value="ng">나이지리아</option><option value="za">남아공</option><option value="ke">케냐</option><option value="et">에티오피아</option><option value="gh">가나</option><option value="br">브라질</option><option value="ar">아르헨티나</option><option value="cl">칠레</option><option value="co">콜롬비아</option><option value="mx">멕시코</option><option value="pe">페루</option><option value="ve">베네수엘라</option><option value="cu">쿠바</option><option value="int">국제·위성 방송</option></select>
+        <select id="vtvc" aria-label="TV 나라" hidden><option value="extra">⭐ 기타 방송 (관리자 추가)</option><option value="sam-kr">📡 삼성 TV Plus · 한국</option><option value="sam-us">📡 삼성 TV Plus · 미국</option><option value="sam-gb">📡 삼성 TV Plus · 영국</option><option value="sam-de">📡 삼성 TV Plus · 독일</option><option value="sam-fr">📡 삼성 TV Plus · 프랑스</option><option value="sam-it">📡 삼성 TV Plus · 이탈리아</option><option value="sam-es">📡 삼성 TV Plus · 스페인</option><option value="sam-ca">📡 삼성 TV Plus · 캐나다</option><option value="sam-ch">📡 삼성 TV Plus · 스위스</option><option value="sam-at">📡 삼성 TV Plus · 오스트리아</option><option value="sam-in">📡 삼성 TV Plus · 인도</option><option value="kr">한국</option><option value="kp">북한</option><option value="jp">일본</option><option value="cn">중국</option><option value="tw">대만</option><option value="hk">홍콩</option><option value="us">미국</option><option value="ca">캐나다</option><option value="gb">영국</option><option value="ie">아일랜드</option><option value="au">호주</option><option value="nz">뉴질랜드</option><option value="de">독일</option><option value="fr">프랑스</option><option value="es">스페인</option><option value="it">이탈리아</option><option value="pt">포르투갈</option><option value="nl">네덜란드</option><option value="be">벨기에</option><option value="ch">스위스</option><option value="at">오스트리아</option><option value="se">스웨덴</option><option value="no">노르웨이</option><option value="dk">덴마크</option><option value="fi">핀란드</option><option value="pl">폴란드</option><option value="cz">체코</option><option value="gr">그리스</option><option value="tr">튀르키예</option><option value="ru">러시아</option><option value="ua">우크라이나</option><option value="sg">싱가포르</option><option value="my">말레이시아</option><option value="th">태국</option><option value="vn">베트남</option><option value="id">인도네시아</option><option value="ph">필리핀</option><option value="in">인도</option><option value="pk">파키스탄</option><option value="bd">방글라데시</option><option value="lk">스리랑카</option><option value="np">네팔</option><option value="mn">몽골</option><option value="kz">카자흐스탄</option><option value="uz">우즈베키스탄</option><option value="ir">이란</option><option value="iq">이라크</option><option value="il">이스라엘</option><option value="sa">사우디</option><option value="ae">아랍에미리트</option><option value="qa">카타르</option><option value="kw">쿠웨이트</option><option value="eg">이집트</option><option value="ma">모로코</option><option value="dz">알제리</option><option value="tn">튀니지</option><option value="ng">나이지리아</option><option value="za">남아공</option><option value="ke">케냐</option><option value="et">에티오피아</option><option value="gh">가나</option><option value="br">브라질</option><option value="ar">아르헨티나</option><option value="cl">칠레</option><option value="co">콜롬비아</option><option value="mx">멕시코</option><option value="pe">페루</option><option value="ve">베네수엘라</option><option value="cu">쿠바</option><option value="ro">루마니아</option><option value="hu">헝가리</option><option value="bg">불가리아</option><option value="rs">세르비아</option><option value="hr">크로아티아</option><option value="sk">슬로바키아</option><option value="si">슬로베니아</option><option value="ba">보스니아</option><option value="al">알바니아</option><option value="mk">북마케도니아</option><option value="me">몬테네그로</option><option value="lt">리투아니아</option><option value="lv">라트비아</option><option value="ee">에스토니아</option><option value="by">벨라루스</option><option value="md">몰도바</option><option value="ge">조지아</option><option value="am">아르메니아</option><option value="az">아제르바이잔</option><option value="is">아이슬란드</option><option value="lu">룩셈부르크</option><option value="mt">몰타</option><option value="cy">키프로스</option><option value="lb">레바논</option><option value="jo">요르단</option><option value="sy">시리아</option><option value="ye">예멘</option><option value="om">오만</option><option value="bh">바레인</option><option value="af">아프가니스탄</option><option value="ly">리비아</option><option value="sd">수단</option><option value="sn">세네갈</option><option value="ci">코트디부아르</option><option value="cm">카메룬</option><option value="tz">탄자니아</option><option value="ug">우간다</option><option value="zw">짐바브웨</option><option value="ao">앙골라</option><option value="mz">모잠비크</option><option value="mg">마다가스카르</option><option value="ec">에콰도르</option><option value="uy">우루과이</option><option value="py">파라과이</option><option value="bo">볼리비아</option><option value="cr">코스타리카</option><option value="pa">파나마</option><option value="gt">과테말라</option><option value="hn">온두라스</option><option value="sv">엘살바도르</option><option value="ni">니카라과</option><option value="do">도미니카공화국</option><option value="pr">푸에르토리코</option><option value="jm">자메이카</option><option value="tt">트리니다드토바고</option><option value="ht">아이티</option><option value="kh">캄보디아</option><option value="la">라오스</option><option value="mm">미얀마</option><option value="bn">브루나이</option><option value="mo">마카오</option><option value="kg">키르기스스탄</option><option value="tj">타지키스탄</option><option value="tm">투르크메니스탄</option><option value="bt">부탄</option><option value="mv">몰디브</option><option value="int">국제·위성 방송</option></select>
+        <button class="addhome" style="margin:0" type="button" id="vtv">📺 TV 채널 목록</button>
         <button class="addhome" style="margin:0" type="button" id="vfind">🔍 검색</button>
       </div>
       <div class="vres" id="vres" hidden></div>
@@ -881,7 +910,7 @@ function mvStop(){
 }
 function attachUrl(u){
   if (MV.hls){ MV.hls.destroy(); MV.hls = null; }
-  if (/\.m3u8(\?|$)/i.test(u) && window.Hls && Hls.isSupported()){ MV.hls = new Hls(); MV.hls.loadSource(u); MV.hls.attachMedia(mwvid); }
+  if ((/\.m3u8(\?|$)/i.test(u) || /^https:\/\/jmp2\.uk\//i.test(u)) && window.Hls && Hls.isSupported()){ MV.hls = new Hls(); MV.hls.loadSource(u); MV.hls.attachMedia(mwvid); }
   else mwvid.src = u;
 }
 const mvPut = o => { if (!bc) return; return lj('roommedia_' + bc.rid, 'PUT', Object.assign({ts: Date.now()}, o)).catch(() => {}); };
@@ -913,7 +942,7 @@ async function hostLink(raw){
     if (!(window.YT && YT.Player)){ setBc('유튜브 플레이어를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'); return; }
     if (location.protocol === 'file:') ytErr(153);
     MV.k = 'yt'; MV.u = id; $('mwyt').innerHTML = '<div id="mwytp"></div>'; mvShow('yt');
-    MV.yt = new YT.Player('mwytp', {width: '100%', height: '100%', videoId: id, playerVars: {autoplay: 1, playsinline: 1, rel: 0},
+    MV.yt = new YT.Player('mwytp', {width: '100%', height: '100%', videoId: id, playerVars: {autoplay: 1, playsinline: 1, rel: 0, cc_load_policy: 1, cc_lang_pref: 'ko', hl: 'ko'},
       events: {onReady: e => { try { e.target.playVideo(); } catch(_){} mvPush(); }, onStateChange: () => mvPush(),
                onError: e => ytErr(e && e.data)}});
     mwUpdate('▶ 유튜브 영상 함께 보는 중');
@@ -1442,17 +1471,45 @@ async function srcPb(q){
     return u ? {title: h.tags || ('Pixabay ' + h.id), sub: 'Pixabay · ' + h.duration + '초', pick: () => playDone(u, h.tags)} : null;
   }).filter(Boolean);
 }
+// 유튜브 검색 키 (비워 두면 처음 검색할 때 물어봅니다). 키는 Google Cloud에서 YouTube Data API v3만 허용하도록 제한해 두세요.
+const YT_KEY = 'AIzaSyB4hUFw8JSPNjfcR_ZUqkhRE5T03TAYy7g';
 async function srcYt(q){
-  const k = needKey('yt', '유튜브(YouTube Data API v3)', 'https://console.cloud.google.com/apis/library/youtube.googleapis.com');
+  const k = kload('yt') || YT_KEY || needKey('yt', '유튜브(YouTube Data API v3)', 'https://console.cloud.google.com/apis/library/youtube.googleapis.com');
   const j = await jget('https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=20&q=' + encodeURIComponent(q) + '&key=' + encodeURIComponent(k));
   const dec = t => { const e = document.createElement('textarea'); e.innerHTML = t || ''; return e.value; };
   return (j.items || []).filter(it => it.id && it.id.videoId).map(it => ({title: dec(it.snippet.title), sub: '유튜브 · ' + dec(it.snippet.channelTitle), pick: () => { const t = dec(it.snippet.title); return hostLink('https://www.youtube.com/watch?v=' + it.id.videoId).then(() => mwUpdate('▶ ' + t.slice(0, 40))); }}));
 }
 const tvCache = {};
-async function srcTv(q){
-  const cc = $('vtvc').value;
+async function tvSam(rc){
+  const key = 'sam-' + rc; if (tvCache[key]) return tvCache[key];
+  let out = [];
+  const okU = u => /^https?:\/\//i.test(u) && !(location.protocol === 'https:' && u.startsWith('http:'));
+  try {
+    const r = await fetch('https://i.mjh.nz/SamsungTVPlus/' + rc + '.m3u8');
+    if (r.ok){
+      let name = '';
+      for (const ln of (await r.text()).split(/\r?\n/)){
+        if (ln.startsWith('#EXTINF')){ name = ln.slice(ln.lastIndexOf(',') + 1).trim(); }
+        else if (okU(ln.trim()) && name){ out.push({name, u: ln.trim(), hls: true}); name = ''; }
+      }
+    }
+  } catch(e){}
+  if (!out.length){
+    try {
+      const r = await fetch('https://raw.githubusercontent.com/matthuisman/i.mjh.nz/master/SamsungTVPlus/.channels.json.gz');
+      const j = JSON.parse(await new Response(r.body.pipeThrough(new DecompressionStream('gzip'))).text());
+      const ch = (j.regions && j.regions[rc] && j.regions[rc].channels) || {};
+      out = Object.entries(ch).sort((a, b) => (a[1].chno || 0) - (b[1].chno || 0)).map(([id, c]) => ({name: c.name + (c.group ? ' [' + c.group + ']' : ''), u: 'https://jmp2.uk/stvp-' + id + '.m3u8', hls: true}));
+    } catch(e){}
+  }
+  if (!out.length) throw new Error('sam');
+  return (tvCache[key] = out);
+}
+async function tvLoad(cc){
+  if (cc === 'extra') return tvExtra();
+  if (cc.startsWith('sam-')) return tvSam(cc.slice(4));
   if (!tvCache[cc]){
-    const r = await fetch('https://raw.githubusercontent.com/iptv-org/iptv/master/streams/' + cc + '.m3u');
+    const r = await fetch(cc.startsWith('sam-') ? 'https://i.mjh.nz/SamsungTVPlus/' + cc.slice(4) + '.m3u8' : 'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/' + cc + '.m3u');
     if (!r.ok) throw new Error(String(r.status));
     const lines = (await r.text()).split(/\r?\n/), out = [], seen = new Set();
     let name = '';
@@ -1466,8 +1523,52 @@ async function srcTv(q){
     }
     tvCache[cc] = out;
   }
-  const f = q.toLowerCase(), cn = $('vtvc').selectedOptions[0].textContent;
-  return tvCache[cc].filter(x => !f || x.name.toLowerCase().includes(f)).slice(0, 300).map(x => ({title: x.name, sub: 'TV · ' + cn, pick: () => hostLink(x.u).then(() => mwUpdate('▶ ' + x.name.slice(0, 40)))}));
+  return tvCache[cc];
+}
+async function srcTv(q){
+  const cc = $('vtvc').value, f = q.toLowerCase(), cn = $('vtvc').selectedOptions[0].textContent;
+  return (await tvLoad(cc)).filter(x => !f || x.name.toLowerCase().includes(f)).slice(0, 300).map(x => ({title: x.name, sub: 'TV · ' + cn, pick: () => hostLink(x.u).then(() => mwUpdate('▶ ' + x.name.slice(0, 40)))}));
+}
+// 나라별 펼침 목록: 검색어 없이 훑어보기
+function tvBrowse(v, pick){
+  v = v || $('vres'); v.hidden = false; v.innerHTML = '';
+  pick = pick || (x => { hostLink(x.u).then(() => mwUpdate('▶ ' + x.name.slice(0, 40))); });
+  const hd = document.createElement('div'); hd.className = 'vm'; hd.textContent = '나라를 눌러 펼치면 그 나라 TV 채널이 나옵니다. 채널을 누르면 바로 재생됩니다.'; v.append(hd);
+  [...$('vtvc').options].forEach(o => {
+    const d = document.createElement('details'); d.style.borderBottom = '1px solid #b99a5b33';
+    const sm = document.createElement('summary'); sm.textContent = '📺 ' + o.textContent + ' (세는 중…)'; sm.dataset.cc = o.value; sm.dataset.nm = o.textContent; sm.style.cssText = 'cursor:pointer;padding:9px 10px;font-size:14px;color:var(--amber)'; d.append(sm);
+    const box = document.createElement('div'); d.append(box); let done = false;
+    d.addEventListener('toggle', async () => {
+      if (!d.open || done) return; done = true; box.innerHTML = '<div class="vm">불러오는 중…</div>';
+      try {
+        const list = await tvLoad(o.value); box.innerHTML = '';
+        if (!list.length){ box.innerHTML = '<div class="vm">재생할 수 있는 채널이 없습니다.</div>'; return; }
+        list.forEach(x => {
+          const b = document.createElement('button'); b.type = 'button'; b.className = 'vr'; b.textContent = x.name.slice(0, 70);
+          b.onclick = () => { v.querySelectorAll('.vr').forEach(y => y.style.background = ''); b.style.background = '#b99a5b33'; pick(x); };
+          if (o.value === 'extra' && tvIsAdm()){
+            const row = document.createElement('div'); row.className = 'vrow'; row.style.cssText = 'display:flex;align-items:center;border-bottom:1px solid #b99a5b33';
+            b.style.cssText = 'flex:1;border-bottom:0'; const del = document.createElement('button'); del.type = 'button'; del.className = 'addhome'; del.style.cssText = 'margin:0 6px;padding:3px 9px;font-size:12px'; del.textContent = '✕ 삭제';
+            del.onclick = async e => { e.stopPropagation(); if (confirm('"' + x.name + '" 을(를) 목록에서 지울까요?')){ await tvExtraDel(x); refreshTvLists(); } };
+            row.append(b, del); box.append(row);
+          } else box.append(b);
+        });
+        if (v === $('tvlist')) tvApplyFilter(true);
+      } catch(e){ done = false; box.innerHTML = '<div class="vm">이 나라 목록을 불러오지 못했습니다. 접었다가 다시 펼쳐 보세요.</div>'; }
+    });
+    v.append(d);
+  });
+  // 나라별 채널 개수를 6개씩 나눠 불러와 표시
+  const sums = [...v.querySelectorAll('summary')]; let n = 0;
+  const worker = async () => {
+    while (n < sums.length){
+      const sm = sums[n++];
+      try { const l = await tvLoad(sm.dataset.cc); if (!l.length && sm.dataset.cc !== 'extra') sm.parentNode.remove(); else sm.textContent = '📺 ' + sm.dataset.nm + ' (' + l.length + '개)'; }
+      catch(e){ if (String(e && e.message) === '404' && sm.dataset.cc !== 'extra') sm.parentNode.remove(); else sm.textContent = '📺 ' + sm.dataset.nm + ' (확인 못 함)'; }
+      if (v === $('tvlist')) tvApplyDeb();
+    }
+  };
+  for (let k = 0; k < 6; k++) worker();
 }
 const VSRC = {tv: srcTv, yt: srcYt, ia: q => srcIA(q), pre: q => srcIA(q, ' AND collection:(prelinger)'), nasa: srcNasa, wm: srcWm, pt: srcPT, px: srcPx, pb: srcPb};
 async function searchVideos(){
@@ -1488,7 +1589,7 @@ async function searchVideos(){
     items.forEach(it => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'vr';
       b.textContent = String(it.title).slice(0, 70); const sm = document.createElement('small'); sm.textContent = it.sub + ' · 클릭하면 바로 재생'; b.append(sm);
-      b.onclick = () => { v.hidden = true; it.pick(); };
+      b.onclick = () => { v.querySelectorAll('.vr').forEach(x => x.style.background = ''); b.style.background = '#b99a5b33'; it.pick(); };
       v.append(b);
     });
   } catch(e){
@@ -1500,6 +1601,161 @@ async function searchVideos(){
   }
 }
 $('vfind').onclick = searchVideos;
+$('vtv').onclick = () => tvBrowse();
+
+// ---- 방 없이 혼자 보는 TV ----
+let tvHls = null;
+function tvStop(){
+  if (tvHls){ tvHls.destroy(); tvHls = null; }
+  const v = $('tvvid'); try { v.pause(); v.removeAttribute('src'); v.load(); } catch(e){}
+  v.hidden = true; $('tvyt').style.display = 'none'; $('tvyt').innerHTML = ''; $('tvplayer').hidden = true; $('tvmsg').textContent = '';
+  $('tvsub').hidden = true; $('tvsub').innerHTML = ''; v.querySelectorAll('track').forEach(t => t.remove());
+}
+function tvWatch(x){
+  tvStop(); try { audio.pause(); } catch(e){}
+  $('tvplayer').hidden = false; $('tvnow').textContent = '▶ ' + x.name; $('tvmsg').textContent = '불러오는 중…';
+  const yid = ytId(x.u);
+  if (yid){
+    const f = $('tvyt'); f.style.display = 'block';
+    f.innerHTML = '<iframe src="https://www.youtube.com/embed/' + yid + '?autoplay=1&rel=0&cc_load_policy=1&cc_lang_pref=ko&hl=ko" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen style="width:100%;height:100%;border:0;border-radius:8px"></iframe>';
+    $('tvmsg').textContent = '';
+  } else {
+    const v = $('tvvid'); v.hidden = false; v.muted = false; if (v.volume === 0) v.volume = 0.8;
+    const fail = () => { $('tvmsg').textContent = '이 채널은 지금 재생할 수 없습니다 (방송 중단 또는 지역 제한). 목록에서 다른 채널을 눌러 보세요.'; };
+    if ((x.hls || /\.m3u8(\?|$)/i.test(x.u)) && window.Hls && Hls.isSupported()){
+      tvHls = new Hls(); tvHls.loadSource(x.u); tvHls.attachMedia(v);
+      tvHls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) fail(); });
+      tvHls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, (_, d) => {
+        const sel = $('tvsub'), tr = (d && d.subtitleTracks) || []; sel.innerHTML = '<option value="-1">방송 자막 끄기</option>';
+        tr.forEach((t, i) => { const o = document.createElement('option'); o.value = i; o.textContent = '방송 자막: ' + (t.name || t.lang || ('트랙 ' + (i + 1))); sel.append(o); });
+        sel.hidden = !tr.length;
+        const ko = tr.findIndex(t => /^ko/i.test(t.lang || '') || /한국|korean/i.test(t.name || ''));
+        if (ko >= 0){ sel.value = ko; tvHls.subtitleTrack = ko; }
+      });
+    } else v.src = x.u;
+    v.onerror = fail; v.onplaying = () => { $('tvmsg').textContent = ''; };
+    v.play().catch(() => {});
+  }
+  $('tvplayer').scrollIntoView({block: 'nearest', behavior: 'smooth'});
+}
+$('tvopen').onclick = () => {
+  const b = $('tvbox');
+  if (!b.hidden){ b.hidden = true; $('tvopen').textContent = '나라별 채널 펼치기'; return; }
+  b.hidden = false; $('tvopen').textContent = '접기';
+  if (!$('tvlist').children.length) tvBrowse($('tvlist'), tvWatch);
+};
+$('tvclose').onclick = tvStop;
+// 영상 아래 소리·재생 조작 줄
+(() => {
+  const v = $('tvvid'), pp = $('tvpp'), mu = $('tvmute'), vol = $('tvvol');
+  const sync = () => {
+    pp.textContent = v.paused ? '▶ 재생' : '⏸ 멈춤';
+    const off = v.muted || v.volume === 0;
+    mu.textContent = off ? '🔇 소리 꺼짐 (눌러서 켜기)' : '🔊 소리 켜짐';
+    mu.style.borderColor = off ? '#e8a33d' : ''; vol.value = v.muted ? 0 : v.volume;
+  };
+  ['play', 'pause', 'volumechange', 'loadedmetadata'].forEach(e => v.addEventListener(e, sync));
+  pp.onclick = () => { v.paused ? v.play().catch(() => {}) : v.pause(); };
+  mu.onclick = () => { if (v.muted || v.volume === 0){ v.muted = false; if (v.volume === 0) v.volume = 0.8; } else v.muted = true; };
+  vol.oninput = () => { v.volume = +vol.value; v.muted = +vol.value === 0; };
+  $('tvfs').onclick = () => { const t = v.hidden ? $('tvyt') : v; try { (t.requestFullscreen || t.webkitRequestFullscreen).call(t); } catch(e){} };
+  new MutationObserver(() => { $('tvctl').style.display = v.hidden ? 'none' : 'flex'; }).observe(v, {attributes: true, attributeFilter: ['hidden']});
+  $('tvctl').style.display = 'none'; sync();
+})();
+
+$('tvsub').onchange = () => { if (tvHls) tvHls.subtitleTrack = +$('tvsub').value; };
+$('tvsubf').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  const v = $('tvvid');
+  if (v.hidden){ $('tvmsg').textContent = '자막 파일은 영상(m3u8·mp4) 재생 중에만 붙일 수 있습니다. 유튜브는 플레이어의 CC 버튼을 쓰세요.'; return; }
+  let t = await f.text();
+  if (!/^\uFEFF?WEBVTT/.test(t)) t = 'WEBVTT\n\n' + t.replace(/\r/g, '').replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+  v.querySelectorAll('track').forEach(x => x.remove());
+  const tr = document.createElement('track'); tr.kind = 'subtitles'; tr.srclang = 'ko'; tr.label = '한글'; tr.default = true;
+  tr.src = URL.createObjectURL(new Blob([t], {type: 'text/vtt'})); v.append(tr);
+  tr.addEventListener('load', () => { try { tr.track.mode = 'showing'; } catch(_){} });
+  try { tr.track.mode = 'showing'; } catch(_){}
+  $('tvmsg').textContent = '한글 자막을 붙였습니다. (영상 시작 시각과 자막이 안 맞으면 다른 자막 파일을 써 보세요)';
+};
+
+// ---- 관리자: 기타 방송 추가/삭제 ----
+const TV_ADMIN_HASH = '8be22f5b30df095a0d37f7ddd772b77fc4be5e8503665a11172320f0d0f96c84'; // 비밀번호 원문은 저장하지 않고 해시만 둡니다
+const tvIsAdm = () => { try { return sessionStorage.getItem('radio_admin') === '1'; } catch(e){ return false; } };
+const exLocal = () => { try { return JSON.parse(localStorage.getItem('radio_tvextra') || '[]'); } catch(e){ return []; } };
+const exLocalSave = a => { try { localStorage.setItem('radio_tvextra', JSON.stringify(a)); } catch(e){} };
+async function tvExtra(){
+  let out = [];
+  try {
+    const j = await lj('tvextra', 'GET');
+    out = Object.entries(j || {}).map(([id, v]) => ({id, name: String(v.name || ''), u: String(v.u || ''), ts: +v.ts || 0}));
+  } catch(e){}
+  exLocal().forEach(v => out.push(v));
+  return out.filter(x => x.name && /^https?:\/\//i.test(x.u)).sort((a, b) => a.ts - b.ts);
+}
+async function tvExtraAdd(name, u){
+  const id = 'x' + Date.now().toString(36) + Math.floor(Math.random() * 1000), rec = {name, u, ts: Date.now()};
+  try { await lj('tvextra/' + id, 'PUT', rec); return 'shared'; }
+  catch(e){ const a = exLocal(); a.push(Object.assign({id: 'L' + id}, rec)); exLocalSave(a); return 'local'; }
+}
+async function tvExtraDel(x){
+  if (String(x.id).startsWith('L')){ exLocalSave(exLocal().filter(v => v.id !== x.id)); return; }
+  try { await lj('tvextra/' + x.id, 'DELETE'); } catch(e){ alert('지우지 못했습니다. 인터넷 연결을 확인하세요.'); }
+}
+function refreshTvLists(){
+  if (!$('tvbox').hidden) tvBrowse($('tvlist'), tvWatch);
+  if (!$('vres').hidden && $('vres').querySelector('details')) tvBrowse();
+}
+function admShow(){ $('tvadmin').hidden = !tvIsAdm(); $('tvadm').textContent = tvIsAdm() ? '🔓 관리자 중' : '🔒 관리자'; }
+$('tvadm').onclick = async () => {
+  if (tvIsAdm()){ $('tvadmin').hidden = !$('tvadmin').hidden; return; }
+  const pw = prompt('관리자 비밀번호를 입력하세요.');
+  if (pw === null) return;
+  let ok = false;
+  try { ok = (await pwHash(pw.trim())) === TV_ADMIN_HASH; } catch(e){ alert('이 주소에서는 비밀번호를 확인할 수 없습니다. https:// 주소로 열어 주세요.'); return; }
+  if (!ok){ alert('비밀번호가 맞지 않습니다.'); return; }
+  try { sessionStorage.setItem('radio_admin', '1'); } catch(e){}
+  admShow(); refreshTvLists();
+};
+$('tvaout').onclick = () => { try { sessionStorage.removeItem('radio_admin'); } catch(e){} admShow(); refreshTvLists(); };
+$('tvaadd').onclick = async () => {
+  const name = $('tvan').value.trim(), u = $('tvau').value.trim();
+  if (!name){ $('tvamsg').textContent = '방송 이름을 넣어 주세요.'; return; }
+  if (!/^https?:\/\//i.test(u)){ $('tvamsg').textContent = '주소는 http:// 또는 https:// 로 시작해야 합니다.'; return; }
+  if (location.protocol === 'https:' && u.startsWith('http:')){ $('tvamsg').textContent = '이 사이트는 https라서 http:// 주소는 브라우저가 막습니다. https:// 주소를 넣어 주세요.'; return; }
+  $('tvamsg').textContent = '저장 중…';
+  const r = await tvExtraAdd(name, u);
+  $('tvan').value = ''; $('tvau').value = '';
+  $('tvamsg').textContent = r === 'shared' ? '추가했습니다. 모든 접속자의 "⭐ 기타 방송"에 보입니다.' : '서버에 저장하지 못해 이 기기에만 저장했습니다.';
+  refreshTvLists();
+};
+admShow();
+
+[['전체', ''], ['뉴스', 'news|뉴스|ytn|jtbc|nhk|bbc|cnn|al jazeera|france 24|dw'], ['스포츠', 'sport|스포츠|espn|golf|soccer|football'], ['음악', 'music|뮤직|mtv|kpop|k-pop|vevo|radio'], ['영화', 'movie|cinema|film|영화|drama|드라마'], ['어린이', 'kids|kid|cartoon|children|junior|baby|어린이'], ['다큐', 'documentary|discovery|history|nature|geographic|science|다큐'], ['날씨', 'weather|날씨']].forEach(([n, q]) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:4px 10px;font-size:13px'; b.textContent = n;
+  b.onclick = () => { $('tvq').value = q; $('tvq').dispatchEvent(new Event('input')); $('tvchips').querySelectorAll('button').forEach(x => x.style.background = ''); b.style.background = '#b99a5b55'; }; $('tvchips').append(b);
+});
+
+let tvDebT = 0;
+const tvApplyDeb = () => { clearTimeout(tvDebT); tvDebT = setTimeout(() => tvApplyFilter(false), 250); };
+function tvApplyFilter(noOpen){
+  const f = $('tvq').value.trim().toLowerCase().split('|').map(t => t.trim()).filter(Boolean);
+  const match = x => !f.length || f.some(w => x.name.toLowerCase().includes(w));
+  let total = 0, nc = 0;
+  const ds = [...$('tvlist').querySelectorAll(':scope > details')];
+  ds.forEach(d => {
+    const sm = d.querySelector('summary'), cc = sm.dataset.cc, list = tvCache[cc];
+    if (!list) return;
+    const n = list.filter(match).length;
+    sm.textContent = '📺 ' + sm.dataset.nm + ' (' + n + '개)';
+    d.style.display = (f.length && !n) ? 'none' : '';
+    total += n; if (n) nc++;
+  });
+  $('tvlist').querySelectorAll('button.vr').forEach(b => { const t = b.textContent.toLowerCase(); (b.closest('.vrow') || b).style.display = match({name: t}) ? '' : 'none'; });
+  $('tvfmsg').textContent = f.length ? ('"' + $('tvq').value.trim().split('|')[0] + '" 해당 채널 ' + total + '개 · 나라 ' + nc + '곳' + (total > 600 ? ' (많아서 나라를 눌러 펼쳐 보세요)' : '')) : '';
+  if (!noOpen && f.length && total <= 600) ds.forEach(d => { if (d.style.display !== 'none' && !d.open) d.open = true; });
+}
+$('tvq').addEventListener('input', () => tvApplyFilter());
+
 $('vsrc').onchange = () => { $('vtvc').hidden = $('vsrc').value !== 'tv'; };
 $('vq').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) searchVideos(); });
 
