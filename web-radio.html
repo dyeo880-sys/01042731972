@@ -293,6 +293,7 @@ const hhmm = ts => { const d = new Date(ts); return d.getHours().toString().padS
 function roomPath(){
   const v = $('room').value;
   if (v.indexOf('r:') === 0) return 'room_' + v.slice(2);
+  if (v.indexOf('u:') === 0) return 'dm_' + [myId, v.slice(2)].sort().join('_');
   if ($('room').value === 'station' && cur >= 0 && stations[cur]) return 'st_' + stations[cur].stationuuid;
   return 'lobby';
 }
@@ -402,6 +403,7 @@ async function sendChat(){
   if (!chatAllowed) return;
   const path = roomPath();
   pending.push(msg); renderChat(true);
+  if ($('room').value.indexOf('u:') === 0) notifyPeer($('room').value.slice(2));
   try {
     const r = await fetch(`${DB}/chat/${path}.json`, {method: 'POST', body: JSON.stringify(msg)});
     if (!r.ok) throw new Error(r.status);
@@ -414,8 +416,15 @@ async function sendChat(){
 }
 $('chatsend').onclick = sendChat;
 $('chatin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) sendChat(); });
-$('room').onchange = () => { lastSig = ''; chat = []; pending = []; renderChat(); fetchChat(true); };
+$('room').onchange = () => {
+  const v = $('room').value, isDm = v.indexOf('u:') === 0;
+  if (isDm){ delete unread[v.slice(2)]; peerSig = ''; renderRooms(v); }
+  $('chatin').placeholder = isDm ? '귓속말: ' + (peers[v.slice(2)] ? peers[v.slice(2)].n : '') + '님에게만 보입니다' : '메시지를 입력하세요';
+  $('chatnote').textContent = (isDm && peers[v.slice(2)] && !peers[v.slice(2)].on) ? '상대가 지금 접속 중이 아닙니다.' : '';
+  lastSig = ''; chat = []; pending = []; renderChat(); fetchChat(true);
+};
 let rooms = [], roomsSig = '';
+const peers = {}, unread = {}; let peerSig = '';
 if (!DB){ try { rooms = JSON.parse(localStorage.getItem('radio_rooms') || '[]'); } catch(e){} }
 function renderRooms(keep){
   const sel = $('room'), val = keep || sel.value;
@@ -423,6 +432,12 @@ function renderRooms(keep){
   rooms.forEach(r => {
     const o = document.createElement('option');
     o.value = 'r:' + r.id; o.textContent = '# ' + r.name; sel.append(o);
+  });
+  Object.keys(peers).forEach(id => {
+    const o = document.createElement('option');
+    o.value = 'u:' + id;
+    o.textContent = '✉ ' + peers[id].n + ' (귓속말)' + (peers[id].on ? '' : ' - 나감') + (unread[id] ? ' ●' : '');
+    sel.append(o);
   });
   sel.value = val;
   if (sel.value !== val) sel.value = 'lobby';
@@ -493,7 +508,7 @@ const presUrl = id => `${DB}/presence/${id}.json`;
 
 async function presenceTouch(){
   const sv = {'.sv': 'timestamp'};
-  const w = await fetch(presUrl(myId), {method: 'PUT', body: JSON.stringify({ts: sv, j: joinTs || sv, a: isAdmin})});
+  const w = await fetch(presUrl(myId), {method: 'PUT', body: JSON.stringify({ts: sv, j: joinTs || sv, a: isAdmin, n: ($('nick').value || '').trim().slice(0, 12)})});
   if (!w.ok) throw new Error(w.status);
   const r = await fetch(`${DB}/presence.json`);
   if (!r.ok) throw new Error(r.status);
@@ -507,10 +522,13 @@ async function presenceTouch(){
     const o = {}; stale.forEach(id => o[id] = null);
     fetch(`${DB}/presence.json`, {method: 'PATCH', body: JSON.stringify(o)}).catch(() => {});
   }
-  return Object.keys(all).map(id => Object.assign({id}, all[id])).filter(p => now - p.ts < PRES_TTL);
+  const liveList = Object.keys(all).map(id => Object.assign({id}, all[id])).filter(p => now - p.ts < PRES_TTL);
+  try { onlineUpdate(liveList); } catch(e){}
+  return liveList;
 }
 function leave(){
   joinTs = 0;
+  try { fetch(`${DB}/chat/inbox_${myId}.json`, {method: 'DELETE', keepalive: true}).catch(() => {}); } catch(e){}
   try { return fetch(presUrl(myId), {method: 'DELETE', keepalive: true}).catch(() => {}); } catch(e){}
 }
 function setAllowed(ok, count, adminFull){
@@ -565,6 +583,46 @@ $('adminok').onclick = async () => {
 $('adminpw').addEventListener('keydown', e => { if (e.key === 'Enter') $('adminok').click(); });
 addEventListener('pagehide', () => { if (DB && chatAllowed) leave(); });
 
+// ===== 접속자 귓속말 =====
+function onlineUpdate(list){
+  const ids = {};
+  list.forEach(p => { if (p.id === myId) return; ids[p.id] = 1; peers[p.id] = {n: String(p.n || '손님').slice(0, 12), on: true}; });
+  Object.keys(peers).forEach(id => {
+    if (ids[id]) return;
+    if ($('room').value === 'u:' + id || unread[id]) peers[id].on = false; else delete peers[id];
+  });
+  const sig = Object.keys(peers).map(id => id + peers[id].n + peers[id].on + (unread[id] ? 1 : 0)).join('|');
+  if (sig !== peerSig){ peerSig = sig; renderRooms(); }
+}
+const inboxSeen = {}, lastNotify = {};
+async function checkInbox(){
+  if (!DB || !chatAllowed) return;
+  try {
+    const r = await fetch(`${DB}/chat/inbox_${myId}.json?orderBy="$key"&limitToLast=20`);
+    if (!r.ok) return;
+    const d = await r.json() || {};
+    let who = '';
+    Object.keys(d).forEach(k => {
+      if (inboxSeen[k]) return;
+      inboxSeen[k] = 1;
+      const m = d[k];
+      if (!m || !m.from || $('room').value === 'u:' + m.from) return;
+      if (!peers[m.from]) peers[m.from] = {n: String(m.n || '손님').slice(0, 12), on: true};
+      unread[m.from] = true; who = peers[m.from].n;
+    });
+    if (who){
+      peerSig = ''; renderRooms();
+      $('chatnote').textContent = '✉ ' + who + '님이 귓속말을 보냈습니다. 채팅방 목록에서 확인하세요.';
+    }
+  } catch(e){}
+}
+function notifyPeer(id){
+  const now = Date.now();
+  if (now - (lastNotify[id] || 0) < 15000) return;
+  lastNotify[id] = now;
+  fetch(`${DB}/chat/inbox_${id}.json`, {method: 'POST', body: JSON.stringify({from: myId, n: $('nick').value.trim(), ts: now})}).catch(() => {});
+}
+
 renderRooms();
 renderChat();
 if (DB){
@@ -573,7 +631,7 @@ if (DB){
   admit();
   setInterval(() => { if (chatAllowed || !document.hidden) admit(); }, BEAT);
 } else { fetchChat(true); }
-setInterval(() => { if (!document.hidden && chatAllowed){ fetchChat(false); loadRooms(); } }, 5000);
+setInterval(() => { if (!document.hidden && chatAllowed){ fetchChat(false); loadRooms(); checkInbox(); } }, 5000);
 
 $('addhome').onclick = () => {
   const ua = navigator.userAgent, m = $('addmsg');
