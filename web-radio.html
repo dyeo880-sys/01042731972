@@ -61,6 +61,23 @@ button,select,input{font:inherit}
 .chatform{display:flex;gap:8px;margin-top:8px}
 .chatform input{flex:1;min-width:0}
 .chat input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+#roomview{position:fixed;inset:0;z-index:60;overflow:auto;background:radial-gradient(ellipse at top,#6b4a2e,#1d120b 70%);padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+#roomview[hidden]{display:none}
+.rvbox{max-width:900px;margin:0 auto}
+.rvhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;background:linear-gradient(180deg,var(--wood2),var(--wood));border:2px solid #2a190e;border-radius:12px;padding:10px 14px}
+.rvhead strong{font-size:18px;color:var(--amber);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#rvbody .rw{background:var(--panel);border:1px solid var(--brass);border-radius:8px;padding:12px;margin-top:0}
+#rvbody .chat{margin-top:12px}
+#rvbody #newroom{display:none}
+.tb{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tbtn{background:var(--panel);color:var(--amber);border:1px solid var(--brass);border-radius:6px;padding:4px 10px;font-size:13px;cursor:pointer}
+.tbtn[aria-expanded="true"]{background:#b99a5b33}
+.tbtn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.tp{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px;padding:8px;background:#1a0f08;border-radius:6px}
+.tp[hidden]{display:none}
+.tp .addhome,.tp input[type=text],.tp input:not([type]),.tp select{font-size:13px;padding:4px 9px;margin:0}
+.tp input:not([type]),.tp select{background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px}
+.rw{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}.rw[hidden]{display:none}
 .foot{text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid #b99a5b55}
 .foot a{color:var(--amber);font-size:15px;text-decoration:none;border-bottom:1px solid var(--brass)}
 .foot a:hover{filter:brightness(1.2)}
@@ -105,24 +122,57 @@ button,select,input{font:inherit}
   </div>
   <div class="count" id="count"></div>
   <div class="list" id="list" role="list"></div>
-  <section class="chat" aria-label="개인 방송">
-    <div class="chathead"><strong>📡 개인 방송</strong><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="livereload">새로고침</button></div>
-    <div class="chatlog" id="livelist" style="height:auto;max-height:140px"><div class="empty" style="margin:14px 0">방송 목록을 불러오는 중…</div></div>
-    <div class="chatform" style="flex-wrap:wrap">
-      <label class="addhome" style="margin:0;cursor:pointer">🎵 내 음악 파일로 방송<input id="bcfile" type="file" accept="audio/*" multiple hidden></label>
-      <button class="addhome" style="margin:0" type="button" id="bcmic">🎤 마이크로 방송</button>
-      <button class="addhome" style="margin:0" type="button" id="bcscr">🖥 PC 소리로 방송</button>
-      <label class="addhome" style="margin:0;cursor:pointer"><input type="checkbox" id="bccam"> 📷 카메라도 함께 켜기</label>
-      <button class="addhome" style="margin:0" type="button" id="bcstop" hidden>■ 방송 종료</button>
+  <section class="chat" id="musicroom" aria-label="음악 방">
+    <div class="chathead"><strong>🎵 음악 방</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="mkopen">＋ 음악 방 만들기</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="livereload">새로고침</button></span></div>
+    <div class="gate" id="mkform" hidden style="text-align:left;margin-bottom:8px">
+      <div class="chatform" style="flex-wrap:wrap"><input id="bctitle" maxlength="20" placeholder="방 이름 (예: 금요일 밤 재즈)" aria-label="방 이름"><input id="bcpw" maxlength="12" placeholder="비밀번호 (선택 · 비우면 누구나 입장)" aria-label="비밀번호" style="max-width:260px"></div>
+      <label class="chatnote" style="display:block"><input type="checkbox" id="bccam"> 📷 내 카메라도 보여주기 (방을 만들 때만 선택할 수 있습니다)</label>
+      <div class="chatform"><button id="mkok" class="addhome" style="margin:0" type="button">만들기</button><button id="mkcancel" class="addhome" style="margin:0" type="button">취소</button></div>
+    </div>
+    <div id="invbanner"></div>
+    <div class="chatlog" id="livelist" style="height:auto;max-height:140px"><div class="empty" style="margin:14px 0">음악 방 목록을 불러오는 중…</div></div>
+    <div class="rw" id="roomwrap" hidden>
+      <div style="flex:1;min-width:230px">
+        <div id="roomtitle" style="font-size:15px;color:var(--amber);font-weight:700"></div>
+        <div class="chatnote" id="bccount"></div>
+        <div class="chatnote" id="rstat"></div>
+        <div class="chatnote" id="bcstat2"></div>
+        <div id="hostctl" hidden>
+          <div class="tb">
+            <button class="tbtn" data-p="p-music" type="button" aria-expanded="false">🎵 음악 ▾</button>
+            <button class="tbtn" data-p="p-pw" type="button" aria-expanded="false">🔒 비밀번호 ▾</button>
+            <button class="tbtn" data-p="p-inv" type="button" aria-expanded="false">💌 초대 ▾</button>
+          </div>
+          <div class="tp" id="p-music" hidden>
+            <label class="addhome" style="margin:0;cursor:pointer">음악 파일<input id="bcfile" type="file" accept="audio/*" multiple hidden></label>
+            <button class="addhome" style="margin:0" type="button" id="bcmic">🎤 마이크</button>
+            <button class="addhome" style="margin:0" type="button" id="bcscr">🖥 PC 소리</button>
+          </div>
+          <div class="tp" id="p-pw" hidden>
+            <input id="bcpw2" maxlength="12" placeholder="비밀번호 설정/변경" aria-label="방 비밀번호 설정 또는 변경" style="width:150px">
+            <button class="addhome" style="margin:0" type="button" id="pwset">설정</button>
+            <button class="addhome" style="margin:0" type="button" id="pwclear">해제</button>
+          </div>
+          <div class="tp" id="p-inv" hidden>
+            <select id="invpeer" aria-label="초대할 접속자"><option value="">접속자 선택…</option></select>
+            <label class="chatnote" style="margin:0"><input type="checkbox" id="invpw"> 비밀번호도</label>
+            <button id="invsend" class="addhome" style="margin:0" type="button">보내기</button>
+            <button class="addhome" style="margin:0" type="button" id="bcinvite">🔗 링크 복사</button>
+          </div>
+          <button class="addhome" style="margin:0" type="button" id="bcstop" hidden>■ 방 닫기</button>
+          <audio id="bcAudio" controls hidden style="width:100%;margin-top:8px"></audio>
+          <video id="bcPreview" muted autoplay playsinline style="display:none;width:100%;max-width:200px;border-radius:8px;margin-top:8px;transform:scaleX(-1)"></video>
+        </div>
+        <video id="liveAudio" autoplay playsinline style="display:none;width:100%;max-width:280px;border-radius:8px;margin-top:8px"></video>
+        <div class="chatform"><button class="addhome" style="margin:0" type="button" id="leavebtn" hidden>방 나가기</button></div>
+      </div>
+      <div id="members" style="min-width:150px;max-width:230px;background:#1a0f08;border-radius:6px;padding:8px 10px;font-size:14px;line-height:1.7"></div>
     </div>
     <div class="chatnote" id="bcstat"></div>
-    <audio id="bcAudio" controls hidden style="width:100%;margin-top:8px"></audio>
-    <video id="bcPreview" muted autoplay playsinline style="display:none;width:100%;max-width:200px;border-radius:8px;margin-top:8px;transform:scaleX(-1)"></video>
-    <video id="liveAudio" autoplay playsinline style="display:none;width:100%;max-width:280px;border-radius:8px;margin-top:8px"></video>
-    <div class="chatnote">내 컴퓨터/폰에서 직접 송출하는 방식이라 청취자는 최대 8명(카메라를 켜면 4명)까지 연결됩니다. 카메라는 방송을 시작하기 전에 체크해 주세요. 방송하는 동안 이 페이지를 닫지 마세요.</div>
+    <div class="chatnote">방을 만든 사람의 기기에서 직접 소리를 보내는 방식이라 듣는 사람은 최대 8명(카메라를 켜면 4명)까지 연결됩니다. 방을 여는 동안 이 페이지를 닫지 마세요.</div>
   </section>
-  <section class="chat" aria-label="채팅">
-    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">＋ 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"></div>
+  <section class="chat" id="chatsec" aria-label="채팅">
+    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"></div>
     <div class="roomform" id="roomform" hidden>
       <input id="roomname" maxlength="20" placeholder="새 채팅방 이름 (최대 20자)" aria-label="새 채팅방 이름">
       <button id="roomok" class="addhome" style="margin:0" type="button">만들기</button>
@@ -149,6 +199,10 @@ button,select,input{font:inherit}
   </footer>
   <p class="note">※ 실제 AM/FM 전파가 아니라, 각 방송국이 인터넷으로 송출하는 스트림을 radio-browser.info 공개 목록에서 불러옵니다. 일부 방송국은 지역 제한이나 주소 변경으로 재생되지 않을 수 있습니다. 이 파일을 내 컴퓨터에서 직접 열어 사용하세요.</p>
 </main>
+<div id="roomview" hidden role="dialog" aria-label="음악 방"><div class="rvbox">
+  <div class="rvhead"><strong id="rvtitle"></strong><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></div>
+  <div id="rvbody"></div>
+</div></div>
 <audio id="audio" preload="none"></audio>
 
 <script>
@@ -261,7 +315,7 @@ function playView(i){
     navigator.mediaSession.metadata = new MediaMetadata({title: s.name.trim(), artist: 'Radiola'});
   }
 }
-const setStatus = t => $('status').textContent = t;
+const setStatus = t => { $('status').textContent = t; const r = $('rstat'); if (r) r.textContent = t; };
 
 audio.addEventListener('playing', () => { setStatus('● 방송 중'); $('play').textContent = '⏸'; });
 audio.addEventListener('pause', () => { $('play').textContent = '▶'; if (audio.src) setStatus('정지'); });
@@ -310,6 +364,7 @@ const hhmm = ts => { const d = new Date(ts); return d.getHours().toString().padS
 function roomPath(){
   const v = $('room').value;
   if (v.indexOf('r:') === 0) return 'room_' + v.slice(2);
+  if (v.indexOf('b:') === 0) return 'live_' + v.slice(2);
   if (v.indexOf('u:') === 0) return 'dm_' + [myId, v.slice(2)].sort().join('_');
   if ($('room').value === 'station' && cur >= 0 && stations[cur]) return 'st_' + stations[cur].stationuuid;
   return 'lobby';
@@ -335,7 +390,8 @@ function renderChat(forceBottom){
   if (!all.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
   all.forEach(c => {
     const d = document.createElement('div'); d.className = 'm';
-    const b = document.createElement('b'); b.textContent = c.n;
+    const b = document.createElement('b'); b.textContent = (c.h ? '👑 ' : '') + c.n;
+    if (c.n === $('nick').value.trim()){ b.style.cursor = 'pointer'; b.title = '이름 바꾸기'; b.onclick = renameMe; }
     const t = document.createElement('span'); t.textContent = c.t;
     const s = document.createElement('small'); s.textContent = hhmm(c.ts);
     d.append(b, t, s); log.append(d);
@@ -410,6 +466,7 @@ async function sendChat(){
   if (!text) return;
   if (!$('nick').value.trim()) $('nick').value = fakeNick();
   const msg = {n: $('nick').value.trim(), t: text, ts: Date.now()};
+  if (liveRoom && liveRoom.id === myId && $('room').value === 'b:' + myId) msg.h = 1;
   try { localStorage.setItem('radio_nick', msg.n); } catch(e){}
   inp.value = '';
   if (!DB){
@@ -441,7 +498,7 @@ $('room').onchange = () => {
   lastSig = ''; chat = []; pending = []; renderChat(); fetchChat(true);
 };
 let rooms = [], roomsSig = '';
-const peers = {}, unread = {}; let peerSig = '';
+const peers = {}, unread = {}; let peerSig = '', liveRoom = null;
 if (!DB){ try { rooms = JSON.parse(localStorage.getItem('radio_rooms') || '[]'); } catch(e){} }
 function renderRooms(keep){
   const sel = $('room'), val = keep || sel.value;
@@ -450,6 +507,7 @@ function renderRooms(keep){
     const o = document.createElement('option');
     o.value = 'r:' + r.id; o.textContent = '# ' + r.name; sel.append(o);
   });
+  if (liveRoom){ const o = document.createElement('option'); o.value = 'b:' + liveRoom.id; o.textContent = '🎵 ' + liveRoom.name + ' (음악 방 채팅)'; sel.append(o); }
   Object.keys(peers).forEach(id => {
     const o = document.createElement('option');
     o.value = 'u:' + id;
@@ -458,6 +516,7 @@ function renderRooms(keep){
   });
   sel.value = val;
   if (sel.value !== val) sel.value = 'lobby';
+  if (typeof fillInvite === 'function') fillInvite();
 }
 async function loadRooms(){
   if (!DB || !chatAllowed) return;
@@ -623,6 +682,7 @@ async function checkInbox(){
       if (inboxSeen[k]) return;
       inboxSeen[k] = 1;
       const m = d[k];
+      if (m && m.inv){ showInvite(m); return; }
       if (!m || !m.from || $('room').value === 'u:' + m.from) return;
       if (!peers[m.from]) peers[m.from] = {n: String(m.n || '손님').slice(0, 12), on: true};
       unread[m.from] = true; who = peers[m.from].n;
@@ -640,13 +700,16 @@ function notifyPeer(id){
   fetch(`${DB}/chat/inbox_${id}.json`, {method: 'POST', body: JSON.stringify({from: myId, n: $('nick').value.trim(), ts: now})}).catch(() => {});
 }
 
-// ===== 개인 방송 (WebRTC, 서버 없이 방송자 기기에서 직접 송출) =====
+// ===== 음악 방 (WebRTC, 방장 기기에서 직접 송출) =====
+const lockOf = (pw, id) => { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; const s = id + '|' + pw; for (let i = 0, c; i < s.length; i++){ c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36); };
+const INVITE = new URLSearchParams(location.search).get('live');
 const RTC_CFG = {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]};
 const MAX_LISTEN = 8;
 const liveAudio = $('liveAudio');
-let bc = null, lis = null;
+let bc = null, lis = null, memTimer = null;
 const lj = (p, m, b) => fetch(`${DB}/chat/${p}.json`, {method: m, body: b ? JSON.stringify(b) : undefined}).then(r => r.ok ? r.json() : Promise.reject(r.status));
-const setBc = t => $('bcstat').textContent = t;
+const setBc = t => { $('bcstat').textContent = t; $('bcstat2').textContent = t; };
+const myNick = () => ($('nick').value.trim() || '손님').slice(0, 12);
 function iceDone(pc){
   return new Promise(res => {
     if (pc.iceGatheringState === 'complete') return res();
@@ -654,22 +717,88 @@ function iceDone(pc){
     pc.addEventListener('icegatheringstatechange', f); setTimeout(res, 3500);
   });
 }
-async function startBroadcast(stream){
-  if (!DB || !chatAllowed){ setBc('채팅 서버에 연결된 뒤에 방송할 수 있습니다.'); return; }
+// ---- 방 참가자 목록 ----
+async function memBeat(){
+  if (!liveRoom || !DB) return;
+  const id = liveRoom.id;
+  try {
+    await lj('roommem_' + id + '/' + myId, 'PUT', {n: myNick(), h: id === myId ? 1 : 0, ts: Date.now()});
+    const d = await lj('roommem_' + id, 'GET') || {}, now = Date.now();
+    if (!liveRoom || liveRoom.id !== id) return;
+    const list = Object.keys(d).map(k => Object.assign({k}, d[k])).filter(m => m && m.n && now - m.ts < 45000)
+      .sort((a, b) => (b.h || 0) - (a.h || 0) || String(a.n).localeCompare(String(b.n)));
+    const box = $('members'); box.innerHTML = '';
+    const t = document.createElement('div'); t.style.cssText = 'font-size:12px;opacity:.7;margin-bottom:4px'; t.textContent = '👥 방 참가자 (' + list.length + '명)'; box.append(t);
+    list.forEach(m => {
+      const r = document.createElement('div');
+      const me = m.k === myId;
+      r.textContent = (m.h ? '👑 ' : '· ') + m.n + (me ? ' (나) ✎' : '');
+      if (me){ r.style.cursor = 'pointer'; r.title = '이름 바꾸기'; r.setAttribute('role', 'button'); r.tabIndex = 0; r.onclick = renameMe; r.onkeydown = e => { if (e.key === 'Enter') renameMe(); }; }
+      box.append(r);
+    });
+  } catch(e){}
+}
+function renameMe(){
+  let v = prompt('새 이름을 입력하세요 (최대 12자)', $('nick').value.trim());
+  if (v === null) return;
+  v = v.trim().slice(0, 12);
+  if (!v) return;
+  $('nick').value = v;
+  try { localStorage.setItem('radio_nick', v); } catch(e){}
+  if (liveRoom) memBeat();
+  if (DB && chatAllowed) admit();
+  $('chatnote').textContent = '이름을 "' + v + '"(으)로 바꿨습니다.';
+}
+function roomHead(){
+  if (!liveRoom) return;
+  const host = liveRoom.id === myId;
+  $('rvtitle').textContent = '🎵 ' + liveRoom.name + (host && bc && bc.pw ? ' 🔒' : '');
+  $('roomtitle').textContent = host ? '👑 내가 방장입니다' : '음악 방에 참여 중';
+  $('rstat').style.display = host ? 'none' : '';
+}
+function showRoomView(){ $('roomview').hidden = false; $('rvbody').append($('roomwrap'), $('chatsec')); document.body.style.overflow = 'hidden'; $('roomview').scrollTop = 0; }
+function hideRoomView(){
+  if ($('roomview').hidden) return;
+  $('musicroom').insertBefore($('roomwrap'), $('bcstat')); $('musicroom').after($('chatsec'));
+  $('roomview').hidden = true; document.body.style.overflow = '';
+}
+function enterRoom(id, name){
+  liveRoom = {id, name}; renderRooms('b:' + id); $('room').onchange();
+  $('roomwrap').hidden = false; $('hostctl').hidden = id !== myId; $('leavebtn').hidden = true; showRoomView();
+  roomHead(); clearInterval(memTimer); memBeat(); memTimer = setInterval(memBeat, 8000);
+}
+function leaveRoom(){
+  const was = liveRoom; liveRoom = null; clearInterval(memTimer);
+  if (was && DB) lj('roommem_' + was.id + (was.id === myId ? '' : '/' + myId), 'DELETE').catch(() => {});
+  $('roomwrap').hidden = true; $('members').innerHTML = ''; $('bccount').textContent = ''; hideRoomView();
+  if (was && $('room').value === 'b:' + was.id){ renderRooms('lobby'); $('room').onchange(); } else renderRooms();
+}
+// ---- 방 만들기 ----
+function openMk(show){ $('mkform').hidden = !show; if (show){ $('bctitle').focus(); } }
+async function makeMusicRoom(){
+  if (!DB || !chatAllowed){ setBc('채팅 서버에 연결된 뒤에 음악 방을 만들 수 있습니다.'); return; }
+  const title = $('bctitle').value.trim();
+  if (!title){ setBc('방 이름을 입력하세요.'); $('bctitle').focus(); return; }
+  const pw = $('bcpw').value.trim(), wantCam = $('bccam').checked;
   stopBroadcast();
-  if ($('bccam').checked){
+  let ac, stream;
+  try { ac = new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); stream = ac.createMediaStreamDestination().stream; }
+  catch(e){ setBc('이 브라우저에서는 음악 방을 만들 수 없습니다.'); return; }
+  if (wantCam){
     try {
       const cam = await navigator.mediaDevices.getUserMedia({video: {width: {ideal: 320}, height: {ideal: 240}, frameRate: {ideal: 15}, facingMode: 'user'}});
       cam.getVideoTracks().forEach(t => stream.addTrack(t));
       const pv = $('bcPreview'); pv.srcObject = new MediaStream(cam.getVideoTracks()); pv.style.display = 'block';
     } catch(e){ setBc('카메라를 사용할 수 없어 소리만 방송합니다. 권한을 확인하세요.'); }
   }
-  const me = {stream, pcs: {}, seen: {}, timers: []};
+  const me = {stream, ac, pcs: {}, seen: {}, timers: [], pw, lock: pw ? lockOf(pw, myId) : '', title, src: null};
   bc = me;
-  const reg = () => lj('livereg/' + myId, 'PUT', {n: ($('nick').value.trim() || '손님') + '의 방송', ts: Date.now()}).catch(() => {});
-  await reg();
-  me.timers.push(setInterval(reg, 15000), setInterval(bcPoll, 2000));
-  $('bcstop').hidden = false; setBc('● 방송 중 (청취자 0명)'); loadLive();
+  me.reg = () => lj('livereg/' + myId, 'PUT', {n: me.title, h: myNick(), ts: Date.now(), p: me.pw ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length}).catch(() => {});
+  await me.reg();
+  me.timers.push(setInterval(me.reg, 15000), setInterval(bcPoll, 2000));
+  $('bctitle').value = ''; $('bcpw').value = ''; openMk(false);
+  enterRoom(myId, title); fillInvite(); loadLive();
+  setBc('음악 방이 만들어졌습니다. 아래에서 음악 파일·마이크·PC 소리 중 하나를 골라 재생하세요.');
 }
 function stopBroadcast(){
   if (!bc) return;
@@ -677,10 +806,24 @@ function stopBroadcast(){
   me.timers.forEach(clearInterval);
   Object.keys(me.pcs).forEach(k => me.pcs[k].close());
   me.stream.getTracks().forEach(t => t.stop());
+  if (me.src) me.src.getTracks().forEach(t => t.stop());
+  try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   lj('livereg/' + myId, 'DELETE').catch(() => {}); lj('sig_' + myId, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null;
-  $('bcstop').hidden = true; setBc(''); loadLive();
+  leaveRoom(); setBc(''); loadLive();
+}
+function swapSource(ns){
+  const me = bc;
+  if (!me){ if (ns) ns.getTracks().forEach(t => t.stop()); setBc('먼저 "음악 방 만들기"로 방을 만들어 주세요.'); return; }
+  const nt = ns && ns.getAudioTracks()[0];
+  if (!nt){ setBc('소리를 가져오지 못했습니다.'); return; }
+  if (me.src && me.src !== ns) me.src.getTracks().forEach(t => t.stop());
+  me.src = ns;
+  const old = me.stream.getAudioTracks()[0]; if (old) me.stream.removeTrack(old);
+  me.stream.addTrack(nt);
+  Object.keys(me.pcs).forEach(k => { const sd = me.pcs[k].getSenders().find(x => x.track && x.track.kind === 'audio'); if (sd) sd.replaceTrack(nt).catch(() => {}); });
+  setBc('🎵 음악이 방에 연결되었습니다.'); closePanels();
 }
 async function bcPoll(){
   const me = bc; if (!me) return;
@@ -689,10 +832,11 @@ async function bcPoll(){
     Object.keys(d).forEach(k => {
       if (k.indexOf('o_') !== 0 || me.seen[k]) return;
       me.seen[k] = 1;
+      if (me.lock && d[k].k !== me.lock){ lj('sig_' + myId + '/a_' + k.slice(2), 'PUT', {no: 1}).catch(() => {}); return; }
       if (Object.keys(me.pcs).length < (me.stream.getVideoTracks().length ? 4 : MAX_LISTEN)) answerOffer(me, k.slice(2), d[k]);
     });
     const n = Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length;
-    if (bc === me) setBc(`● 방송 중 (청취자 ${n}명)`);
+    if (bc === me) $('bccount').textContent = '● 음악 방 열림 (소리 연결 ' + n + '명)';
   } catch(e){}
 }
 async function answerOffer(me, lid, off){
@@ -711,80 +855,173 @@ async function answerOffer(me, lid, off){
     await lj('sig_' + myId + '/a_' + lid, 'PUT', {sdp: pc.localDescription.sdp});
   } catch(e){ pc.close(); delete me.pcs[lid]; }
 }
-async function listen(bid, name){
+// ---- 입장 ----
+async function listen(bid, name, locked, presetPw){
   if (!DB || !chatAllowed) return;
+  let pw = '';
+  if (locked){ pw = presetPw || prompt('이 음악 방은 비밀번호가 필요합니다.') || ''; if (!pw) return; }
   stopListen(); audio.pause();
   const lid = myId + Date.now().toString(36).slice(-4);
   const pc = new RTCPeerConnection(RTC_CFG); lis = {pc, bid, lid};
-  $('now').textContent = name; $('meta').textContent = '개인 방송'; setStatus('연결 중…');
+  $('now').textContent = name; $('meta').textContent = '음악 방'; setStatus('연결 중…'); enterRoom(bid, name);
   pc.addTransceiver('audio', {direction: 'recvonly'});
   pc.addTransceiver('video', {direction: 'recvonly'});
   liveAudio.style.display = 'none';
-  pc.ontrack = e => { if (e.track.kind === 'video') e.track.addEventListener('unmute', () => { liveAudio.style.display = 'block'; });
-    liveAudio.srcObject = e.streams[0] || new MediaStream([e.track]); liveAudio.play().catch(() => setStatus('재생 버튼을 눌러 주세요')); setStatus('● 개인 방송 듣는 중'); };
+  pc.ontrack = e => {
+    if (e.track.kind === 'video') e.track.addEventListener('unmute', () => { liveAudio.style.display = 'block'; });
+    liveAudio.srcObject = e.streams[0] || new MediaStream([e.track]);
+    liveAudio.play().catch(() => setStatus('재생 버튼을 눌러 주세요')); setStatus('● 음악 방 듣는 중');
+  };
   pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' && lis && lis.pc === pc) setStatus('연결하지 못했습니다 (네트워크 제한)'); };
   try {
     await pc.setLocalDescription(await pc.createOffer());
     await iceDone(pc);
-    await lj('sig_' + bid + '/o_' + lid, 'PUT', {sdp: pc.localDescription.sdp, ts: Date.now()});
+    await lj('sig_' + bid + '/o_' + lid, 'PUT', {sdp: pc.localDescription.sdp, ts: Date.now(), k: pw ? lockOf(pw, bid) : ''});
     for (let i = 0; i < 25; i++){
       await new Promise(r => setTimeout(r, 1000));
       if (!lis || lis.pc !== pc) return;
       const a = await lj('sig_' + bid + '/a_' + lid, 'GET');
+      if (a && a.no){ setStatus('비밀번호가 맞지 않습니다'); setBc('비밀번호가 맞지 않습니다.'); stopListen(); return; }
       if (a && a.sdp){ await pc.setRemoteDescription({type: 'answer', sdp: a.sdp}); return; }
     }
-    setStatus('방송자가 응답하지 않습니다'); stopListen();
-  } catch(e){ if (lis && lis.pc === pc) setStatus('방송에 연결하지 못했습니다'); }
+    setStatus('방장이 응답하지 않습니다'); setBc('방장이 응답하지 않습니다. 방이 닫혔을 수 있습니다.'); stopListen();
+  } catch(e){ if (lis && lis.pc === pc) setStatus('음악 방에 연결하지 못했습니다'); }
 }
 function stopListen(){
   if (!lis) return;
   const l = lis; lis = null;
   l.pc.close(); liveAudio.srcObject = null; liveAudio.style.display = 'none';
   lj('sig_' + l.bid + '/o_' + l.lid, 'DELETE').catch(() => {}); lj('sig_' + l.bid + '/a_' + l.lid, 'DELETE').catch(() => {});
+  leaveRoom();
 }
 async function loadLive(){
   const box = $('livelist');
-  if (!DB){ box.innerHTML = '<div class="empty" style="margin:14px 0">채팅 서버(FIREBASE_URL)가 설정되어야 개인 방송을 쓸 수 있습니다.</div>'; return; }
+  if (!DB){ box.innerHTML = '<div class="empty" style="margin:14px 0">채팅 서버(FIREBASE_URL)가 설정되어야 음악 방을 쓸 수 있습니다.</div>'; return; }
   if (!chatAllowed) return;
   try {
     const d = await lj('livereg', 'GET') || {}, now = Date.now();
     const ids = Object.keys(d).filter(id => d[id] && now - d[id].ts < 60000);
     box.innerHTML = '';
-    if (!ids.length){ box.innerHTML = '<div class="empty" style="margin:14px 0">지금 진행 중인 개인 방송이 없습니다.</div>'; return; }
+    if (!ids.length){ box.innerHTML = '<div class="empty" style="margin:14px 0">' + (INVITE ? '초대받은 음악 방이 아직 열리지 않았거나 이미 닫혔습니다.' : '지금 열려 있는 음악 방이 없습니다.') + '</div>'; return; }
+    ids.sort((a, b) => (b === INVITE) - (a === INVITE));
     ids.forEach(id => {
-      const b = document.createElement('button'); b.className = 'st'; b.type = 'button';
+      const b = document.createElement('button'); b.className = 'st'; b.type = 'button'; b.style.flex = '1';
       const n = document.createElement('span'); n.className = 'n';
-      n.textContent = '📡 ' + String(d[id].n).slice(0, 24) + (id === myId ? ' (내 방송)' : '');
-      b.append(n); if (id !== myId) b.onclick = () => listen(id, String(d[id].n)); box.append(b);
+      n.textContent = (id === INVITE ? '▶ 초대받은 음악 방 입장: ' : '🎵 ') + String(d[id].n).slice(0, 24) + (d[id].p ? ' 🔒' : '') + ' · ' + (d[id].c || 0) + '명 듣는 중' + (id === myId ? ' (내 방)' : '');
+      if (id === INVITE) b.classList.add('on');
+      b.append(n);
+      if (id !== myId) b.onclick = () => listen(id, String(d[id].n), !!d[id].p);
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center'; row.append(b);
+      if (id !== myId){
+        const m = document.createElement('button'); m.className = 'fav'; m.type = 'button';
+        m.style.cssText = 'font-size:13px;white-space:nowrap;padding:0 10px';
+        m.textContent = '👑 ' + String(d[id].h || '방장').slice(0, 12) + ' ✉';
+        m.title = '방장에게 귓속말 보내기'; m.setAttribute('aria-label', '방장에게 귓속말 보내기');
+        m.onclick = () => askHost(id, String(d[id].h || '방장'), String(d[id].n));
+        row.append(m);
+      }
+      box.append(row);
     });
   } catch(e){}
 }
+// ---- 초대 / 문의 ----
+function fillInvite(){
+  const sel = $('invpeer'); if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">접속자 선택…</option>';
+  Object.keys(peers).filter(id => peers[id].on).forEach(id => { const o = document.createElement('option'); o.value = id; o.textContent = peers[id].n; sel.append(o); });
+  sel.value = cur;
+}
+$('invsend').onclick = async () => {
+  if (!bc){ setBc('먼저 음악 방을 만들어 주세요.'); return; }
+  const id = $('invpeer').value;
+  if (!id){ setBc('초대할 접속자를 선택하세요.'); return; }
+  const inv = {id: myId, t: bc.title, p: bc.pw ? 1 : 0};
+  if (bc.pw && $('invpw').checked) inv.k = bc.pw;
+  try {
+    await lj('inbox_' + id, 'POST', {from: myId, n: myNick(), ts: Date.now(), inv});
+    setBc('💌 ' + (peers[id] ? peers[id].n : '상대') + '님에게 초대장을 보냈습니다.'); closePanels();
+  } catch(e){ setBc('초대장을 보내지 못했습니다.'); }
+};
+function showInvite(m){
+  const i = m.inv; if (!i || !i.id) return;
+  const d = document.createElement('div'); d.className = 'gate'; d.style.margin = '0 0 8px';
+  const p = document.createElement('p');
+  p.textContent = '💌 ' + String(m.n || '손님').slice(0, 12) + '님이 「' + String(i.t || '음악 방').slice(0, 20) + '」 음악 방에 초대했습니다.' + (i.p && !i.k ? ' (비밀번호는 방장에게 문의하세요)' : '');
+  const r = document.createElement('div'); r.className = 'row';
+  const ok = document.createElement('button'); ok.className = 'addhome'; ok.style.margin = '0'; ok.type = 'button'; ok.textContent = '입장';
+  ok.onclick = () => { d.remove(); listen(String(i.id), String(i.t || '음악 방'), !!i.p, i.k ? String(i.k) : ''); };
+  const no = document.createElement('button'); no.className = 'addhome'; no.style.margin = '0'; no.type = 'button'; no.textContent = '닫기';
+  no.onclick = () => d.remove();
+  r.append(ok, no); d.append(p, r); $('invbanner').append(d);
+  $('chatnote').textContent = '💌 음악 방 초대장이 도착했습니다.';
+}
+function askHost(id, nick, title){
+  if (!peers[id]) peers[id] = {n: nick, on: true};
+  peerSig = ''; renderRooms('u:' + id); $('room').onchange();
+  $('chatin').value = '안녕하세요, 「' + title + '」 방 입장 비밀번호를 알려주실 수 있을까요?';
+  document.querySelector('section[aria-label="채팅"]').scrollIntoView({behavior: 'smooth', block: 'center'});
+  $('chatin').focus();
+}
+// ---- 버튼 연결 ----
+const closePanels = () => { document.querySelectorAll('.tp').forEach(x => x.hidden = true); document.querySelectorAll('.tbtn').forEach(x => x.setAttribute('aria-expanded', 'false')); };
+document.querySelectorAll('.tbtn').forEach(b => { b.onclick = () => { const t = $(b.dataset.p), open = t.hidden; closePanels(); if (open){ t.hidden = false; b.setAttribute('aria-expanded', 'true'); } }; });
+$('newroom').onclick = () => { $('musicroom').scrollIntoView({behavior: 'smooth', block: 'center'}); openMk(true); };
+$('mkopen').onclick = () => openMk($('mkform').hidden);
+$('mkok').onclick = makeMusicRoom;
+$('mkcancel').onclick = () => openMk(false);
+$('bctitle').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) makeMusicRoom(); });
 $('livereload').onclick = loadLive;
 $('bcstop').onclick = stopBroadcast;
+$('leavebtn').onclick = () => { stopListen(); setStatus('정지'); };
+$('rvleave').onclick = () => {
+  if (!liveRoom){ hideRoomView(); return; }
+  if (liveRoom.id === myId){
+    if (!confirm('방을 나가면 방이 닫히고 듣고 있는 사람들의 음악이 끊깁니다. 나갈까요?')) return;
+    stopBroadcast();
+  } else { stopListen(); if (liveRoom) leaveRoom(); setStatus('정지'); }
+};
+$('bcinvite').onclick = () => {
+  const u = location.href.split(/[?#]/)[0] + '?live=' + myId;
+  (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => setBc('초대 링크를 복사했습니다. 친구에게 보내세요.')).catch(() => prompt('이 링크를 복사해서 보내세요', u));
+};
+$('pwset').onclick = () => {
+  if (!bc) return;
+  const v = $('bcpw2').value.trim();
+  if (!v){ setBc('설정할 비밀번호를 입력하세요.'); return; }
+  bc.pw = v; bc.lock = lockOf(v, myId); bc.reg(); roomHead(); $('bcpw2').value = '';
+  setBc('🔒 비밀번호를 설정했습니다. 이미 들어와 있는 사람은 그대로 듣습니다.'); closePanels();
+};
+$('pwclear').onclick = () => {
+  if (!bc) return;
+  bc.pw = ''; bc.lock = ''; bc.reg(); roomHead(); setBc('비밀번호를 해제했습니다. 이제 누구나 입장할 수 있습니다.'); closePanels();
+};
 $('bcfile').onchange = e => {
   const files = [...e.target.files]; if (!files.length) return;
+  if (!bc){ setBc('먼저 "음악 방 만들기"로 방을 만들어 주세요.'); e.target.value = ''; return; }
   const a = $('bcAudio'); let i = 0;
   const play = () => { a.src = URL.createObjectURL(files[i]); a.play().catch(() => {}); };
   a.onended = () => { i = (i + 1) % files.length; play(); };
   a.hidden = false;
   a.addEventListener('playing', () => {
-    if (bc) return;
     const cs = a.captureStream ? a.captureStream() : (a.mozCaptureStream ? a.mozCaptureStream() : null);
-    if (!cs || !cs.getAudioTracks().length){ setBc('이 브라우저는 파일 방송을 지원하지 않습니다. 마이크나 PC 소리를 이용하세요.'); return; }
-    startBroadcast(cs);
+    if (!cs || !cs.getAudioTracks().length){ setBc('이 브라우저는 파일 재생 방송을 지원하지 않습니다. 마이크나 PC 소리를 이용하세요.'); return; }
+    swapSource(cs);
   }, {once: true});
   play(); e.target.value = '';
 };
 $('bcmic').onclick = async () => {
-  try { startBroadcast(await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: false}})); }
+  if (!bc){ setBc('먼저 "음악 방 만들기"로 방을 만들어 주세요.'); return; }
+  try { swapSource(await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: false}})); }
   catch(e){ setBc('마이크를 사용할 수 없습니다. 권한을 확인하세요 (https 또는 파일 열기 필요).'); }
 };
 $('bcscr').onclick = async () => {
+  if (!bc){ setBc('먼저 "음악 방 만들기"로 방을 만들어 주세요.'); return; }
   try {
     const d = await navigator.mediaDevices.getDisplayMedia({video: true, audio: true});
     const at = d.getAudioTracks(); d.getVideoTracks().forEach(t => t.stop());
     if (!at.length){ setBc('공유 창에서 "시스템 오디오(또는 탭 오디오) 공유"를 체크해 주세요. (PC의 Chrome/Edge에서만 가능)'); return; }
-    startBroadcast(new MediaStream(at));
+    swapSource(new MediaStream(at));
   } catch(e){ setBc('PC 소리 공유를 사용할 수 없습니다. 컴퓨터의 Chrome/Edge에서 시도하세요.'); }
 };
 addEventListener('pagehide', () => { stopBroadcast(); stopListen(); });
