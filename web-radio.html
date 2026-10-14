@@ -248,7 +248,8 @@ button,select,input{font:inherit}
       <button class="addhome" style="margin:0" type="button" id="vstop">■ 끄기</button>
       <div class="mwsearch">
         <input id="vq" placeholder="영상 검색 (예: 안전 교육, science, 지게차)" aria-label="영상 검색">
-        <select id="vsrc" aria-label="검색할 곳"><option value="all">전체 (해외 사이트 한꺼번에)</option><option value="ia">Internet Archive</option><option value="pre">Prelinger (옛 교육·산업 영화)</option><option value="nasa">NASA</option><option value="wm">Wikimedia Commons</option><option value="pt">PeerTube (세계 각국 영상)</option><option value="px">Pexels (무료 키 필요)</option><option value="pb">Pixabay (무료 키 필요)</option></select>
+        <select id="vsrc" aria-label="검색할 곳"><option value="all">전체 (해외 사이트 한꺼번에)</option><option value="ia">Internet Archive</option><option value="pre">Prelinger (옛 교육·산업 영화)</option><option value="nasa">NASA</option><option value="wm">Wikimedia Commons</option><option value="pt">PeerTube (세계 각국 영상)</option><option value="tv">📺 TV·위성 방송 (나라별 · 무료)</option><option value="yt">유튜브 (무료 키 필요)</option><option value="px">Pexels (무료 키 필요)</option><option value="pb">Pixabay (무료 키 필요)</option></select>
+        <select id="vtvc" aria-label="TV 나라" hidden><option value="kr">한국</option><option value="kp">북한</option><option value="jp">일본</option><option value="cn">중국</option><option value="tw">대만</option><option value="hk">홍콩</option><option value="us">미국</option><option value="ca">캐나다</option><option value="gb">영국</option><option value="ie">아일랜드</option><option value="au">호주</option><option value="nz">뉴질랜드</option><option value="de">독일</option><option value="fr">프랑스</option><option value="es">스페인</option><option value="it">이탈리아</option><option value="pt">포르투갈</option><option value="nl">네덜란드</option><option value="be">벨기에</option><option value="ch">스위스</option><option value="at">오스트리아</option><option value="se">스웨덴</option><option value="no">노르웨이</option><option value="dk">덴마크</option><option value="fi">핀란드</option><option value="pl">폴란드</option><option value="cz">체코</option><option value="gr">그리스</option><option value="tr">튀르키예</option><option value="ru">러시아</option><option value="ua">우크라이나</option><option value="sg">싱가포르</option><option value="my">말레이시아</option><option value="th">태국</option><option value="vn">베트남</option><option value="id">인도네시아</option><option value="ph">필리핀</option><option value="in">인도</option><option value="pk">파키스탄</option><option value="bd">방글라데시</option><option value="lk">스리랑카</option><option value="np">네팔</option><option value="mn">몽골</option><option value="kz">카자흐스탄</option><option value="uz">우즈베키스탄</option><option value="ir">이란</option><option value="iq">이라크</option><option value="il">이스라엘</option><option value="sa">사우디</option><option value="ae">아랍에미리트</option><option value="qa">카타르</option><option value="kw">쿠웨이트</option><option value="eg">이집트</option><option value="ma">모로코</option><option value="dz">알제리</option><option value="tn">튀니지</option><option value="ng">나이지리아</option><option value="za">남아공</option><option value="ke">케냐</option><option value="et">에티오피아</option><option value="gh">가나</option><option value="br">브라질</option><option value="ar">아르헨티나</option><option value="cl">칠레</option><option value="co">콜롬비아</option><option value="mx">멕시코</option><option value="pe">페루</option><option value="ve">베네수엘라</option><option value="cu">쿠바</option><option value="int">국제·위성 방송</option></select>
         <button class="addhome" style="margin:0" type="button" id="vfind">🔍 검색</button>
       </div>
       <div class="vres" id="vres" hidden></div>
@@ -1441,10 +1442,37 @@ async function srcPb(q){
     return u ? {title: h.tags || ('Pixabay ' + h.id), sub: 'Pixabay · ' + h.duration + '초', pick: () => playDone(u, h.tags)} : null;
   }).filter(Boolean);
 }
-const VSRC = {ia: q => srcIA(q), pre: q => srcIA(q, ' AND collection:(prelinger)'), nasa: srcNasa, wm: srcWm, pt: srcPT, px: srcPx, pb: srcPb};
+async function srcYt(q){
+  const k = needKey('yt', '유튜브(YouTube Data API v3)', 'https://console.cloud.google.com/apis/library/youtube.googleapis.com');
+  const j = await jget('https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=20&q=' + encodeURIComponent(q) + '&key=' + encodeURIComponent(k));
+  const dec = t => { const e = document.createElement('textarea'); e.innerHTML = t || ''; return e.value; };
+  return (j.items || []).filter(it => it.id && it.id.videoId).map(it => ({title: dec(it.snippet.title), sub: '유튜브 · ' + dec(it.snippet.channelTitle), pick: () => { const t = dec(it.snippet.title); return hostLink('https://www.youtube.com/watch?v=' + it.id.videoId).then(() => mwUpdate('▶ ' + t.slice(0, 40))); }}));
+}
+const tvCache = {};
+async function srcTv(q){
+  const cc = $('vtvc').value;
+  if (!tvCache[cc]){
+    const r = await fetch('https://raw.githubusercontent.com/iptv-org/iptv/master/streams/' + cc + '.m3u');
+    if (!r.ok) throw new Error(String(r.status));
+    const lines = (await r.text()).split(/\r?\n/), out = [], seen = new Set();
+    let name = '';
+    for (const ln of lines){
+      if (ln.startsWith('#EXTINF')){ name = ln.slice(ln.lastIndexOf(',') + 1).trim(); }
+      else if (/^https?:\/\//i.test(ln) && name){
+        const u = ln.trim();
+        if ((/\.m3u8(\?|$)/i.test(u) || ytId(u)) && !(location.protocol === 'https:' && u.startsWith('http:')) && !seen.has(u)){ seen.add(u); out.push({name, u}); }
+        name = '';
+      }
+    }
+    tvCache[cc] = out;
+  }
+  const f = q.toLowerCase(), cn = $('vtvc').selectedOptions[0].textContent;
+  return tvCache[cc].filter(x => !f || x.name.toLowerCase().includes(f)).slice(0, 300).map(x => ({title: x.name, sub: 'TV · ' + cn, pick: () => hostLink(x.u).then(() => mwUpdate('▶ ' + x.name.slice(0, 40)))}));
+}
+const VSRC = {tv: srcTv, yt: srcYt, ia: q => srcIA(q), pre: q => srcIA(q, ' AND collection:(prelinger)'), nasa: srcNasa, wm: srcWm, pt: srcPT, px: srcPx, pb: srcPb};
 async function searchVideos(){
   const q = $('vq').value.trim(), key = $('vsrc').value;
-  if (!q){ vResMsg('검색어를 입력하세요.'); return; }
+  if (!q && key !== 'tv'){ vResMsg('검색어를 입력하세요.'); return; }
   vResMsg('검색 중…');
   try {
     let items = [];
@@ -1466,11 +1494,13 @@ async function searchVideos(){
   } catch(e){
     const m = String(e && e.message);
     if (m === 'nokey') vResMsg('API 키를 입력하지 않아 검색하지 않았습니다.');
-    else if ((key === 'px' || key === 'pb') && /^(400|401|403)$/.test(m)){ ksave(key, ''); vResMsg('API 키가 맞지 않습니다. 다시 검색하면 키를 새로 물어봅니다.'); }
+    else if ((key === 'px' || key === 'pb' || key === 'yt') && /^(400|401|403)$/.test(m)){ ksave(key, ''); vResMsg(key === 'yt' ? '유튜브 키가 맞지 않거나 오늘 사용량을 다 썼습니다. 다시 검색하면 키를 새로 물어봅니다.' : 'API 키가 맞지 않습니다. 다시 검색하면 키를 새로 물어봅니다.'); }
+    else if (key === 'tv') vResMsg('이 나라의 TV 목록을 불러오지 못했습니다. 인터넷 연결을 확인하거나 다른 나라를 골라 보세요.');
     else vResMsg('검색하지 못했습니다. 인터넷 연결을 확인하거나 다른 검색처를 골라 보세요.');
   }
 }
 $('vfind').onclick = searchVideos;
+$('vsrc').onchange = () => { $('vtvc').hidden = $('vsrc').value !== 'tv'; };
 $('vq').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) searchVideos(); });
 
 $('vplay').onclick = () => {
