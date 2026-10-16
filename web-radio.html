@@ -406,6 +406,7 @@ body.hidebad .vr.bad{display:none}
   <section id="mediawin" hidden aria-label="미디어 창">
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
     <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button></div>
+    <div class="mwsize" id="lagrow" hidden><label for="lagsel">🐢 끊김 줄이기</label><select id="lagsel" aria-label="끊김 줄이기 (영상을 조금 늦게 재생)" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:4px 8px;font-size:13px"><option value="0">끔 (가장 빠름)</option><option value="1000">1초 늦게</option><option value="2000">2초 늦게</option><option value="3000">3초 늦게</option><option value="4000">4초 늦게 (가장 안정 · 기본)</option></select><span class="chatnote" style="margin:0">늦게 볼수록 덜 끊깁니다</span></div>
     <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div></div>
     <div class="debate" id="debate" hidden></div><div id="rxfloat" aria-hidden="true"></div>
     <div class="mwscreen" id="mwscreen">
@@ -425,6 +426,8 @@ body.hidebad .vr.bad{display:none}
       <button class="addhome" style="margin:0" type="button" id="vstop">■ 끄기</button>
       <button class="addhome" style="margin:0" type="button" id="bcshare" title="내 PC 화면(창·탭·전체)을 방 사람들에게 영상으로 보냅니다">🖥 내 화면 공유</button>
       <button class="addhome" style="margin:0" type="button" id="bcshare2" title="내 PC 화면을 보내면서 오른쪽 아래에 내 얼굴(카메라)을 동그랗게 함께 넣습니다">🖥📷 화면+내 얼굴</button>
+      <button class="addhome" style="margin:0;border-color:var(--amber);color:var(--amber);font-weight:700" type="button" id="bclec" title="화면 + PC 소리 + 내 마이크 목소리를 한꺼번에 보냅니다 (강의용)">🎓 강의 시작 (화면+PC소리+마이크)</button>
+      <label class="chatnote" style="margin:0;display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="lecface"> 얼굴도 넣기</label>
       <div class="mwsearch">
         <input id="vq" placeholder="영상 검색 (예: 안전 교육, science, 지게차)" aria-label="영상 검색">
         <select id="vsrc" aria-label="검색할 곳"><option value="all">전체 (해외 사이트 한꺼번에)</option><option value="ia">Internet Archive</option><option value="pre">Prelinger (옛 교육·산업 영화)</option><option value="nasa">NASA</option><option value="wm">Wikimedia Commons</option><option value="pt">PeerTube (세계 각국 영상)</option><option value="tv">📺 TV·위성 방송 (나라별 · 무료)</option><option value="yt">유튜브 (무료 키 필요)</option><option value="px">Pexels (무료 키 필요)</option><option value="pb">Pixabay (무료 키 필요)</option></select>
@@ -1297,7 +1300,7 @@ function mwUpdate(text){
   if (text != null) $('mwnow').textContent = text;
 }
 function mwOpen(host){
-  MV.regTs = null; MV.regAt = 0; MV.vwait = 0; MV.vre = 0; $('mwre').hidden = host;
+  MV.regTs = null; MV.regAt = 0; MV.vwait = 0; MV.vre = 0; $('mwre').hidden = host; $('lagrow').hidden = !!host;
   $('mediawin').hidden = false;
   $('mwctl').hidden = !host; $('talkbtn').hidden = host; $('camreqbtn').hidden = host; if (!host) $('talkhost').hidden = true;
   clearInterval(MV.poll); if (!host){ MV.poll = setInterval(mvPoll, 3000); mvPoll(); }
@@ -1741,6 +1744,24 @@ async function listen(bid, name, locked, presetPw){
   $('now').textContent = name; $('meta').textContent = '음악 방'; setStatus('연결 중…'); enterRoom(bid, name);
   return connectListen(bid, name, pw);
 }
+// 듣는 사람: 수신 버퍼를 늘려 화면을 조금 늦게 재생하는 대신 끊김을 줄임 (Chrome/Edge 114+)
+let lagMs = 4000; try { const v = localStorage.getItem('lecLag'); if (v !== null) lagMs = Math.max(0, Math.min(4000, +v || 0)); } catch(e){} // 기본값 4초
+function applyLag(rcv){
+  if (!rcv) return;
+  try { if ('jitterBufferTarget' in rcv) rcv.jitterBufferTarget = lagMs; } catch(e){}
+  try { if ('playoutDelayHint' in rcv) rcv.playoutDelayHint = lagMs / 1000; } catch(e){}
+}
+function lagSupported(){ try { return typeof RTCRtpReceiver !== 'undefined' && 'jitterBufferTarget' in RTCRtpReceiver.prototype; } catch(e){ return false; } }
+(() => {
+  const sel = $('lagsel'); if (!sel) return;
+  sel.value = String(lagMs); if (sel.value !== String(lagMs)) sel.value = '0';
+  sel.onchange = () => {
+    lagMs = +sel.value || 0; try { localStorage.setItem('lecLag', String(lagMs)); } catch(e){}
+    if (lis && lis.pc) lis.pc.getReceivers().forEach(applyLag);
+    if (lagMs && !lagSupported()) setBc('이 브라우저는 늦게 재생(끊김 줄이기)을 지원하지 않습니다. PC의 Chrome/Edge 최신 버전에서 사용해 보세요.');
+    else setBc(lagMs ? '화면과 소리를 ' + (lagMs / 1000) + '초쯤 늦게 재생해 끊김을 줄입니다.' : '지연 없이 바로 재생합니다.');
+  };
+})();
 async function connectListen(bid, name, pw){
   const lid = myId + Date.now().toString(36).slice(-4);
   const pc = new RTCPeerConnection(RTC_CFG); lis = {pc, bid, lid, pw};
@@ -1750,6 +1771,7 @@ async function connectListen(bid, name, pw){
   liveAudio.controls = false; liveAudio.style.display = 'none'; lisVidReady = false; MV.rk = '';
   pc.ontrack = e => {
     if (lis && lis.gtr && e.transceiver === lis.gtr){ const g = $('guestVid'); g.srcObject = new MediaStream([e.track]); g.play().catch(() => {}); return; }
+    applyLag(e.receiver);
     if (e.track.kind === 'video') e.track.addEventListener('unmute', () => { lisVidReady = true; lisVidRefresh(); });
     liveAudio.srcObject = e.streams[0] || new MediaStream([e.track]);
     liveAudio.play().catch(() => { liveAudio.controls = true; liveAudio.style.display = 'block'; setStatus('재생 버튼을 눌러 주세요'); mwUpdate(); }); setStatus('● 음악 방 듣는 중'); mwUpdate('● 방송 듣는 중');
@@ -2515,7 +2537,13 @@ $('bcmic').onclick = async () => {
 };
 
 // ---- 🖥 방장 화면 공유 (강의용): 내 PC 화면을 영상으로 송출, 선택하면 내 얼굴을 구석에 동그랗게 함께 넣음 ----
+function lecCleanup(){
+  const l = MV.lec; if (!l) return; MV.lec = null;
+  l.tracks.forEach(t => { try { t.stop(); } catch(e){} });
+  l.nodes.forEach(n => { try { n.disconnect(); } catch(e){} });
+}
 function scrCleanup(){
+  try { lecCleanup(); } catch(e){}
   const sc = MV.scr; if (!sc) return; MV.scr = null;
   try { clearInterval(sc.timer); } catch(e){}
   try { if (sc.worker) sc.worker.terminate(); } catch(e){}
@@ -2575,6 +2603,42 @@ async function startScreen(withFace){
   setBc('🖥 화면을 방에 보내는 중입니다.' + note + (at.length ? '' : ' 소리가 필요하면 🎤 마이크를 누르거나, 공유 창에서 "시스템 오디오 공유"를 체크하세요.') + ' 끝내려면 "■ 끄기"를 누르세요.');
   closePanels();
 }
+// ---- 🎓 강의 시작: 화면 공유 + PC 소리 + 내 마이크를 한 줄로 섞어서 송출 ----
+async function startLecture(withFace){
+  const me = bc;
+  if (!me){ setBc('먼저 "음악 방 만들기"로 방을 만들어 주세요.'); return; }
+  await startScreen(withFace);                       // 화면(필요하면 얼굴 포함) 송출 시작
+  const sc = MV.scr;
+  if (!sc || bc !== me) return;                      // 화면 공유를 취소했거나 방이 사라짐
+  let mic = null;
+  try { mic = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}}); } catch(e){}
+  // 공유 창에서 고른 PC 소리는 복제해서 사용 (원본은 swapSource가 정리함)
+  const sys = sc.d.getAudioTracks().map(t => t.clone());
+  if (MV.scr !== sc || bc !== me){                   // 기다리는 사이 공유가 끝났다면 정리
+    sys.forEach(t => t.stop()); if (mic) mic.getTracks().forEach(t => t.stop()); return;
+  }
+  if (!sys.length && !mic){ setBc('PC 소리도 마이크도 가져오지 못했습니다. 공유 창에서 "시스템 오디오 공유"를 체크하고 마이크 권한을 허용해 주세요.'); return; }
+  try { me.ac.resume(); } catch(e){}
+  const dest = me.ac.createMediaStreamDestination(), nodes = [];
+  const add = (stream, gain) => {
+    const g = me.ac.createGain(); g.gain.value = gain;
+    const n = me.ac.createMediaStreamSource(stream); n.connect(g); g.connect(dest); nodes.push(n, g);
+  };
+  if (sys.length) add(new MediaStream(sys), 0.7);    // PC 소리는 조금 낮춰서 목소리가 잘 들리게
+  if (mic) add(mic, 1.0);
+  const dt = dest.stream.getAudioTracks()[0];
+  const tracks = [dt].concat(sys, mic ? mic.getAudioTracks() : []);
+  MV.lec = {tracks, nodes};
+  // swapSource는 getAudioTracks()[0]만 방송에 쓰고, 나중에 소리를 바꿀 때 getTracks() 전부를 끕니다
+  swapSource({getAudioTracks: () => [dt], getVideoTracks: () => [], getTracks: () => tracks});
+  const what = sys.length && mic ? '화면 + PC 소리 + 마이크' : sys.length ? '화면 + PC 소리 (마이크 없음)' : '화면 + 마이크 (PC 소리 없음)';
+  mwUpdate('🎓 강의 중 · ' + what);
+  setBc('🎓 강의를 방에 보내는 중입니다 (' + what + ').' +
+    (sys.length ? '' : ' PC 소리도 보내려면 ■ 끄기 후 다시 시작하고, 공유 창에서 "전체 화면"을 고른 뒤 "시스템 오디오 공유"를 체크하세요.') +
+    (mic ? '' : ' 마이크를 쓸 수 없어 PC 소리만 나갑니다. 권한을 확인하세요.') +
+    ' 끝내려면 "■ 끄기"를 누르세요.');
+}
+$('bclec').onclick = () => startLecture($('lecface').checked);
 $('bcshare').onclick = () => startScreen(false);
 $('bcshare2').onclick = () => startScreen(true);
 $('bcscr').onclick = async () => {
