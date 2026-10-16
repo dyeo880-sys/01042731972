@@ -75,7 +75,7 @@ button,select,input{font:inherit}
 .mwscreen video{max-width:100%;max-height:calc(34vh * var(--mws));border-radius:8px;background:#000}
 .vr.bad{opacity:.4;text-decoration:line-through}.vr.good::before{content:'● ';color:#6fd36f;font-size:10px}
 body.hidebad .vr.bad{display:none}
-.mwtalk{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;font-size:13px}.mwtalk[hidden]{display:none}.mwtalk button{margin:0;padding:4px 10px;font-size:13px}#talkhost{flex-basis:100%;background:#1a0f08;border-radius:6px;padding:6px 8px}#talkhost .tk{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:3px 0}#talkhost .tk b{color:var(--amber)}
+.mwtalk{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;font-size:13px}.mwtalk[hidden]{display:none}.mwtalk button{margin:0;padding:4px 10px;font-size:13px}.mwtalk button.blocked{border-color:#ff4d4d;color:#ff6b6b}#talkmsg.blkmsg{color:#ff6b6b;font-weight:700;opacity:1!important}.debate{background:#1a0f08;border-radius:8px;padding:8px 10px;margin:0 0 8px;font-size:13px}.debate[hidden]{display:none}.debate .rxt{color:var(--amber);font-weight:700;margin-bottom:6px;font-size:12px}.debate .rxrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.debate .rxb{margin:0;padding:5px 10px;font-size:13px}.debate .rxb.on{background:var(--amber);color:#2a1a08;font-weight:700}.debate .rxh{font-size:12px;opacity:.9;margin-top:2px}.rxbar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin:0 0 8px;background:#3a2a1a}.rxbar span{display:block;height:100%}#rxfloat{position:fixed;left:0;right:0;bottom:70px;height:0;pointer-events:none;z-index:60}.rxf{position:absolute;bottom:0;display:flex;flex-direction:column;align-items:center;animation:rxup 3s ease-out forwards}.rxf span{font-size:38px;line-height:1}.rxf small{font-size:11px;background:rgba(0,0,0,.6);color:#fff;border-radius:8px;padding:1px 6px}@keyframes rxup{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:1;transform:translateY(-30px) scale(1.1)}100%{transform:translateY(-260px) scale(1);opacity:0}}#talkhost{flex-basis:100%;background:#1a0f08;border-radius:6px;padding:6px 8px}#talkhost .tk{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:3px 0}#talkhost .tk b{color:var(--amber)}
 @keyframes tkblink{0%,100%{opacity:1;box-shadow:0 0 0 0 #ff4d4d}50%{opacity:.35;box-shadow:0 0 10px 3px #ff4d4d}}
 .blink{animation:tkblink 1s ease-in-out infinite}
 #tkbadge{background:#c0392b;color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}#tkbadge[hidden]{display:none}
@@ -305,7 +305,7 @@ body.hidebad .vr.bad{display:none}
       <div id="members" style="min-width:150px;max-width:230px;background:#1a0f08;border-radius:6px;padding:8px 10px;font-size:14px;line-height:1.7"></div>
     </div>
     <div class="chatnote" id="bcstat"></div>
-    <div class="chatnote">방을 만든 사람의 기기에서 직접 소리를 보내는 방식이라 듣는 사람은 최대 8명(카메라를 켜면 4명)까지 연결됩니다. 방을 여는 동안 이 페이지를 닫지 마세요. 손님은 "🎤 마이크 요청"·"📷 카메라 요청"을 누르고 방장이 허용하면 켜집니다(마이크 동시 2명, 카메라 1명). 방장은 언제든 강제로 끌 수 있습니다.</div>
+    <div class="chatnote">방을 만든 사람의 기기에서 직접 소리를 보내는 방식이라 듣는 사람은 최대 8명(카메라를 켜면 4명)까지 연결됩니다. 방을 여는 동안 이 페이지를 닫지 마세요. 손님은 "🎤 마이크 요청"·"📷 카메라 요청"을 누르고 방장이 허용하면 켜집니다(마이크 동시 4명, 카메라 1명). 방장은 언제든 강제로 끌 수 있습니다.</div>
   </section>
   <section class="chat" id="chatsec" aria-label="채팅">
     <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"></div>
@@ -379,6 +379,7 @@ body.hidebad .vr.bad{display:none}
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
     <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button></div>
     <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div></div>
+    <div class="debate" id="debate" hidden></div><div id="rxfloat" aria-hidden="true"></div>
     <div class="mwscreen" id="mwscreen">
       <div class="mwidle" id="mwidle">🎶</div>
       <video id="mwvid" controls playsinline style="display:none"></video>
@@ -964,6 +965,7 @@ function renderMembers(){
 function memRec(){
   const r = {n: myNick(), h: isHost() ? 1 : 0, ts: Date.now()};
   if (typeof talk !== 'undefined'){ if (talk.a) r.a = 1; if (talk.v) r.v = 1; }
+  if (typeof rx !== 'undefined' && liveRoom && rx.rid === liveRoom.id){ if (rx.st){ r.st = rx.st; r.sts = rx.sts; } if (rx.hd) r.hd = 1; if (rx.rl){ r.rl = rx.rl; r.rt = rx.rt; } if (Object.keys(rx.rc).length) r.rc = rx.rc; if (isHost()){ if (rx.rs) r.rs = rx.rs; if (rx.pv) r.pv = 1; if (rx.rv) r.rv = 1; } }
   if (isHost() && bc){
     const ok = {};
     Object.keys(bc.okA).forEach(u => { (ok[u] = ok[u] || {}).a = bc.okA[u]; });
@@ -984,7 +986,7 @@ async function memBeat(){
     const list = Object.keys(d).map(k => Object.assign({k}, d[k])).filter(m => m && m.n && now - m.ts < 45000)
       .sort((a, b) => (b.h || 0) - (a.h || 0) || String(a.n).localeCompare(String(b.n)));
     memList = list; if (openMem && !list.some(m => m.k === openMem)) openMem = '';
-    renderMembers();
+    renderMembers(); try { rxApply(); } catch(e){}
   } catch(e){}
 }
 function renameMe(){
@@ -1278,7 +1280,7 @@ function enterRoom(id, name){
   roomHead(); clearInterval(memTimer); memBeat(); memTimer = setInterval(memBeat, 8000);
 }
 function leaveRoom(){
-  const was = liveRoom; liveRoom = null; clearInterval(memTimer);
+  const was = liveRoom; liveRoom = null; clearInterval(memTimer); try { rxApply(); } catch(e){}
   if (was && DB) lj('roommem_' + was.id + '/' + myId, 'DELETE').catch(() => {});
   mwClose(); $('roomwrap').hidden = true; $('members').innerHTML = ''; $('bccount').textContent = ''; hideRoomView();
   if (was && $('room').value === 'b:' + was.id){ renderRooms('lobby'); $('room').onchange(); } else renderRooms();
@@ -1395,7 +1397,7 @@ async function answerOffer(me, lid, off){
   } catch(e){ pc.close(); delete me.pcs[lid]; }
 }
 // ---- 🎤📷 손님 마이크·카메라 (방장이 허락해야 켜짐 · 방장이 언제든 강제로 끌 수 있음) ----
-const MAX_SPEAK = 2;
+const MAX_SPEAK = 4;
 // 방장: 손님 목소리를 음악과 한 줄로 섞어 모두에게 내보냄
 function mixInit(me){
   if (me.mix) return me.mix;
@@ -1496,13 +1498,17 @@ function renderTalkHost(me){
   });
 }
 // 손님: 마이크/카메라를 켜 두고 요청 → 허락되면 전송 → 방장이 끄면 즉시 멈춤
-const talk = {a: '', v: '', mic: null, cam: null, tm: 0, rid: '', msg: '', info: '', qa: 0, qv: 0};
+const talk = {a: '', v: '', mic: null, cam: null, tm: 0, rid: '', msg: '', info: '', qa: 0, qv: 0, blk: {a: '', v: ''}};
 function talkUI(){
   const ba = $('talkbtn'), bv = $('camreqbtn'), m = $('talkmsg');
-  const lab = (st, nm, on) => st === 'ok' ? on : st === 'req' ? '⏳ ' + nm + ' 요청 취소' : nm + ' 요청';
-  ba.textContent = lab(talk.a, '🎤 마이크', '🎙️ 마이크 끄기'); bv.textContent = lab(talk.v, '📷 카메라', '📹 카메라 끄기');
+  const lab = (st, nm, on, k) => st === 'ok' ? on : st === 'req' ? '⏳ ' + nm + ' 요청 취소' : talk.blk[k] ? '🚫 ' + nm + ' 차단됨 (다시 요청)' : nm + ' 요청';
+  ba.textContent = lab(talk.a, '🎤 마이크', '🎙️ 마이크 끄기', 'a'); bv.textContent = lab(talk.v, '📷 카메라', '📹 카메라 끄기', 'v');
   ba.classList.toggle('blink', talk.a === 'req'); bv.classList.toggle('blink', talk.v === 'req');
-  m.textContent = talk.msg || ((talk.a === 'req' || talk.v === 'req') ? talk.info || '요청을 보내는 중…' : (talk.a === 'ok' || talk.v === 'ok') ? '🔴 켜짐 — 마이크는 이어폰을 쓰면 울림이 없습니다' : '');
+  ba.classList.toggle('blocked', !talk.a && !!talk.blk.a); bv.classList.toggle('blocked', !talk.v && !!talk.blk.v);
+  const bm = ['a', 'v'].filter(k => !talk[k] && talk.blk[k]).map(k => talk.blk[k]).join(' / ');
+  const act = talk.a === 'req' || talk.v === 'req' || talk.a === 'ok' || talk.v === 'ok';
+  m.textContent = talk.msg || (talk.a === 'req' || talk.v === 'req' ? talk.info || '요청을 보내는 중…' : (talk.a === 'ok' || talk.v === 'ok') ? '🔴 켜짐 — 마이크는 이어폰을 쓰면 울림이 없습니다' : (bm ? '🚫 ' + bm : ''));
+  m.classList.toggle('blkmsg', !!bm && !act && (!talk.msg || talk.msg.indexOf('방장이') === 0));
 }
 function talkAttach(){
   if (!lis) return;
@@ -1524,7 +1530,7 @@ async function talkStart(kind){
   if (!lis || !liveRoom || isHost()){ talk.msg = '방에 연결된 뒤에 요청할 수 있습니다.'; talkUI(); return; }
   if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){ talk.msg = '이 주소에서는 ' + nm + '를 쓸 수 없습니다. https:// 주소(또는 파일로 직접 열기)로 접속하세요.'; talkUI(); return; }
   try { const dv = await navigator.mediaDevices.enumerateDevices(); if (dv.length && !dv.some(d => d.kind === (kind === 'a' ? 'audioinput' : 'videoinput'))){ talk.msg = '이 기기에서 ' + nm + ' 장치를 찾을 수 없습니다.'; talkUI(); return; } } catch(e){}
-  talk.rid = liveRoom.id; talk[kind] = 'req'; talk.msg = ''; talk.info = '요청을 보내는 중…';
+  talk.rid = liveRoom.id; talk[kind] = 'req'; talk.blk[kind] = ''; talk.msg = ''; talk.info = '요청을 보내는 중…';
   if (!talk.tm) talk.tm = setInterval(talkBeat, 3000);
   talkNotify(kind); talkBeat(); talkUI();
 }
@@ -1557,16 +1563,99 @@ async function talkBeat(){
     ['a', 'v'].forEach(k => {
       if (!talk[k]) return; const val = o[k], nm = k === 'a' ? '마이크' : '카메라';
       if (val === true){ talk[k] = 'ok'; talkAcquire(k); }
-      else if (val === false) talkKindStop(k, talk[k] === 'ok' ? '방장이 ' + nm + '를 껐습니다.' : '방장이 ' + nm + ' 요청을 거절했습니다.');
+      else if (val === false){ const tx = talk[k] === 'ok' ? '방장이 ' + nm + '를 껐습니다 (차단됨)' : '방장이 ' + nm + ' 요청을 거절했습니다'; talk.blk[k] = tx; talkKindStop(k, tx + '.'); }
       else if (talk[k] === 'ok') talk[k] = 'req'; // 허락이 사라짐 (새 방장 등) → 다시 대기
     });
     talk.info = !h ? '방장을 찾는 중… (방장이 접속 중인지 확인하세요)' : (h.ak && h.ak[myId]) ? '✓ 방장에게 전달됨 — 허락을 기다리는 중…' : '요청 전송됨 — 방장 확인 대기 중… (방장 화면도 새로 고침한 최신 버전이어야 합니다)';
     talkAttach(); talkUI();
   } catch(e){ talk.msg = '요청을 서버에 보내지 못했습니다. 인터넷 연결이나 데이터베이스 규칙을 확인하세요.'; talkUI(); }
 }
-function talkStop(msg){ ['a', 'v'].forEach(k => { if (talk[k]) talkKindStop(k, msg); }); talk.msg = msg || ''; talkUI(); }
+function talkStop(msg){ ['a', 'v'].forEach(k => { if (talk[k]) talkKindStop(k, msg); }); talk.blk = {a: '', v: ''}; talk.msg = msg || ''; talkUI(); }
 $('talkbtn').onclick = () => { if (talk.a) talkKindStop('a', ''); else talkStart('a'); };
 $('camreqbtn').onclick = () => { if (talk.v) talkKindStop('v', ''); else talkStart('v'); };
+// ---- 🗳 토론 반응 버튼 (찬성·반대·중립·손들기·100점 등) — 방 참가자 기록(roommem_)에 실어 모두에게 보여줌 ----
+const RX_ST = [['p', '👍', '찬성', '#2e9e4f'], ['c', '👎', '반대', '#d64545'], ['n', '😐', '중립', '#8a8a8a']];
+const RX_EM = [['100', '💯', '100점'], ['clap', '👏', '박수'], ['fire', '🔥', '불꽃'], ['lol', '😂', '웃김'], ['hmm', '🤔', '의문'], ['wow', '😮', '놀람']];
+const RX_ICON = {}; RX_EM.forEach(x => { RX_ICON[x[0]] = x[1]; });
+const rx = {pv: 0, rv: 0, st: '', sts: 0, hd: 0, rc: {}, rl: '', rt: 0, rs: 0, seenRs: 0, last: {}, init: false, rid: '', tm: 0, sig: '', lastClick: 0};
+function rxClear(){ rx.st = ''; rx.sts = 0; rx.hd = 0; rx.rc = {}; rx.rl = ''; rx.rt = 0; }
+function rxFloat(k, name){
+  const f = $('rxfloat'); if (!f || f.children.length > 24) return;
+  const d = document.createElement('div'); d.className = 'rxf'; d.style.left = (6 + Math.random() * 84) + '%';
+  const e = document.createElement('span'); e.textContent = RX_ICON[k] || k;
+  const n = document.createElement('small'); n.textContent = String(name || '').slice(0, 12);
+  d.append(e, n); f.append(d); setTimeout(() => d.remove(), 3200);
+}
+function rxApply(){
+  const box = $('debate'); if (!box) return;
+  if (!liveRoom){ box.hidden = true; rx.rid = ''; rx.sig = ''; return; }
+  if (rx.rid !== liveRoom.id){ rx.rid = liveRoom.id; rxClear(); rx.rs = 0; rx.pv = 0; rx.rv = 0; rx.seenRs = 0; rx.last = {}; rx.init = false; rx.sig = ''; }
+  box.hidden = false;
+  const mine = {st: rx.st, sts: rx.sts, hd: rx.hd, rc: rx.rc, rl: rx.rl, rt: rx.rt};
+  const list = memList.map(m => m.k === myId ? Object.assign({}, m, mine) : m);
+  if (!list.some(m => m.k === myId)) list.push(Object.assign({k: myId, n: myNick()}, mine));
+  const hr = list.reduce((a, m) => { const v = m.h ? (m.k === myId ? rx.rs : m.rs) : 0; return v > a ? v : a; }, 0);
+  if (hr && hr !== rx.seenRs){ // 방장이 집계를 초기화함 → 내 표시도 지움
+    rx.seenRs = hr;
+    if (!isHost() && (rx.st || rx.hd || Object.keys(rx.rc).length)){ rxClear(); clearTimeout(rx.tm); rx.tm = setTimeout(memBeat, 300); return rxApply(); }
+  }
+  const hrec = list.filter(m => m.h), pv = hrec.some(m => m.k === myId ? rx.pv : m.pv), rv = hrec.some(m => m.k === myId ? rx.rv : m.rv), hide = !!pv && !rv;
+  const cnt = {p: 0, c: 0, n: 0}, tot = {}, hands = [];
+  list.forEach(m => {
+    if (m.st && cnt[m.st] !== undefined && (m.sts || 0) > hr) cnt[m.st]++;
+    if (m.hd) hands.push(m.n || '손님');
+    if (m.rc) Object.keys(m.rc).forEach(k => { if (RX_ICON[k]) tot[k] = (tot[k] || 0) + (m.rc[k] | 0); });
+  });
+  list.forEach(m => { if (m.rt && rx.last[m.k] !== m.rt){ if (rx.init && m.k !== myId && RX_ICON[m.rl]) rxFloat(m.rl, m.n); rx.last[m.k] = m.rt; } });
+  if (memList.length) rx.init = true;
+  const sig = JSON.stringify([cnt, tot, hands, rx.st, rx.hd, isHost(), pv, rv]); if (sig === rx.sig) return; rx.sig = sig;
+  box.innerHTML = '';
+  const mk = (txt, fn, on) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome rxb' + (on ? ' on' : ''); b.textContent = txt; b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.onclick = fn; return b; };
+  const t = document.createElement('div'); t.className = 'rxt'; t.textContent = '🗳 토론 반응 — 누르면 방 모두에게 보입니다'; box.append(t);
+  const r1 = document.createElement('div'); r1.className = 'rxrow';
+  RX_ST.forEach(([k, ic, nm]) => r1.append(mk(hide ? ic + ' ' + nm : ic + ' ' + nm + ' ' + cnt[k], () => rxStance(k), rx.st === k)));
+  r1.append(mk('🙋 손들기' + (rx.hd ? ' (취소)' : ''), rxHand, !!rx.hd));
+  box.append(r1);
+  const sum = cnt.p + cnt.c + cnt.n;
+  if (pv){ const iv = document.createElement('div'); iv.className = 'rxh'; iv.style.marginBottom = '6px'; iv.textContent = hide ? '🔒 비공개 투표 중 — 지금까지 ' + sum + '명 투표 (결과는 방장이 공개합니다)' : '🔓 비공개 투표 결과가 공개되었습니다'; box.append(iv); }
+  if (sum && !hide){ const bar = document.createElement('div'); bar.className = 'rxbar'; RX_ST.forEach(([k, , , col]) => { if (!cnt[k]) return; const sp = document.createElement('span'); sp.style.width = (cnt[k] / sum * 100) + '%'; sp.style.background = col; bar.append(sp); }); box.append(bar); }
+  const r2 = document.createElement('div'); r2.className = 'rxrow';
+  RX_EM.forEach(([k, ic, nm]) => r2.append(mk(ic + ' ' + nm + (tot[k] ? ' ' + tot[k] : ''), () => rxReact(k), false)));
+  if (isHost()){ r2.append(mk(pv ? '🔓 비공개 끄기' : '🔒 비공개 투표', rxPrivate, !!pv)); if (pv) r2.append(mk(rv ? '🙈 결과 숨기기' : '👁 결과 공개', rxReveal, false)); r2.append(mk('🧹 집계 초기화', rxReset, false)); }
+  box.append(r2);
+  if (hands.length){ const h = document.createElement('div'); h.className = 'rxh'; h.textContent = '🙋 손든 사람: ' + hands.join(', '); box.append(h); }
+}
+function rxNeed(){ if (!liveRoom){ setBc('방에 들어간 뒤에 쓸 수 있습니다.'); return false; } return true; }
+function rxSend(){ rx.sig = ''; rxApply(); clearTimeout(rx.tm); rx.tm = setTimeout(memBeat, 250); }
+function rxStance(k){ if (!rxNeed()) return; rx.st = rx.st === k ? '' : k; rx.sts = rx.st ? Date.now() : 0; rxSend(); }
+function rxHand(){ if (!rxNeed()) return; rx.hd = rx.hd ? 0 : 1; rxSend(); }
+function rxReact(k){
+  if (!rxNeed()) return; const n = Date.now(); if (n - rx.lastClick < 300) return; rx.lastClick = n;
+  rx.rc[k] = (rx.rc[k] || 0) + 1; rx.rl = k; rx.rt = n; rx.last[myId] = n; rxFloat(k, myNick()); rxSend();
+}
+function rxPrivate(){ if (!isHost() || !liveRoom) return; rx.pv = rx.pv ? 0 : 1; rx.rv = 0; rxSend(); }
+function rxReveal(){ if (!isHost() || !liveRoom || !rx.pv) return; rx.rv = rx.rv ? 0 : 1; rxSend(); }
+function rxReset(){
+  if (!isHost() || !liveRoom) return;
+  if (!confirm('찬성/반대/중립 · 손들기 · 점수 집계를 모두 초기화할까요?')) return;
+  rx.rs = Date.now(); rx.seenRs = rx.rs; rx.rv = 0; rxClear(); rxSend();
+}
+async function rxPoll(){ // 반응이 빨리 보이도록 참가자 기록만 3초마다 가볍게 읽음
+  if (!liveRoom || !DB || document.hidden || !rx.rid) return;
+  const id = liveRoom.id;
+  try {
+    const d = (await lj('roommem_' + id, 'GET')) || {}, now = Date.now();
+    if (!liveRoom || liveRoom.id !== id) return;
+    const list = Object.keys(d).map(k => Object.assign({k}, d[k])).filter(m => m && m.n && now - m.ts < 45000)
+      .sort((a, b) => (b.h || 0) - (a.h || 0) || String(a.n).localeCompare(String(b.n)));
+    const sg = x => x.map(m => m.k + '|' + m.n + '|' + (m.h || 0)).join(',');
+    const changed = sg(list) !== sg(memList);
+    memList = list; if (openMem && !list.some(m => m.k === openMem)) openMem = '';
+    if (changed) renderMembers();
+    rxApply();
+  } catch(e){}
+}
+setInterval(rxPoll, 3000);
 // ---- 입장 ----
 async function listen(bid, name, locked, presetPw){
   if (!DB || !chatAllowed) return;
