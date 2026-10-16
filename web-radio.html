@@ -1807,7 +1807,7 @@ function fsOn(v, box){
 fsOn($('tvvid')); fsOn($('mwvid'));
 
 // ---- 🎬 맨 위 MTV 뮤직비디오 화면 (24시간 뮤직 채널, 라디오·TV와 별도) ----
-const mtv = {list: null, i: -1, hls: null, tries: 0, timer: 0, on: false};
+const mtv = {list: null, i: -1, hls: null, tries: 0, timer: 0, on: false, silent: false, rec: 0, lastT: -1, stuck: 0, re: 0};
 const mtvV = $('mtvvid');
 async function mtvList(){
   if (mtv.list && mtv.list.length) return mtv.list;
@@ -1847,15 +1847,18 @@ async function mtvPlay(i){
   $('mtvname').textContent = '연결 중… ' + x.name;
   if ((x.hls || /\.m3u8(\?|$)/i.test(x.u)) && window.Hls && Hls.isSupported()){
     mtv.hls = new Hls(); mtv.hls.loadSource(x.u); mtv.hls.attachMedia(mtvV);
-    mtv.hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) mtvFail(); });
+    mtv.hls.on(Hls.Events.ERROR, (_, d) => { if (!d.fatal) return; if (!mtv.rec && d.type === Hls.ErrorTypes.MEDIA_ERROR){ mtv.rec = 1; mtv.hls.recoverMediaError(); } else if (!mtv.rec && d.type === Hls.ErrorTypes.NETWORK_ERROR){ mtv.rec = 1; mtv.hls.startLoad(); } else mtvFail(); });
   } else mtvV.src = x.u;
-  mtvV.play().catch(() => {});
+  mtv.rec = 0; mtv.stuck = 0; mtv.lastT = -1;
+  if (mtv.silent) mtvV.muted = true;
+  mtvV.play().catch(e => { if (e && e.name === 'NotAllowedError'){ mtvOff('▶ 눌러서 시작하세요'); } });
   mtv.timer = setTimeout(mtvFail, 15000);
 }
-mtvV.addEventListener('playing', () => { clearTimeout(mtv.timer); mtv.tries = 0; const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = '🎵 ' + x.name; });
+mtvV.addEventListener('playing', () => { clearTimeout(mtv.timer); mtv.tries = 0; mtv.rec = 0; const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = (mtv.silent ? '🔇 화면을 누르면 소리가 켜집니다 · ' : '🎵 ') + x.name; });
+mtvV.addEventListener('ended', () => { if (mtv.on){ mtv.tries = 0; mtvPlay(mtv.i + 1); } });
 mtvV.addEventListener('error', () => { if (mtv.on) mtvFail(); });
-$('mtvon').onclick = () => { mtv.tries = 0; mtvPlay(mtv.i >= 0 ? mtv.i : 0); };
-$('mtvoff').onclick = () => mtvOff();
+$('mtvon').onclick = () => { try { localStorage.setItem('radio_mtv_auto', '1'); } catch(e){} mtv.silent = false; mtvV.muted = false; mtv.tries = 0; mtvPlay(mtv.i >= 0 ? mtv.i : 0); };
+$('mtvoff').onclick = () => { try { localStorage.setItem('radio_mtv_auto', '0'); } catch(e){} mtvOff(); };
 $('mtvnext').onclick = () => { mtv.tries = 0; mtvPlay(mtv.i + 1); };
 $('mtvprev').onclick = () => { mtv.tries = 0; mtvPlay(mtv.i - 1); };
 (() => {
@@ -1866,9 +1869,32 @@ $('mtvprev').onclick = () => { mtv.tries = 0; mtvPlay(mtv.i - 1); };
   vol.oninput = () => { mtvV.volume = +vol.value; mtvV.muted = +vol.value === 0; try { localStorage.setItem('radio_mtv_vol', vol.value); } catch(e){} sync(); };
   mu.onclick = () => { if (mtvV.muted || mtvV.volume === 0){ mtvV.muted = false; if (mtvV.volume === 0){ mtvV.volume = 0.5; vol.value = 0.5; } } else mtvV.muted = true; sync(); };
   $('mtvfs').onclick = () => { const b = $('mtvbox'); try { if (document.fullscreenElement) document.exitFullscreen(); else (b.requestFullscreen || b.webkitRequestFullscreen).call(b); } catch(e){} };
+  mtvV.addEventListener('volumechange', sync);
   sync();
 })();
 fsOn(mtvV, $('mtvbox'));
+
+// 접속하면 자동으로 켜짐 (브라우저 규칙상 처음에는 소리 없이 시작 → 화면 아무 곳이나 처음 누르면 소리 켜짐)
+const mtvUnmute = () => {
+  if (mtv.on && mtv.silent){
+    mtv.silent = false; mtvV.muted = false; if (mtvV.volume === 0) mtvV.volume = 0.5;
+    const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = '🎵 ' + x.name;
+  }
+};
+addEventListener('pointerdown', mtvUnmute, {capture: true, once: true});
+addEventListener('keydown', mtvUnmute, {capture: true, once: true});
+// 끊기지 않게: 10초마다 화면이 멈췄는지 확인 → 같은 채널 재접속 → 안 되면 다음 채널
+setInterval(() => {
+  if (!mtv.on || document.hidden) return;
+  if (mtvV.paused && mtvV.readyState >= 2){ mtvV.play().catch(() => {}); }
+  const ct = mtvV.currentTime;
+  if (ct === mtv.lastT){
+    if (++mtv.stuck >= 2){ mtv.stuck = 0; mtv.tries = 0; mtvPlay(mtv.i + (mtv.re++ % 2)); }
+  } else { mtv.stuck = 0; mtv.lastT = ct; }
+}, 10000);
+addEventListener('online', () => { if (mtv.on){ mtv.tries = 0; mtvPlay(mtv.i); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && mtv.on && mtvV.paused) mtvV.play().catch(() => {}); });
+(() => { let off = false; try { off = localStorage.getItem('radio_mtv_auto') === '0'; } catch(e){} if (!off){ mtv.silent = true; mtvPlay(0); } })();
 
 
 $('tvsub').onchange = () => { if (tvHls) tvHls.subtitleTrack = +$('tvsub').value; };
