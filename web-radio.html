@@ -3380,5 +3380,192 @@ kwLoad(); setInterval(() => { if (!document.hidden) kwLoad(); }, 600000);
   $('rptoggle').onclick = () => { const o = $('rpopts'); o.hidden = !o.hidden; $('rptoggle').textContent = o.hidden ? '⚙ 확인·설정 ▾' : '⚙ 확인·설정 ▴'; $('rptoggle').setAttribute('aria-expanded', String(!o.hidden)); };
 })();
 </script>
+<!-- ===== 실시간 뉴스 자막(티커) ===== -->
+<style>
+body.hasticker{padding-bottom:calc(36px + env(safe-area-inset-bottom,0px))}
+body.hasticker main .chat.sp.dopen{bottom:calc(36px + env(safe-area-inset-bottom,0px))}
+body.hasticker #roomview{padding-bottom:calc(52px + env(safe-area-inset-bottom,0px))}
+#newsbar{position:fixed;left:0;right:0;bottom:0;z-index:80;height:34px;box-sizing:content-box;padding-bottom:env(safe-area-inset-bottom,0px);display:flex;align-items:stretch;background:linear-gradient(180deg,#2a1a0e,#140c06);border-top:2px solid var(--brass);color:var(--ink);box-shadow:0 -4px 14px #0008;font-size:14px}
+#newsbar[hidden]{display:none}
+#newsbar .nb-tag{flex:none;display:flex;align-items:center;padding:0 10px;background:var(--amber);color:#2a1a08;font-weight:800;font-size:13px;white-space:nowrap;letter-spacing:.5px}
+#newsbar .nb-view{flex:1;min-width:0;position:relative;overflow:hidden}
+#newsbar .nb-track{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;width:max-content;white-space:nowrap;will-change:transform;animation:nbscroll var(--nbdur,120s) linear infinite}
+#newsbar .nb-view:hover .nb-track,#newsbar .nb-view:active .nb-track{animation-play-state:paused}
+@keyframes nbscroll{from{transform:translateX(0)}to{transform:translateX(calc(-1 * var(--nbw,0px)))}}
+#newsbar .nb-group{display:flex;flex:none;align-items:center}
+#newsbar .nb-chip{flex:none;margin-right:10px;padding:2px 8px;border-radius:10px;background:#5a3822;border:1px solid var(--brass);color:var(--amber);font-size:12px;font-weight:700}
+#newsbar a.nb-item{flex:none;color:var(--ink);text-decoration:none}
+#newsbar a.nb-item:hover{color:var(--amber);text-decoration:underline}
+#newsbar .nb-src{opacity:.6;font-size:12px;margin-left:5px}
+#newsbar .nb-sep{flex:none;margin:0 16px;color:var(--brass);opacity:.8}
+#newsbar .nb-msg{padding:0 12px;opacity:.85;display:flex;align-items:center}
+#newsbar .nb-ctl{flex:none;display:flex;align-items:center;gap:2px;padding:0 4px;background:#1b1008}
+#newsbar .nb-ctl button{margin:0;padding:3px 8px;font-size:12px;line-height:1.2;background:transparent;border:1px solid #b99a5b55;border-radius:8px;color:var(--ink);cursor:pointer}
+#newsbar .nb-ctl button:hover{border-color:var(--amber);color:var(--amber)}
+#nbopen{position:fixed;left:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));z-index:80;width:38px;height:38px;border-radius:50%;border:2px solid var(--brass);background:var(--wood2);color:var(--amber);font-size:18px;cursor:pointer;box-shadow:0 4px 12px #0008}
+#nbopen[hidden]{display:none}
+@media (max-width:520px){#newsbar{font-size:13px}#newsbar .nb-tag{padding:0 7px;font-size:12px}}
+</style>
+
+<div id="newsbar" role="region" aria-label="실시간 뉴스 자막">
+  <div class="nb-tag" id="nb_tag" title="">📺 LIVE 뉴스</div>
+  <div class="nb-view" id="nb_view"><div class="nb-track" id="nb_track"><span class="nb-msg">뉴스를 불러오는 중…</span></div></div>
+  <div class="nb-ctl">
+    <button type="button" id="nb_speed" title="자막 속도">보통</button>
+    <button type="button" id="nb_close" title="뉴스 자막 닫기" aria-label="뉴스 자막 닫기">✕</button>
+  </div>
+</div>
+<button type="button" id="nbopen" title="뉴스 자막 열기" aria-label="뉴스 자막 열기" hidden>📰</button>
+
+<script>
+(function(){
+  'use strict';
+  var bar=document.getElementById('newsbar'), view=document.getElementById('nb_view'),
+      track=document.getElementById('nb_track'), tag=document.getElementById('nb_tag'),
+      btnSpeed=document.getElementById('nb_speed'), btnClose=document.getElementById('nb_close'),
+      btnOpen=document.getElementById('nbopen');
+  if(!bar||!view||!track) return;
+
+  var K={hide:'nb_hide',speed:'nb_speed',cache:'nb_cache'};
+  function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+
+  var SPEEDS=[{n:'느리게',v:60},{n:'보통',v:100},{n:'빠르게',v:160}];
+  var sp=parseInt(lsGet(K.speed),10); if(!(sp>=0&&sp<SPEEDS.length)) sp=1;
+
+  var NEWS_Q='https://news.google.com/rss/search?q='+encodeURIComponent('속보 when:1d')+'&hl=ko&gl=KR&ceid=KR:ko';
+  var NEWS_TOP='https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko';
+  var TREND='https://trends.google.com/trending/rss?geo=KR';
+  var SECTIONS=[
+    {tag:'🚨 속보',    url:NEWS_Q,   max:12, kind:'news'},
+    {tag:'📰 주요뉴스', url:NEWS_TOP, max:25, kind:'news'},
+    {tag:'🔥 핫이슈',   url:TREND,    max:15, kind:'trend'}
+  ];
+  var data=[]; var timer=null, retry=null;
+
+  function tfetch(url,ms){
+    var c=new AbortController(); var t=setTimeout(function(){c.abort();},ms);
+    return fetch(url,{signal:c.signal,cache:'no-store'}).then(function(r){
+      clearTimeout(t); if(!r.ok) throw new Error('http '+r.status); return r;
+    },function(e){clearTimeout(t); throw e;});
+  }
+  function parseXml(txt){
+    var doc=new DOMParser().parseFromString(txt,'text/xml');
+    if(doc.querySelector('parsererror')) throw new Error('xml');
+    var out=[];
+    doc.querySelectorAll('item').forEach(function(it){
+      var t=it.querySelector('title'), l=it.querySelector('link');
+      out.push({title:t?t.textContent:'',link:l?l.textContent:''});
+    });
+    if(!out.length) throw new Error('empty');
+    return out;
+  }
+  function getFeed(url){
+    var enc=encodeURIComponent(url);
+    var tries=[
+      function(){return tfetch('https://api.allorigins.win/raw?url='+enc,9000).then(function(r){return r.text();}).then(parseXml);},
+      function(){return tfetch('https://corsproxy.io/?'+enc,9000).then(function(r){return r.text();}).then(parseXml);},
+      function(){return tfetch('https://api.rss2json.com/v1/api.json?rss_url='+enc,9000).then(function(r){return r.json();}).then(function(j){
+        if(!j.items||!j.items.length) throw new Error('empty');
+        return j.items.map(function(i){return {title:i.title,link:i.link};});
+      });}
+    ];
+    return tries.reduce(function(p,f){return p.catch(f);},Promise.reject(new Error('start')));
+  }
+  function clean(s){return String(s||'').replace(/\s+/g,' ').trim();}
+  function safeLink(u){u=clean(u);return /^https?:\/\//i.test(u)?u:'';}
+  function normalize(sec,raw){
+    var seen={},out=[];
+    for(var i=0;i<raw.length&&out.length<sec.max;i++){
+      var t=clean(raw[i].title); if(!t) continue;
+      var src='';
+      if(sec.kind==='news'){var m=t.match(/^(.*\S) - ([^-]{1,20})$/); if(m){t=m[1];src=m[2];}}
+      var key=t.slice(0,24); if(seen[key]) continue; seen[key]=1;
+      var link=sec.kind==='trend'
+        ? 'https://news.google.com/search?q='+encodeURIComponent(t)+'&hl=ko&gl=KR&ceid=KR:ko'
+        : safeLink(raw[i].link);
+      out.push({t:t,s:src,l:link});
+    }
+    return out;
+  }
+
+  function buildGroup(reps){
+    var g=document.createElement('div'); g.className='nb-group';
+    for(var r=0;r<reps;r++){
+      data.forEach(function(sec){
+        if(!sec.items.length) return;
+        var chip=document.createElement('span'); chip.className='nb-chip'; chip.textContent=sec.tag; g.appendChild(chip);
+        sec.items.forEach(function(it){
+          var a=document.createElement(it.l?'a':'span'); a.className='nb-item';
+          if(it.l){a.href=it.l;a.target='_blank';a.rel='noopener noreferrer';}
+          a.appendChild(document.createTextNode(it.t));
+          if(it.s){var s=document.createElement('span');s.className='nb-src';s.textContent=it.s;a.appendChild(s);}
+          g.appendChild(a);
+          var sep=document.createElement('span'); sep.className='nb-sep'; sep.textContent='◆'; g.appendChild(sep);
+        });
+      });
+    }
+    return g;
+  }
+  function layout(){
+    var has=data.some(function(s){return s.items.length;});
+    if(!has) return;
+    track.style.animation='none'; track.innerHTML='';
+    var g=buildGroup(1); track.appendChild(g);
+    var W=g.offsetWidth, V=view.clientWidth||window.innerWidth;
+    if(W<V){ track.innerHTML=''; g=buildGroup(Math.ceil(V/Math.max(W,1))+1); track.appendChild(g); W=g.offsetWidth; }
+    track.appendChild(g.cloneNode(true));
+    track.style.setProperty('--nbw',W+'px');
+    track.style.setProperty('--nbdur',Math.max(10,W/SPEEDS[sp].v)+'s');
+    void track.offsetWidth; track.style.animation='';
+  }
+  function setMsg(t){track.style.animation='none';track.innerHTML='';var m=document.createElement('span');m.className='nb-msg';m.textContent=t;track.appendChild(m);}
+
+  function two(n){return (n<10?'0':'')+n;}
+  function load(){
+    clearTimeout(retry);
+    Promise.all(SECTIONS.map(function(sec){
+      return getFeed(sec.url).then(function(raw){return normalize(sec,raw);},function(){return [];});
+    })).then(function(res){
+      var total=0;
+      res.forEach(function(r){total+=r.length;});
+      if(total){
+        data=SECTIONS.map(function(s,i){return {tag:s.tag,items:res[i]};});
+        lsSet(K.cache,JSON.stringify({t:Date.now(),d:data}));
+        var d=new Date(); tag.title='마지막 갱신 '+two(d.getHours())+':'+two(d.getMinutes());
+        layout();
+      }else{
+        if(!data.some(function(s){return s.items.length;})) setMsg('뉴스를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요. 잠시 후 다시 시도합니다…');
+        retry=setTimeout(load,60000);
+      }
+    });
+  }
+
+  function setHidden(h){
+    bar.hidden=h; btnOpen.hidden=!h;
+    document.body.classList.toggle('hasticker',!h);
+    lsSet(K.hide,h?'1':'0');
+    if(!h) layout();
+  }
+  btnClose.addEventListener('click',function(){setHidden(true);});
+  btnOpen.addEventListener('click',function(){setHidden(false);});
+  btnSpeed.addEventListener('click',function(){
+    sp=(sp+1)%SPEEDS.length; lsSet(K.speed,String(sp)); btnSpeed.textContent=SPEEDS[sp].n; layout();
+  });
+  btnSpeed.textContent=SPEEDS[sp].n;
+  var rz; window.addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(layout,200);});
+
+  // 시작: 저장된 이전 뉴스가 있으면 먼저 보여주고, 새로 불러옴
+  try{
+    var c=JSON.parse(lsGet(K.cache)||'null');
+    if(c&&c.d&&Date.now()-c.t<6*3600*1000){ data=c.d; }
+  }catch(e){}
+  setHidden(lsGet(K.hide)==='1');
+  load();
+  timer=setInterval(load,10*60*1000);
+})();
+</script>
+<!-- ===== /실시간 뉴스 자막 ===== -->
+
 </body>
 </html>
