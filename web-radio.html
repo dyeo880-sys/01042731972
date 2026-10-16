@@ -11,7 +11,7 @@
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#6b4a2e,#1d120b 70%);color:var(--ink);font-family:"Noto Serif KR",Georgia,serif;padding:20px}
 .set{max-width:960px;margin:0 auto;background:linear-gradient(180deg,var(--wood2),var(--wood));border:2px solid #2a190e;border-radius:18px;box-shadow:0 20px 50px #000a,inset 0 0 0 4px #00000030;padding:22px}
-.top{display:grid;grid-template-columns:120px 1fr;gap:20px;align-items:center}
+.top{display:grid;grid-template-columns:250px 1fr;gap:20px;align-items:center}
 .speaker{height:150px;border:3px solid var(--brass);border-radius:8px;background:repeating-linear-gradient(45deg,#8a7a55 0 3px,#6d5f3f 3px 6px)}
 .dial{background:linear-gradient(#ffd98f,#e8a64a);color:#2a1a08;border:3px solid var(--brass);border-radius:10px;padding:12px 16px;box-shadow:inset 0 0 25px #8a4b0099,0 0 25px #ffb54d55}
 .dial h1{margin:0;font-size:12px;letter-spacing:.4em;text-align:center;opacity:.7}
@@ -151,12 +151,46 @@ button,select,input{font:inherit}
 #boardsec a.map:hover{filter:brightness(1.2)}
 #boardsec .empty{text-align:center;opacity:.7;padding:30px}
 @media(max-width:560px){#boardsec .grid{grid-template-columns:1fr}}
+
+.speaker.mtvbox{position:relative;overflow:hidden}
+.mtvbox video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+.mtvbox video[hidden]{display:none}
+.mtvidle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#0007;text-align:center;padding:6px}
+.mtvidle[hidden]{display:none}
+.mtvmsg{font-size:12px;color:var(--amber);text-shadow:0 1px 3px #000;font-weight:700;line-height:1.4}
+.mtvname{position:absolute;top:4px;left:6px;right:6px;font-size:12px;color:#fff;background:#000a;border-radius:4px;padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:2}
+.mtvname[hidden]{display:none}
+.mtvbar{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:2px;padding:3px 6px;background:#000b;z-index:2}
+.mtvbar[hidden]{display:none}
+.mtvbar button{background:none;border:0;color:var(--amber);font-size:16px;cursor:pointer;padding:2px 5px}
+.mtvbar button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+.mtvbar input{flex:1;min-width:36px;accent-color:var(--brass)}
+.mtvbox:fullscreen{width:100vw;height:100vh;border:0;border-radius:0;background:#000}
+.mtvbox:fullscreen .mtvbar{padding:10px 18px}
+.mtvbox:fullscreen .mtvbar button{font-size:26px}
+.mtvbox:fullscreen .mtvname{font-size:16px;padding:4px 10px}
+@media(max-width:600px){.speaker.mtvbox{height:200px}}
 </style>
 </head>
 <body>
 <main class="set">
   <div class="top">
-    <div class="speaker" aria-hidden="true"></div>
+    <div class="speaker mtvbox" id="mtvbox" role="region" aria-label="MTV 뮤직비디오">
+      <video id="mtvvid" playsinline hidden></video>
+      <div class="mtvidle" id="mtvidle">
+        <button class="knob" id="mtvon" type="button" title="뮤직비디오 켜기" aria-label="뮤직비디오 켜기">▶</button>
+        <div class="mtvmsg" id="mtvmsg">🎵 MTV 뮤직비디오 24시간</div>
+      </div>
+      <div class="mtvname" id="mtvname" hidden></div>
+      <div class="mtvbar" id="mtvbar" hidden>
+        <button type="button" id="mtvprev" title="이전 채널" aria-label="이전 채널">⏮</button>
+        <button type="button" id="mtvoff" title="끄기" aria-label="뮤직비디오 끄기">■</button>
+        <button type="button" id="mtvnext" title="다음 채널" aria-label="다음 채널">⏭</button>
+        <button type="button" id="mtvmute" title="소리 켜기/끄기" aria-label="음소거">🔊</button>
+        <input type="range" id="mtvvol" min="0" max="1" step="0.05" value="0.8" aria-label="뮤직비디오 볼륨">
+        <button type="button" id="mtvfs" title="전체화면 (화면을 두 번 눌러도 됩니다)" aria-label="전체화면">⛶</button>
+      </div>
+    </div>
     <div class="dial">
       <h1>RADIOLA</h1>
       <div class="now" id="now">방송국을 선택하세요</div>
@@ -444,6 +478,7 @@ function render(){
 let curView = -1;
 function playView(i){
   const s = view[i]; if (!s) return;
+  try { if (mtv.on) mtvOff(); } catch(e){}
   curView = i;
   stopListen();
   cur = stations.indexOf(s);
@@ -1682,6 +1717,7 @@ function tvStop(){
 }
 let tvLast = null;
 function tvWatch(x){
+  try { if (mtv.on) mtvOff(); } catch(e){}
   tvLast = x; $('tvresume').hidden = true;
   tvStop(); try { audio.pause(); } catch(e){}
   $('tvplayer').hidden = false; $('tvnow').textContent = '▶ ' + x.name; $('tvmsg').textContent = '불러오는 중…';
@@ -1759,15 +1795,81 @@ $('tvmv').onclick = async () => {
   });
 };
 // 영상 화면을 두 번 누르면 전체화면 (브라우저 기본 동작과 겹쳐 두 번 토글되지 않게 확인 후 처리)
-function fsOn(v){
+function fsOn(v, box){
+  box = box || v;
   let st = false;
   v.addEventListener('dblclick', () => { st = !!document.fullscreenElement; }, true);
   v.addEventListener('dblclick', () => setTimeout(() => {
     if (st !== !!document.fullscreenElement) return;
-    try { if (document.fullscreenElement) document.exitFullscreen(); else (v.requestFullscreen || v.webkitRequestFullscreen).call(v); } catch(e){}
+    try { if (document.fullscreenElement) document.exitFullscreen(); else (box.requestFullscreen || box.webkitRequestFullscreen).call(box); } catch(e){}
   }, 60));
 }
 fsOn($('tvvid')); fsOn($('mwvid'));
+
+// ---- 🎬 맨 위 MTV 뮤직비디오 화면 (24시간 뮤직 채널, 라디오·TV와 별도) ----
+const mtv = {list: null, i: -1, hls: null, tries: 0, timer: 0, on: false};
+const mtvV = $('mtvvid');
+async function mtvList(){
+  if (mtv.list && mtv.list.length) return mtv.list;
+  const regs = ['sam-kr', 'sam-us', 'sam-gb', 'kr', 'us', 'gb', 'jp'];
+  const re = /music|mtv|vevo|kpop|k-pop|뮤직|trace|stingray|vh1|cmt|clubbing|concert|fuse|musica|musique|hits|dance/i;
+  const rs = await Promise.allSettled(regs.map(cc => tvLoad(cc)));
+  const seen = new Set(), items = [];
+  rs.forEach(r => { if (r.status === 'fulfilled') r.value.filter(x => re.test(x.name) && !ytId(x.u)).forEach(x => { if (!seen.has(x.u)){ seen.add(x.u); items.push(x); } }); });
+  return (mtv.list = items);
+}
+function mtvOff(msg){
+  clearTimeout(mtv.timer); mtv.on = false;
+  if (mtv.hls){ mtv.hls.destroy(); mtv.hls = null; }
+  try { mtvV.pause(); mtvV.removeAttribute('src'); mtvV.load(); } catch(e){}
+  mtvV.hidden = true; $('mtvbar').hidden = true; $('mtvname').hidden = true; $('mtvidle').hidden = false;
+  $('mtvmsg').textContent = msg || (mtv.i >= 0 ? '▶ 눌러서 다시 켜기' : '🎵 MTV 뮤직비디오 24시간');
+  if (document.fullscreenElement === $('mtvbox')) { try { document.exitFullscreen(); } catch(e){} }
+}
+function mtvFail(){
+  if (!mtv.on) return;
+  if (++mtv.tries > Math.min(8, (mtv.list || []).length)){ mtvOff('연결할 수 있는 채널이 없습니다. 잠시 후 다시 눌러 보세요.'); return; }
+  mtvPlay(mtv.i + 1);
+}
+async function mtvPlay(i){
+  mtv.on = true;
+  if (!mtv.list){ $('mtvmsg').textContent = '채널 찾는 중…'; }
+  const list = await mtvList();
+  if (!mtv.on) return;
+  if (!list.length){ mtvOff('불러올 수 있는 뮤직 채널이 없습니다. 인터넷 연결을 확인하세요.'); mtv.list = null; return; }
+  mtv.i = ((i % list.length) + list.length) % list.length;
+  const x = list[mtv.i];
+  try { audio.pause(); } catch(e){}
+  try { tvStop(); } catch(e){}
+  clearTimeout(mtv.timer);
+  if (mtv.hls){ mtv.hls.destroy(); mtv.hls = null; }
+  mtvV.hidden = false; $('mtvidle').hidden = true; $('mtvbar').hidden = false; $('mtvname').hidden = false;
+  $('mtvname').textContent = '연결 중… ' + x.name;
+  if ((x.hls || /\.m3u8(\?|$)/i.test(x.u)) && window.Hls && Hls.isSupported()){
+    mtv.hls = new Hls(); mtv.hls.loadSource(x.u); mtv.hls.attachMedia(mtvV);
+    mtv.hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) mtvFail(); });
+  } else mtvV.src = x.u;
+  mtvV.play().catch(() => {});
+  mtv.timer = setTimeout(mtvFail, 15000);
+}
+mtvV.addEventListener('playing', () => { clearTimeout(mtv.timer); mtv.tries = 0; const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = '🎵 ' + x.name; });
+mtvV.addEventListener('error', () => { if (mtv.on) mtvFail(); });
+$('mtvon').onclick = () => { mtv.tries = 0; mtvPlay(mtv.i >= 0 ? mtv.i : 0); };
+$('mtvoff').onclick = () => mtvOff();
+$('mtvnext').onclick = () => { mtv.tries = 0; mtvPlay(mtv.i + 1); };
+$('mtvprev').onclick = () => { mtv.tries = 0; mtvPlay(mtv.i - 1); };
+(() => {
+  const vol = $('mtvvol'), mu = $('mtvmute');
+  try { const s = parseFloat(localStorage.getItem('radio_mtv_vol')); if (s >= 0 && s <= 1) vol.value = s; } catch(e){}
+  mtvV.volume = +vol.value;
+  const sync = () => { mu.textContent = (mtvV.muted || mtvV.volume === 0) ? '🔇' : '🔊'; };
+  vol.oninput = () => { mtvV.volume = +vol.value; mtvV.muted = +vol.value === 0; try { localStorage.setItem('radio_mtv_vol', vol.value); } catch(e){} sync(); };
+  mu.onclick = () => { if (mtvV.muted || mtvV.volume === 0){ mtvV.muted = false; if (mtvV.volume === 0){ mtvV.volume = 0.5; vol.value = 0.5; } } else mtvV.muted = true; sync(); };
+  $('mtvfs').onclick = () => { const b = $('mtvbox'); try { if (document.fullscreenElement) document.exitFullscreen(); else (b.requestFullscreen || b.webkitRequestFullscreen).call(b); } catch(e){} };
+  sync();
+})();
+fsOn(mtvV, $('mtvbox'));
+
 
 $('tvsub').onchange = () => { if (tvHls) tvHls.subtitleTrack = +$('tvsub').value; };
 $('tvsubf').onchange = async e => {
