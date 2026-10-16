@@ -71,7 +71,7 @@ button,select,input{font:inherit}
 #mwnow{font-size:13px;opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mwscreen{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#120a05;border-radius:8px;min-height:84px;padding:8px}
 .mwscreen{--mws:1;overflow:auto;max-height:85vh;position:relative}
-#guestTile{position:absolute;right:8px;bottom:8px;width:min(34%,calc(200px * var(--mws)));background:#000;border:2px solid var(--amber);border-radius:8px;overflow:hidden;z-index:2;cursor:pointer;box-shadow:0 2px 10px #000a}#guestTile[hidden]{display:none}#guestTile.big{width:min(72%,calc(440px * var(--mws)))}#guestTile video{width:100%;display:block;max-height:none!important;border-radius:0!important}#guestTile small{position:absolute;left:4px;top:4px;background:#000b;color:var(--amber);padding:1px 7px;border-radius:6px;font-size:11px}#roomview.mini #guestTile{width:96px}
+#guestTile{position:absolute;right:8px;bottom:8px;width:min(34%,calc(200px * var(--mws)));background:#000;border:2px solid var(--amber);border-radius:8px;overflow:hidden;z-index:2;cursor:move;user-select:none;-webkit-user-select:none;box-shadow:0 2px 10px #000a}#guestTile[hidden]{display:none}#guestTile.big{width:min(72%,calc(440px * var(--mws)))}#guestTile video{width:100%;display:block;max-height:none!important;border-radius:0!important}#guestTile small{position:absolute;left:4px;top:4px;background:#000b;color:var(--amber);padding:1px 7px;border-radius:6px;font-size:11px}#roomview.mini #guestTile{width:96px}
 .mwscreen video{max-width:100%;max-height:calc(34vh * var(--mws));border-radius:8px;background:#000}
 .vr.bad{opacity:.4;text-decoration:line-through}.vr.good::before{content:'● ';color:#6fd36f;font-size:10px}
 body.hidebad .vr.bad{display:none}
@@ -183,6 +183,25 @@ body.hidebad .vr.bad{display:none}
 .mtvbox:fullscreen .mtvbar button{font-size:26px}
 .mtvbox:fullscreen .mtvname{font-size:16px;padding:4px 10px}
 @media(max-width:600px){.speaker.mtvbox{height:200px}}
+
+/* 💬 방 화면: 넓은 화면에서는 채팅을 영상 옆(오른쪽/왼쪽)에 붙임 */
+#rvside{margin:0}#roomview.mini #rvside{display:none}
+@media (max-width:899px){#rvside{display:none}}
+@media (min-width:900px){
+#roomview:is(.sideR,.sideL):not(.mini) .rvbox{max-width:1500px;display:grid;grid-template-columns:minmax(0,1fr) clamp(320px,30vw,440px);column-gap:14px;align-items:start}
+#roomview.sideL:not(.mini) .rvbox{grid-template-columns:clamp(320px,30vw,440px) minmax(0,1fr)}
+#roomview:is(.sideR,.sideL):not(.mini) #rvbody{display:contents}
+#roomview:is(.sideR,.sideL):not(.mini) .rvhead{grid-column:1/-1;grid-row:1}
+#roomview:is(.sideR,.sideL):not(.mini) #mediawin{grid-row:2;grid-column:1;margin-bottom:0;min-width:0}
+#roomview:is(.sideR,.sideL):not(.mini) #chatsec{grid-row:2;grid-column:2;margin-top:0;position:sticky;top:0;min-width:0}
+#roomview.sideL:not(.mini) #mediawin{grid-column:2}
+#roomview.sideL:not(.mini) #chatsec{grid-column:1}
+#roomview:is(.sideR,.sideL):not(.mini) #roomwrap{grid-column:1/-1;grid-row:3;margin-top:12px}
+#roomview:is(.sideR,.sideL):not(.mini) #chatlog{height:calc(100vh - 330px);min-height:240px}
+#roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]){grid-template-columns:minmax(0,1fr)}
+#roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]) #chatsec{grid-column:1;position:static}
+#roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]) #chatlog{height:180px;min-height:0}
+}
 </style>
 </head>
 <body>
@@ -374,7 +393,7 @@ body.hidebad .vr.bad{display:none}
   <p class="note">※ 실제 AM/FM 전파가 아니라, 각 방송국이 인터넷으로 송출하는 스트림을 radio-browser.info 공개 목록에서 불러옵니다. 일부 방송국은 지역 제한이나 주소 변경으로 재생되지 않을 수 있습니다. 이 파일을 내 컴퓨터에서 직접 열어 사용하세요.</p>
 </main>
 <div id="roomview" hidden role="dialog" aria-label="음악 방"><div class="rvbox">
-  <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><span id="tkbadge" class="blink" hidden>🔔 요청</span><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
+  <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><span id="tkbadge" class="blink" hidden>🔔 요청</span><button class="addhome" style="margin:0" type="button" id="rvside" title="채팅창을 영상 옆 오른쪽/왼쪽/아래로 옮깁니다">💬 채팅: 오른쪽 ▶</button><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
   <section id="mediawin" hidden aria-label="미디어 창">
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
     <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button></div>
@@ -386,7 +405,7 @@ body.hidebad .vr.bad{display:none}
       <div id="mwyt" style="display:none"></div>
       <video id="liveAudio" autoplay playsinline style="display:none"></video>
       <video id="bcPreview" muted autoplay playsinline style="display:none;transform:scaleX(-1)"></video>
-      <div id="guestTile" hidden title="누르면 크게/작게"><video id="guestVid" muted autoplay playsinline></video><small id="guestLbl"></small></div>
+      <div id="guestTile" hidden title="끌어서 이동 · 누르면 크게/작게 · 더블클릭하면 원래 자리"><video id="guestVid" muted autoplay playsinline></video><small id="guestLbl"></small></div>
     </div>
     <audio id="bcAudio" controls hidden style="width:100%;margin-top:8px"></audio>
     <div class="mwctl" id="mwctl" hidden>
@@ -1272,7 +1291,29 @@ function guestSet(g){
   const t = $('guestTile'); if (!t || isHost()) return;
   if (g && g.n && $('guestVid').srcObject){ $('guestLbl').textContent = String(g.n).slice(0, 12); t.hidden = false; const v = $('guestVid'); if (v.paused) v.play().catch(() => {}); } else t.hidden = true;
 }
-$('guestTile').onclick = () => $('guestTile').classList.toggle('big');
+(function(){ // 손님 카메라 작은 화면: 마우스/터치로 끌어서 이동, 그냥 누르면 크게/작게
+  const t = $('guestTile'); let dr = null, moved = false;
+  t.style.touchAction = 'none';
+  const clamp = () => { if (t.style.left === '') return; const p = t.offsetParent || t.parentElement; t.style.left = Math.min(Math.max(0, p.scrollWidth - t.offsetWidth), Math.max(0, parseFloat(t.style.left) || 0)) + 'px'; t.style.top = Math.min(Math.max(0, p.scrollHeight - t.offsetHeight), Math.max(0, parseFloat(t.style.top) || 0)) + 'px'; };
+  t.addEventListener('pointerdown', e => {
+    if (e.button > 0) return;
+    const par = t.offsetParent || t.parentElement, pr = par.getBoundingClientRect(), tr = t.getBoundingClientRect();
+    dr = {x: e.clientX, y: e.clientY, l: tr.left - pr.left + par.scrollLeft, t: tr.top - pr.top + par.scrollTop, par, pid: e.pointerId}; moved = false;
+    try { t.setPointerCapture(e.pointerId); } catch(x){}
+  });
+  t.addEventListener('pointermove', e => {
+    if (!dr) return; const dx = e.clientX - dr.x, dy = e.clientY - dr.y;
+    if (!moved && Math.abs(dx) + Math.abs(dy) < 5) return; moved = true;
+    const p = dr.par;
+    t.style.left = Math.min(Math.max(0, p.scrollWidth - t.offsetWidth), Math.max(0, dr.l + dx)) + 'px';
+    t.style.top = Math.min(Math.max(0, p.scrollHeight - t.offsetHeight), Math.max(0, dr.t + dy)) + 'px';
+    t.style.right = 'auto'; t.style.bottom = 'auto';
+  });
+  const end = () => { if (dr){ try { t.releasePointerCapture(dr.pid); } catch(x){} } dr = null; };
+  t.addEventListener('pointerup', end); t.addEventListener('pointercancel', end);
+  t.onclick = () => { if (moved){ moved = false; return; } t.classList.toggle('big'); clamp(); };
+  t.ondblclick = () => { t.style.left = t.style.top = ''; t.style.right = t.style.bottom = ''; }; // 더블클릭하면 원래 자리(오른쪽 아래)로
+})();
 function mwClose(){ try { talkStop(''); } catch(e){} $('guestTile').hidden = true; $('guestVid').srcObject = null; clearInterval(MV.poll); mvStop(); MV.rk = ''; MV.hostless = false; MV.gone = 0; lisVidReady = false; $('mediawin').hidden = true; $('mwnow').textContent = '대기 중'; mwUpdate(); }
 function enterRoom(id, name){
   liveRoom = {id, name, host: !!(bc && bc.rid === id)}; renderRooms('b:' + id); $('room').onchange();
@@ -1804,6 +1845,15 @@ $('bcstop').onclick = async () => {
 $('leavebtn').onclick = () => { stopListen(); setStatus('정지'); };
 $('mwre').onclick = () => { if (lis){ setBc('영상을 다시 연결하는 중입니다…'); reconnectListen(); } };
 $('rvmini').onclick = () => setMini(!$('roomview').classList.contains('mini'));
+(function(){ // 채팅 위치: 영상 옆 오른쪽(기본) / 왼쪽 / 아래 — 넓은 화면(900px 이상)에서만 적용
+  const rv = $('roomview'), b = $('rvside'); let m = 'r';
+  try { m = localStorage.getItem('radio_chat_side') || 'r'; } catch(e){}
+  if (!{r: 1, l: 1, b: 1}[m]) m = 'r';
+  const lab = {r: '💬 채팅: 오른쪽 ▶', l: '💬 채팅: ◀ 왼쪽', b: '💬 채팅: 아래 ▼'};
+  const apply = () => { rv.classList.toggle('sideR', m === 'r'); rv.classList.toggle('sideL', m === 'l'); b.textContent = lab[m]; };
+  b.onclick = () => { m = {r: 'l', l: 'b', b: 'r'}[m]; try { localStorage.setItem('radio_chat_side', m); } catch(e){} apply(); };
+  apply();
+})();
 $('rvleave').onclick = () => {
   if (!liveRoom){ hideRoomView(); return; }
   if (isHost()){
