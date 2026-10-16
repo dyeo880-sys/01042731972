@@ -70,11 +70,16 @@ button,select,input{font:inherit}
 .mwhead strong{color:var(--amber);font-size:15px}
 #mwnow{font-size:13px;opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mwscreen{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#120a05;border-radius:8px;min-height:84px;padding:8px}
-.mwscreen video{max-width:100%;max-height:34vh;border-radius:8px;background:#000}
+.mwscreen{--mws:1;overflow:auto;max-height:85vh}
+.mwscreen video{max-width:100%;max-height:calc(34vh * var(--mws));border-radius:8px;background:#000}
+.mwsize{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;flex-wrap:wrap}
+.mwsize input[type=range]{flex:1;min-width:120px;max-width:420px;accent-color:var(--brass)}
+.mwsize output{min-width:44px;text-align:right;color:var(--amber)}
+.mwsize button{margin:0;padding:3px 9px;font-size:12px}
 .mwidle{font-size:34px;opacity:.55}
-#liveAudio,#bcPreview{max-width:320px}
-#mwvid{width:100%;max-width:640px}
-#mwyt{width:100%;max-width:640px;aspect-ratio:16/9}
+#liveAudio,#bcPreview{max-width:min(100%,calc(320px * var(--mws)))}
+#mwvid{width:100%;max-width:calc(640px * var(--mws))}
+#mwyt{width:100%;max-width:calc(640px * var(--mws));aspect-ratio:16/9}
 .mwctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;padding:8px;background:#1a0f08;border-radius:6px}
 .mwctl[hidden]{display:none}
 .mwctl input{flex:1;min-width:160px;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 9px;font-size:13px}
@@ -94,7 +99,7 @@ button,select,input{font:inherit}
 #roomview.mini .rvhead .addhome{padding:4px 8px;font-size:12px}
 #roomview.mini #chatsec,#roomview.mini #members,#roomview.mini .tb,#roomview.mini .tp{display:none!important}
 #roomview.mini #rvbody .rw{padding:8px}
-#roomview.mini .mwscreen{min-height:60px}#roomview.mini .mwscreen video{max-height:22vh}#roomview.mini #mediawin{margin-bottom:6px;padding:8px}
+#roomview.mini .mwsize{display:none}#roomview.mini .mwscreen{--mws:1!important;min-height:60px;max-height:none}#roomview.mini .mwscreen video{max-height:22vh}#roomview.mini #mediawin{margin-bottom:6px;padding:8px}
 .rvbox{max-width:900px;margin:0 auto}
 .rvhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;background:linear-gradient(180deg,var(--wood2),var(--wood));border:2px solid #2a190e;border-radius:12px;padding:10px 14px}
 .rvhead strong{font-size:18px;color:var(--amber);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -363,6 +368,7 @@ button,select,input{font:inherit}
   <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
   <section id="mediawin" hidden aria-label="미디어 창">
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
+    <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button></div>
     <div class="mwscreen" id="mwscreen">
       <div class="mwidle" id="mwidle">🎶</div>
       <video id="mwvid" controls playsinline style="display:none"></video>
@@ -1814,6 +1820,20 @@ function fsOn(v, box){
   }, 60));
 }
 fsOn($('tvvid')); fsOn($('mwvid'));
+
+// ---- 미디어 창 화면 크기 슬라이더 (50%~200%, 값 기억) ----
+(function(){
+  const r = $('mwsize'), o = $('mwsizev'), sc = $('mwscreen');
+  function ap(v){
+    v = Math.min(200, Math.max(50, +v || 100));
+    r.value = v; o.textContent = v + '%'; sc.style.setProperty('--mws', v / 100);
+    try { localStorage.setItem('mwsize', v); } catch(e){}
+  }
+  let sv = 100; try { sv = localStorage.getItem('mwsize') || 100; } catch(e){}
+  ap(sv);
+  r.addEventListener('input', () => ap(r.value));
+  $('mwsizer').addEventListener('click', () => ap(100));
+})();
 
 // ---- 🎬 맨 위 MTV 뮤직비디오 화면 (24시간 뮤직 채널, 라디오·TV와 별도) ----
 const mtv = {list: null, i: -1, hls: null, tries: 0, timer: 0, on: false, silent: false, rec: 0, lastT: -1, stuck: 0, re: 0};
