@@ -923,11 +923,23 @@ function iceDone(pc){
   });
 }
 // ---- 방 참가자 목록 ----
+function memRec(){
+  const r = {n: myNick(), h: isHost() ? 1 : 0, ts: Date.now()};
+  if (typeof talk !== 'undefined'){ if (talk.a) r.a = 1; if (talk.v) r.v = 1; }
+  if (isHost() && bc){
+    const ok = {};
+    Object.keys(bc.okA).forEach(u => { (ok[u] = ok[u] || {}).a = bc.okA[u]; });
+    Object.keys(bc.okV).forEach(u => { (ok[u] = ok[u] || {}).v = bc.okV[u]; });
+    if (Object.keys(ok).length) r.ok = ok;
+    if (bc.vact && bc.vname) r.g = bc.vname;
+  }
+  return r;
+}
 async function memBeat(){
   if (!liveRoom || !DB) return;
   const id = liveRoom.id;
   try {
-    await lj('roommem_' + id + '/' + myId, 'PUT', {n: myNick(), h: isHost() ? 1 : 0, ts: Date.now()});
+    await lj('roommem_' + id + '/' + myId, 'PUT', memRec());
     const d = await lj('roommem_' + id, 'GET') || {}, now = Date.now();
     if (!liveRoom || liveRoom.id !== id) return;
     const list = Object.keys(d).map(k => Object.assign({k}, d[k])).filter(m => m && m.n && now - m.ts < 45000)
@@ -1117,9 +1129,9 @@ async function mvPoll(){
   if (!liveRoom || isHost() || !DB) return;
   const id = liveRoom.id; let s = null;
   let reg = null, gg = null;
-  try { [s, reg, gg] = await Promise.all([lj('roommedia_' + id, 'GET'), lj('livereg/' + id, 'GET'), lj('roomguest_' + id, 'GET').catch(() => null)]); } catch(e){ return; }
+  try { [s, reg, gg] = await Promise.all([lj('roommedia_' + id, 'GET'), lj('livereg/' + id, 'GET'), lj('roommem_' + id, 'GET').catch(() => null)]); } catch(e){ return; }
   if (!liveRoom || liveRoom.id !== id) return;
-  guestSet(gg);
+  { let hh = null; Object.keys(gg || {}).forEach(k => { const m = gg[k]; if (m && m.h && (!hh || m.ts > hh.ts)) hh = m; }); guestSet(hh && hh.g ? {n: hh.g} : null); }
   if (reg && reg.ts !== MV.regTs){ MV.regTs = reg.ts; MV.regAt = Date.now(); }
   if (!reg || reg.e || Date.now() - (MV.regAt || Date.now()) > 90000){
     if (++MV.gone >= 2){ MV.hostless = true; electStep(id); return; }
@@ -1368,17 +1380,17 @@ function gSend(pc, track, me){
   sd.replaceTrack(track).then(() => { if (!track) return; try { const q = sd.getParameters(); q.encodings = q.encodings && q.encodings.length ? q.encodings : [{}]; q.encodings[0].maxBitrate = 250000; sd.setParameters(q).catch(() => {}); } catch(e){} }).catch(() => {});
 }
 function vidOn(me, lid, track, name){
-  me.vact = lid; me.vtrack = track;
+  me.vact = lid; me.vtrack = track; me.vname = String(name || '손님').slice(0, 12);
   Object.keys(me.pcs).forEach(k => gSend(me.pcs[k], track, me));
   const g = $('guestVid'); g.srcObject = new MediaStream([track]); g.play().catch(() => {});
   $('guestLbl').textContent = String(name || '손님').slice(0, 12); $('guestTile').hidden = false;
-  lj('roomguest_' + me.rid, 'PUT', {n: String(name || '손님').slice(0, 12), ts: Date.now()}).catch(() => {});
+  memBeat();
 }
 function vidOff(me){
-  me.vact = null; me.vtrack = null;
+  me.vact = null; me.vtrack = null; me.vname = '';
   Object.keys(me.pcs).forEach(k => gSend(me.pcs[k], null, me));
   $('guestTile').hidden = true; $('guestVid').srcObject = null;
-  lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
+  memBeat();
 }
 function hostTalkApply(me){
   let act = null;
@@ -1399,21 +1411,16 @@ function hostTalkApply(me){
   else if (!act && me.vact) vidOff(me);
 }
 async function talkPoll(me){
-  let rq = null; try { rq = await lj('talkreq_' + me.rid, 'GET'); } catch(e){ return; }
+  let d = null; try { d = await lj('roommem_' + me.rid, 'GET'); } catch(e){ return; }
   if (bc !== me) return;
-  rq = rq || {}; const now = Date.now(); me.rq = {};
-  Object.keys(rq).forEach(u => {
-    const r = rq[u]; if (!r) return;
+  d = d || {}; const now = Date.now(); me.rq = {};
+  Object.keys(d).forEach(u => {
+    const r = d[u]; if (!r || r.h || u === myId || !(r.a || r.v)) return;
     const sn = me.seen2[u]; if (!sn || sn.ts !== r.ts) me.seen2[u] = {ts: r.ts, at: now};
-    if (now - me.seen2[u].at < 20000) me.rq[u] = r; else lj('talkreq_' + me.rid + '/' + u, 'DELETE').catch(() => {});
+    if (now - me.seen2[u].at < 25000) me.rq[u] = r;
   });
   [['okA', 'a'], ['okV', 'v']].forEach(([m, k]) => Object.keys(me[m]).forEach(u => { if (!(me.rq[u] && me.rq[u][k])){ delete me[m][u]; me.okDirty = true; } }));
-  if (me.okDirty){
-    me.okDirty = false; const o = {};
-    Object.keys(me.okA).forEach(u => { (o[u] = o[u] || {}).a = me.okA[u]; });
-    Object.keys(me.okV).forEach(u => { (o[u] = o[u] || {}).v = me.okV[u]; });
-    if (Object.keys(o).length) lj('talkok_' + me.rid, 'PUT', o).catch(() => {}); else lj('talkok_' + me.rid, 'DELETE').catch(() => {});
-  }
+  if (me.okDirty){ me.okDirty = false; memBeat(); }
   hostTalkApply(me); renderTalkHost(me);
 }
 function talkDecide(me, kind, u, yes){
@@ -1425,7 +1432,7 @@ function talkDecide(me, kind, u, yes){
     }
     m[u] = true;
   } else m[u] = false;
-  me.okDirty = true; me.tsig = ''; hostTalkApply(me); renderTalkHost(me);
+  me.okDirty = false; me.tsig = ''; hostTalkApply(me); renderTalkHost(me); memBeat();
 }
 function renderTalkHost(me){
   const box = $('talkhost'); if (!box || !isHost()) return;
@@ -1480,23 +1487,26 @@ function talkKindStop(kind, msg){
   talk[kind] = ''; try { talkAttach(); } catch(e){}
   if (talk[s]){ talk[s].getTracks().forEach(t => t.stop()); talk[s] = null; }
   talk.msg = msg || ''; if (msg) setBc(msg);
-  if (!talk.a && !talk.v){ clearInterval(talk.tm); talk.tm = 0; if (talk.rid && DB) lj('talkreq_' + talk.rid + '/' + myId, 'DELETE').catch(() => {}); talk.rid = ''; }
+  if (!talk.a && !talk.v){ clearInterval(talk.tm); talk.tm = 0; talk.rid = ''; if (liveRoom) memBeat(); }
   else talkBeat();
   talkUI();
 }
 async function talkBeat(){
   if ((!talk.a && !talk.v) || !talk.rid) return; const rid = talk.rid;
   try {
-    lj('talkreq_' + rid + '/' + myId, 'PUT', {n: myNick(), ts: Date.now(), a: talk.a ? 1 : 0, v: talk.v ? 1 : 0}).catch(() => {});
-    const o = (await lj('talkok_' + rid + '/' + myId, 'GET')) || {};
+    await lj('roommem_' + rid + '/' + myId, 'PUT', memRec());
+    const d = (await lj('roommem_' + rid, 'GET')) || {};
+    let h = null; Object.keys(d).forEach(k => { const m = d[k]; if (m && m.h && (!h || m.ts > h.ts)) h = m; });
+    const o = (h && h.ok && h.ok[myId]) || {};
     ['a', 'v'].forEach(k => {
       if (!talk[k]) return; const val = o[k], nm = k === 'a' ? '마이크' : '카메라';
       if (val === true) talk[k] = 'ok';
       else if (val === false) talkKindStop(k, talk[k] === 'ok' ? '방장이 ' + nm + '를 껐습니다.' : '방장이 ' + nm + ' 요청을 거절했습니다.');
       else if (talk[k] === 'ok') talk[k] = 'req'; // 허락이 사라짐 (새 방장 등) → 다시 대기
     });
+    if (!h && (talk.a === 'req' || talk.v === 'req')) talk.msg = '방장을 찾는 중… (방장이 접속 중인지 확인하세요)'; else if (talk.msg && talk.msg.indexOf('방장을 찾는') === 0) talk.msg = '';
     talkAttach(); talkUI();
-  } catch(e){}
+  } catch(e){ talk.msg = '요청을 서버에 보내지 못했습니다. 인터넷 연결이나 데이터베이스 규칙을 확인하세요.'; talkUI(); }
 }
 function talkStop(msg){ ['a', 'v'].forEach(k => { if (talk[k]) talkKindStop(k, msg); }); talk.msg = msg || ''; talkUI(); }
 $('talkbtn').onclick = () => { if (talk.a) talkKindStop('a', ''); else talkStart('a'); };
