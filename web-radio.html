@@ -252,6 +252,82 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 #roomview:is(.sideR,.sideL):not(.mini) #chatsec:has(>.debate:not([hidden])) #chatlog{height:max(200px,calc(100vh - 640px))}
 #roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]) #chatlog{height:180px;min-height:0}
 }
+#dlvsec input,#dlvsec select,#dlvsec textarea{background:#1a0f08;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:8px 10px;min-width:0;font:inherit}
+#dlvsec textarea{width:100%;min-height:110px;resize:vertical}
+#dlvsec .btn{background:var(--panel);color:var(--amber);border:1px solid var(--brass);border-radius:6px;padding:8px 14px;cursor:pointer;font-size:14px}
+#dlvsec .btn:hover{filter:brightness(1.3)}
+#dlvsec .btn.pri{background:#b99a5b;color:#2a1a08;font-weight:700}
+#dlvsec .btn.red{border-color:#c0552d;color:#ffb59c}
+#dlvsec .btn:focus-visible,#dlvsec a:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+#dlvsec .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+#dlvsec .bar .grow{flex:1;min-width:140px}
+#dlvsec .box{background:#1a0f08;border:1px solid var(--brass);border-radius:10px;padding:14px;margin-bottom:12px}
+#dlvsec .box[hidden]{display:none}
+#dlvsec .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+#dlvsec .grid .full{grid-column:1/-1}
+#dlvsec label.l{display:block;font-size:12px;opacity:.75;margin-bottom:3px}
+#dlvsec .note{font-size:12px;opacity:.7;margin-top:6px;line-height:1.6}
+#dlvsec .bmsg{font-size:13px;color:var(--amber);margin-top:8px;min-height:18px}
+#dlvsec .post{background:#1a0f08;border:1px solid #00000066;border-left:4px solid var(--brass);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+#dlvsec .post .btop{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+#dlvsec .badge{font-size:12px;background:#b99a5b33;color:var(--amber);border-radius:10px;padding:2px 9px}
+#dlvsec .badge.c{background:#ffffff14;color:var(--ink)}
+#dlvsec .post h3{margin:2px 0;font-size:17px;word-break:break-all}
+#dlvsec .store{color:var(--amber);font-size:14px;margin-bottom:4px;word-break:break-all}
+#dlvsec .post .meta{font-size:12px;opacity:.65;min-height:0}
+#dlvsec .post .body{white-space:pre-wrap;word-break:break-word;line-height:1.7;margin:8px 0;font-size:15px}
+#dlvsec .addr{font-size:13px;opacity:.85;word-break:break-all}
+#dlvsec .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+#dlvsec a.map{display:inline-block;background:#2f5d3a;color:#e8ffe8;text-decoration:none;border-radius:6px;padding:6px 12px;font-size:14px}
+#dlvsec a.map:hover{filter:brightness(1.2)}
+#dlvsec .empty{text-align:center;opacity:.7;padding:30px}
+@media(max-width:560px){#dlvsec .grid{grid-template-columns:1fr}}
+#dlvsec .post h3{font-size:17px}
+#dlvsec .mrow{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+#dlvsec .mrow input.mn{flex:1;min-width:0}
+#dlvsec .mrow input.mp{width:120px;flex:none;text-align:right}
+#dlvsec .menu{margin:8px 0;border-top:1px dashed #b99a5b55}
+#dlvsec .menu .mi{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed #b99a5b33;font-size:15px;word-break:break-all}
+#dlvsec .menu .mi b{color:var(--amber);white-space:nowrap}
+#dlvsec .post .addr{margin-bottom:2px}
+#dlvreg input,#dlvreg select,#dlvreg textarea{background:#1a0f08;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:8px 10px;min-width:0;font:inherit}
+#dlvreg textarea{width:100%;min-height:110px;resize:vertical}
+#dlvreg .btn{background:var(--panel);color:var(--amber);border:1px solid var(--brass);border-radius:6px;padding:8px 14px;cursor:pointer;font-size:14px}
+#dlvreg .btn:hover{filter:brightness(1.3)}
+#dlvreg .btn.pri{background:#b99a5b;color:#2a1a08;font-weight:700}
+#dlvreg .btn.red{border-color:#c0552d;color:#ffb59c}
+#dlvreg .btn:focus-visible,#dlvreg a:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+#dlvreg .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+#dlvreg .bar .grow{flex:1;min-width:140px}
+#dlvreg .box{background:#1a0f08;border:1px solid var(--brass);border-radius:10px;padding:14px;margin-bottom:12px}
+#dlvreg .box[hidden]{display:none}
+#dlvreg .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+#dlvreg .grid .full{grid-column:1/-1}
+#dlvreg label.l{display:block;font-size:12px;opacity:.75;margin-bottom:3px}
+#dlvreg .note{font-size:12px;opacity:.7;margin-top:6px;line-height:1.6}
+#dlvreg .bmsg{font-size:13px;color:var(--amber);margin-top:8px;min-height:18px}
+#dlvreg .post{background:#1a0f08;border:1px solid #00000066;border-left:4px solid var(--brass);border-radius:8px;padding:12px 14px;margin-bottom:10px}
+#dlvreg .post .btop{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+#dlvreg .badge{font-size:12px;background:#b99a5b33;color:var(--amber);border-radius:10px;padding:2px 9px}
+#dlvreg .badge.c{background:#ffffff14;color:var(--ink)}
+#dlvreg .post h3{margin:2px 0;font-size:17px;word-break:break-all}
+#dlvreg .store{color:var(--amber);font-size:14px;margin-bottom:4px;word-break:break-all}
+#dlvreg .post .meta{font-size:12px;opacity:.65;min-height:0}
+#dlvreg .post .body{white-space:pre-wrap;word-break:break-word;line-height:1.7;margin:8px 0;font-size:15px}
+#dlvreg .addr{font-size:13px;opacity:.85;word-break:break-all}
+#dlvreg .acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+#dlvreg a.map{display:inline-block;background:#2f5d3a;color:#e8ffe8;text-decoration:none;border-radius:6px;padding:6px 12px;font-size:14px}
+#dlvreg a.map:hover{filter:brightness(1.2)}
+#dlvreg .empty{text-align:center;opacity:.7;padding:30px}
+@media(max-width:560px){#dlvreg .grid{grid-template-columns:1fr}}
+#dlvreg .post h3{font-size:17px}
+#dlvreg .mrow{display:flex;gap:6px;margin-bottom:6px;align-items:center}
+#dlvreg .mrow input.mn{flex:1;min-width:0}
+#dlvreg .mrow input.mp{width:120px;flex:none;text-align:right}
+#dlvreg .menu{margin:8px 0;border-top:1px dashed #b99a5b55}
+#dlvreg .menu .mi{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed #b99a5b33;font-size:15px;word-break:break-all}
+#dlvreg .menu .mi b{color:var(--amber);white-space:nowrap}
+#dlvreg .post .addr{margin-bottom:2px}
 </style>
 </head>
 <body>
@@ -471,6 +547,43 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <div class="note" style="text-align:center;margin-top:16px">광고·욕설·도배 글은 관리자가 삭제할 수 있습니다. 한 번에 한 글만, 30초 간격으로 등록할 수 있습니다.</div>
 
   </section>
+  <section class="chat" id="dlvreg" aria-label="배달음식점 등록">
+    <div class="chathead"><strong>🛵 배달음식점 등록</strong></div>
+    <div class="note" style="margin:0 0 10px">배달음식점 사장님이나 가게 관계자가 직접 등록합니다. 글만 남길 수 있고(사진·파일 없음), 광고·허위·욕설·개인 연락처 글은 관리자가 삭제할 수 있습니다. 등록하면 화면 맨 아래 자막에 자동으로 흘러갑니다.</div>
+    <section class="box" id="dl_form" aria-label="배달음식점 등록">
+      <div class="grid">
+        <div class="full"><label class="l" for="dl_fs">가게 이름 * (최대 30자)</label><input id="dl_fs" maxlength="30" style="width:100%" placeholder="예: 맛나치킨 영통점"></div>
+        <div><label class="l" for="dl_fr">시·도 *</label><select id="dl_fr" style="width:100%"></select></div>
+        <div><label class="l" for="dl_fc">음식 종류 *</label><select id="dl_fc" style="width:100%"></select></div>
+        <div class="full"><label class="l" for="dl_fd">배달 가능 지역 * (최대 60자)</label><input id="dl_fd" maxlength="60" style="width:100%" placeholder="예: 수원 영통구·광교 일대 / 전국 택배 배송"></div>
+        <div><label class="l" for="dl_fp">가게 전화번호 *</label><input id="dl_fp" maxlength="16" inputmode="tel" style="width:100%" placeholder="예: 031-123-4567"></div>
+        <div><label class="l" for="dl_fh">영업시간 (선택, 30자)</label><input id="dl_fh" maxlength="30" style="width:100%" placeholder="예: 11:00~23:00"></div>
+        <div><label class="l" for="dl_fo">최소 주문금액 (선택, 20자)</label><input id="dl_fo" maxlength="20" style="width:100%" placeholder="예: 15,000원"></div>
+        <div><label class="l" for="dl_fpw">삭제용 비밀번호 * (4~12자)</label><input id="dl_fpw" type="password" maxlength="12" autocomplete="new-password" style="width:100%"></div>
+        <div class="full"><label class="l">메뉴와 가격 * (최대 15개 · 가격은 숫자만)</label>
+          <div id="dl_menus"></div>
+          <button class="btn" id="dl_madd" type="button" style="margin-top:6px">➕ 메뉴 줄 추가</button></div>
+        <div class="full"><label class="l" for="dl_fb">가게 소개·메모 (선택, 300자)</label><textarea id="dl_fb" maxlength="300" placeholder="예: 포장 할인, 배달팁 안내, 원산지 등"></textarea></div>
+        <div class="full"><label class="l" for="dl_fm">주문·가게 안내 링크 (선택)</label><input id="dl_fm" maxlength="300" style="width:100%" placeholder="배달앱·블로그·지도 주소 (https://...)"></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.5;margin:4px 0 8px"><input type="checkbox" id="dl_fok2" style="margin-top:3px"><span>가게 사장님이거나 가게의 허락을 받아 등록합니다. 개인 휴대전화 번호는 등록하지 않습니다.</span></label>
+      <div class="acts"><button class="btn pri" id="dl_fok" type="button">등록</button><button class="btn" id="dl_fcancel" type="button">취소</button></div>
+      <div class="bmsg" id="dl_fmsg" role="status"></div>
+    </section>
+  </section>
+  <section class="chat" id="dlvsec" aria-label="전국 배달음식점 찾기">
+    <div class="chathead"><strong>🔎 전국 배달음식점 찾기</strong></div>
+    <div class="bar">
+      <select id="dl_region" aria-label="시·도 선택"></select>
+      <select id="dl_cat" aria-label="음식 종류"></select>
+      <select id="dl_sort" aria-label="정렬"><option value="new">최신 등록순</option><option value="name">가게 이름순</option></select>
+      <input id="dl_q" class="grow" type="search" placeholder="가게·메뉴·지역·전화번호 검색" aria-label="검색">
+      <button class="btn" id="dl_adm" type="button">🔒 관리자</button>
+    </div>
+    <div class="note" id="dl_count" style="margin:0 0 8px"></div>
+    <div id="dl_list"></div>
+    <div class="acts" style="justify-content:center"><button class="btn" id="dl_more" type="button" hidden>더 보기</button></div>
+  </section>
   <footer class="foot"><a href="https://blog.naver.com/fb1234" target="_blank" rel="noopener noreferrer">이진주방산업</a>
     <div><button id="addhome" class="addhome">바탕화면에 바로가기 만들기</button></div>
     <div class="addmsg" id="addmsg" role="status"></div>
@@ -623,6 +736,18 @@ function render(){
 }
 
 let curView = -1;
+// 브라우저가 소리 있는 자동재생을 막으면: 소리 없이 먼저 시작 → 화면을 처음 누르는 순간 소리 켜기
+function radioMutedStart(){
+  audio.muted = true;
+  audio.play().then(() => {
+    const t = document.createElement('div');
+    t.textContent = '🔇 소리를 켜려면 화면을 한 번 누르세요';
+    t.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:56px;z-index:95;background:#2a1a08;color:#ffcf7a;border:2px solid #b99a5b;border-radius:18px;padding:8px 16px;font-size:14px;font-weight:700;box-shadow:0 6px 18px #000a;pointer-events:none';
+    document.body.appendChild(t);
+    const un = () => { audio.muted = false; t.remove(); removeEventListener('pointerdown', un, true); removeEventListener('keydown', un, true); };
+    addEventListener('pointerdown', un, true); addEventListener('keydown', un, true);
+  }).catch(() => { audio.muted = false; armResume(); });
+}
 function playView(i, keepRoom, restore){
   const s = view[i]; if (!s) return;
   try { if (mtv.on && !restore) mtvOff(); } catch(e){}
@@ -636,6 +761,7 @@ function playView(i, keepRoom, restore){
   setStatus('연결 중…');
   if (hls){ hls.destroy(); hls = null; }
   audio.pause();
+  if (!restore) audio.muted = false;
   const isHls = /\.m3u8(\?|$)/i.test(url) || (s.hls === 1);
   if (isHls && window.Hls && Hls.isSupported()){
     hls = new Hls(); hls.loadSource(url); hls.attachMedia(audio);
@@ -643,7 +769,7 @@ function playView(i, keepRoom, restore){
   } else {
     audio.src = url;
   }
-  audio.play().catch(e => setStatus(e && e.name === 'NotAllowedError' ? '▶ 화면을 한 번 누르면 이어서 나옵니다' : '재생할 수 없습니다. 다른 방송국을 선택하세요'));
+  audio.play().catch(e => (restore && e && e.name === 'NotAllowedError') ? radioMutedStart() : setStatus(e && e.name === 'NotAllowedError' ? '▶ 화면을 한 번 누르면 이어서 나옵니다' : '재생할 수 없습니다. 다른 방송국을 선택하세요'));
   document.querySelectorAll('.st').forEach((el, k) => el.classList.toggle('on', k === i));
   if ($('room').value === 'station' && typeof fetchChat === 'function') { lastSig = ''; fetchChat(true); }
   if (navigator.mediaSession){
@@ -750,6 +876,8 @@ audio.addEventListener('error', () => { const s = stations[cur]; if (s && audio.
 const lastGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch(e){ return null; } };
 const lastOff = v => { try { v ? localStorage.setItem('radio_last_off', '1') : localStorage.removeItem('radio_last_off'); } catch(e){} };
 function lastSaveStation(s){
+  try { localStorage.setItem('radio_last_kind', 'radio'); } catch(e){}
+  try { mtv.single = false; mtv.label = ''; mtv.radio = true; if (!mtv.on) mtv.list = null; } catch(e){}
   try {
     localStorage.setItem('radio_last_st', JSON.stringify({c: $('country').value, s: {stationuuid: s.stationuuid, name: s.name, url: s.url, url_resolved: s.url_resolved, hls: s.hls, country: s.country, codec: s.codec, bitrate: s.bitrate, tags: s.tags, favicon: s.favicon}}));
   } catch(e){}
@@ -780,10 +908,11 @@ async function restoreLast(){
     }
   }
   try { if (localStorage.getItem('radio_last_off') === '1') return; } catch(e){}
+  try { if (localStorage.getItem('radio_last_kind') === 'tv') return; } catch(e){}
   const st = lastGet('radio_last_st'); if (!st || !st.s || curView >= 0) return;
   const find = () => view.findIndex(x => x.stationuuid === st.s.stationuuid);
   let i = find();
-  if (i < 0){ if (!stations.some(x => x.stationuuid === st.s.stationuuid)) stations.unshift(st.s); render(); i = find(); }
+  if (i < 0){ if (!stations.some(x => x.stationuuid === st.s.stationuuid)) stations.unshift(st.s); try { rpSet(st.s, true); } catch(e){} render(); i = find(); }
   if (i < 0) return;
   playView(i, true, true);
   setTimeout(() => { if (audio.paused && audio.src) armResume(); }, 1200);
@@ -2506,6 +2635,10 @@ function tvWatch(x, auto){
   if (!auto) tvAutoN = 0;
   try { if (mtv.on) mtvOff(); } catch(e){}
   tvLast = x; $('tvresume').hidden = true;
+  if (!ytId(x.u)){
+    try { localStorage.setItem('radio_last_kind', 'tv'); localStorage.removeItem('radio_tv_off'); localStorage.setItem('radio_last_tv', JSON.stringify({name: x.name, u: x.u, hls: x.hls ? 1 : 0})); } catch(e){}
+    $('now').textContent = String(x.name).trim(); $('meta').textContent = '📺 TV 방송';
+  }
   tvStop(); try { audio.pause(); } catch(e){}
   $('tvplayer').hidden = false; $('tvnow').textContent = '▶ ' + x.name; $('tvmsg').textContent = '불러오는 중…';
   const yid = ytId(x.u);
@@ -2615,7 +2748,7 @@ fsOn($('tvvid')); fsOn($('mwvid'));
 })();
 
 // ---- 🎬 맨 위 MTV 뮤직비디오 화면 (24시간 뮤직 채널, 라디오·TV와 별도) ----
-const mtv = {list: null, i: -1, hls: null, tries: 0, timer: 0, on: false, silent: false, rec: 0, lastT: -1, stuck: 0, re: 0};
+const mtv = {list: null, i: -1, hls: null, tries: 0, timer: 0, on: false, silent: false, rec: 0, lastT: -1, stuck: 0, re: 0, single: false, label: '', radio: false};
 const mtvV = $('mtvvid');
 async function mtvList(){
   if (mtv.list && mtv.list.length) return mtv.list;
@@ -2631,7 +2764,7 @@ function mtvOff(msg){
   if (mtv.hls){ mtv.hls.destroy(); mtv.hls = null; }
   try { mtvV.pause(); mtvV.removeAttribute('src'); mtvV.load(); } catch(e){}
   mtvV.hidden = true; $('mtvbar').hidden = true; $('mtvname').hidden = true; $('mtvidle').hidden = false;
-  $('mtvmsg').textContent = msg || (mtv.i >= 0 ? '▶ 눌러서 다시 켜기' : '🎵 MTV 뮤직비디오 24시간');
+  $('mtvmsg').textContent = msg || (mtv.single && mtv.list && mtv.list[0] ? '📺 ' + mtv.list[0].name + ' · ▶ 눌러서 다시 켜기' : mtv.radio ? '📻 ' + $('now').textContent + ' · ▶ 눌러서 켜기' : (mtv.i >= 0 ? '▶ 눌러서 다시 켜기' : '🎵 MTV 뮤직비디오 24시간'));
   if (document.fullscreenElement === $('mtvbox')) { try { document.exitFullscreen(); } catch(e){} }
 }
 function mtvFail(){
@@ -2640,7 +2773,7 @@ function mtvFail(){
   mtvPlay(mtv.i + 1);
 }
 async function mtvPlay(i){
-  mtv.on = true;
+  mtv.on = true; mtv.radio = false;
   if (!mtv.list){ $('mtvmsg').textContent = '채널 찾는 중…'; }
   const list = await mtvList();
   if (!mtv.on) return;
@@ -2662,13 +2795,24 @@ async function mtvPlay(i){
   mtvV.play().catch(e => { if (e && e.name === 'NotAllowedError'){ mtvOff('▶ 눌러서 시작하세요'); } });
   mtv.timer = setTimeout(mtvFail, 15000);
 }
-mtvV.addEventListener('playing', () => { clearTimeout(mtv.timer); mtv.tries = 0; mtv.rec = 0; const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = (mtv.silent ? '🔇 화면을 누르면 소리가 켜집니다 · ' : '🎵 ') + x.name; });
+mtvV.addEventListener('playing', () => { clearTimeout(mtv.timer); mtv.tries = 0; mtv.rec = 0; const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = (mtv.silent ? '🔇 화면을 누르면 소리가 켜집니다 · ' : (mtv.label || '🎵 ')) + x.name; });
 mtvV.addEventListener('ended', () => { if (mtv.on){ mtv.tries = 0; mtvPlay(mtv.i + 1); } });
 mtvV.addEventListener('error', () => { if (mtv.on) mtvFail(); });
-$('mtvon').onclick = () => { try { localStorage.setItem('radio_mtv_auto', '1'); } catch(e){} mtv.silent = false; mtvV.muted = false; mtv.tries = 0; mtvPlay(mtv.i >= 0 ? mtv.i : 0); };
-$('mtvoff').onclick = () => { try { localStorage.setItem('radio_mtv_auto', '0'); } catch(e){} mtvOff(); };
-$('mtvnext').onclick = () => { mtv.tries = 0; mtvPlay(mtv.i + 1); };
-$('mtvprev').onclick = () => { mtv.tries = 0; mtvPlay(mtv.i - 1); };
+$('mtvon').onclick = () => {
+  try { localStorage.setItem('radio_mtv_auto', '1'); localStorage.removeItem('radio_tv_off'); } catch(e){}
+  if (mtv.radio){ // 마지막이 라디오였으면 뮤직비디오 대신 그 라디오를 켬
+    if (audio.src && !audio.error){ audio.paused ? audio.play().catch(() => {}) : audio.pause(); } else { lastOff(0); restoreLast(); }
+    return;
+  }
+  mtv.silent = false; mtvV.muted = false; mtv.tries = 0; mtvPlay(mtv.i >= 0 ? mtv.i : 0);
+};
+audio.addEventListener('playing', () => { if (mtv.radio && !mtv.on) $('mtvmsg').textContent = '📻 ' + $('now').textContent + ' · 듣는 중'; });
+audio.addEventListener('pause', () => { if (mtv.radio && !mtv.on) $('mtvmsg').textContent = '📻 ' + $('now').textContent + ' · ▶ 눌러서 켜기'; });
+function topPlay(x){ mtv.list = [x]; mtv.i = 0; mtv.single = true; mtv.label = '📺 '; mtv.radio = false; mtvPlay(0); }
+const mtvLeave = () => { if (mtv.single){ mtv.single = false; mtv.label = ''; mtv.list = null; mtv.i = -1; } };
+$('mtvoff').onclick = () => { try { localStorage.setItem(mtv.single ? 'radio_tv_off' : 'radio_mtv_auto', mtv.single ? '1' : '0'); } catch(e){} mtvOff(); };
+$('mtvnext').onclick = () => { mtvLeave(); mtv.tries = 0; mtvPlay(mtv.i + 1); };
+$('mtvprev').onclick = () => { mtvLeave(); mtv.tries = 0; mtvPlay(mtv.i < 0 ? 0 : mtv.i - 1); };
 (() => {
   const vol = $('mtvvol'), mu = $('mtvmute');
   try { const s = parseFloat(localStorage.getItem('radio_mtv_vol')); if (s >= 0 && s <= 1) vol.value = s; } catch(e){}
@@ -2686,7 +2830,7 @@ fsOn(mtvV, $('mtvbox'));
 const mtvUnmute = () => {
   if (mtv.on && mtv.silent){
     mtv.silent = false; mtvV.muted = false; if (mtvV.volume === 0) mtvV.volume = 0.5;
-    const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = '🎵 ' + x.name;
+    const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = (mtv.label || '🎵 ') + x.name;
   }
 };
 addEventListener('pointerdown', mtvUnmute, {capture: true, once: true});
@@ -2702,7 +2846,33 @@ setInterval(() => {
 }, 10000);
 addEventListener('online', () => { if (mtv.on){ mtv.tries = 0; mtvPlay(mtv.i); } });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && mtv.on && mtvV.paused) mtvV.play().catch(() => {}); });
-(() => { let off = false; try { off = localStorage.getItem('radio_mtv_auto') === '0'; } catch(e){} if (!off){ mtv.silent = true; mtvPlay(0); } })();
+// 접속하면: 마지막으로 보던 TV/위성방송 → 위쪽 화면에 이어서 / 마지막이 라디오 → 그 방송국 이름 표시 + 라디오 이어 듣기 / 처음 쓰는 경우만 뮤직비디오
+(() => {
+  let off = false, tvOff = false, kind = '', tv = null, hasRoom = false;
+  try {
+    off = localStorage.getItem('radio_mtv_auto') === '0';
+    tvOff = localStorage.getItem('radio_tv_off') === '1';
+    kind = localStorage.getItem('radio_last_kind') || '';
+    tv = JSON.parse(localStorage.getItem('radio_last_tv') || 'null');
+    hasRoom = !!localStorage.getItem('radio_last_room');
+  } catch(e){}
+  const st = lastGet('radio_last_st');
+  if (!kind && st && st.s) kind = 'radio';
+  if (kind === 'tv' && tv && tv.u){
+    mtv.list = [tv]; mtv.i = 0; mtv.single = true; mtv.label = '📺 ';
+    $('now').textContent = String(tv.name).trim(); $('meta').textContent = '📺 마지막으로 본 방송';
+    if (tvOff || hasRoom) mtvOff(); else { mtv.silent = true; mtvPlay(0); }
+    return;
+  }
+  if (kind === 'radio' && st && st.s){
+    mtv.radio = true;
+    $('now').textContent = String(st.s.name || '').trim() || '방송국을 선택하세요';
+    $('meta').textContent = '📻 마지막으로 들은 방송';
+    mtvOff();
+    return;
+  }
+  if (!off){ mtv.silent = true; mtvPlay(0); }
+})();
 
 
 $('tvsub').onchange = () => { if (tvHls) tvHls.subtitleTrack = +$('tvsub').value; };
@@ -3354,9 +3524,197 @@ $('kcclose').onclick = () => { if (kcHls){ kcHls.destroy(); kcHls = null; } cons
 $('kiref').onclick = kwLoad;
 kwLoad(); setInterval(() => { if (!document.hidden) kwLoad(); }, 600000);
 
+// ===== 🛵 전국 배달음식점 등록 (라디오와 같은 Firebase의 /delivery 경로) =====
+(function(){
+try {
+const $ = id => document.getElementById('dl_' + id);
+const PAGE = 20, COOLDOWN = 30000, FETCH = 2000;
+const REGIONS = ['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주','전국'];
+const CATS = ['한식','치킨','피자','중식','일식·돈까스','분식','족발·보쌈','고기·구이','찜·탕·찌개','양식·패스트푸드','야식','도시락·죽','카페·디저트','기타'];
+let items = [], shown = PAGE, isAdm = false;
+try { isAdm = sessionStorage.getItem('board_admin') === '1'; } catch(e){}
+
+function fillSel(sel, first, arr){
+  sel.innerHTML = '';
+  if (first){ const o = document.createElement('option'); o.value = ''; o.textContent = first; sel.append(o); }
+  arr.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = v; sel.append(o); });
+}
+fillSel($('region'), '전체 지역', REGIONS);
+fillSel($('cat'), '모든 음식', CATS);
+fillSel($('fr'), '시·도 선택…', REGIONS);
+fillSel($('fc'), null, CATS);
+
+async function sha(s){
+  try {
+    const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('delivery|' + s));
+    return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
+  } catch(e){
+    let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    return 'f' + (h >>> 0).toString(36);
+  }
+}
+const safeUrl = u => /^https?:\/\/[^\s]+$/i.test(u || '') ? u : '';
+const digits = t => String(t || '').replace(/[^0-9]/g, '');
+const fmt = ts => { const d = new Date(ts), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())}`; };
+
+const won = n => Number(n).toLocaleString('ko-KR') + '원';
+const menuList = p => Array.isArray(p.mn) ? p.mn : Object.values(p.mn || {});
+const menuText = p => menuList(p).map(m => m && m.n).join(' ');
+function addRow(){
+  const box = $('menus'); if (box.children.length >= 15) return;
+  const r = document.createElement('div'); r.className = 'mrow';
+  const a = document.createElement('input'); a.className = 'mn'; a.maxLength = 30; a.placeholder = '메뉴 이름 (예: 후라이드 치킨)';
+  const b = document.createElement('input'); b.className = 'mp'; b.maxLength = 11; b.inputMode = 'numeric'; b.placeholder = '가격 (예: 18000)';
+  b.oninput = () => { const d = digits(b.value).slice(0, 7); b.value = d ? Number(d).toLocaleString('ko-KR') : ''; };
+  const x = document.createElement('button'); x.type = 'button'; x.className = 'btn red'; x.textContent = '✕'; x.title = '이 줄 지우기'; x.style.padding = '6px 10px';
+  x.onclick = () => { if (box.children.length > 1) r.remove(); else { a.value = ''; b.value = ''; } };
+  r.append(a, b, x); box.append(r);
+}
+function resetMenus(){ $('menus').innerHTML = ''; for (let i = 0; i < 3; i++) addRow(); }
+resetMenus();
+$('madd').onclick = () => { addRow(); const l = $('menus').lastChild; if (l) l.querySelector('.mn').focus(); };
+
+async function load(){
+  if (!DB){ $('list').innerHTML = '<div class="empty">Firebase 주소가 없어 등록 목록을 쓸 수 없습니다.</div>'; return; }
+  try {
+    const r = await fetch(`${DB}/delivery.json?orderBy="$key"&limitToLast=${FETCH}`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json() || {};
+    items = Object.keys(d).map(id => Object.assign({id}, d[id])).filter(p => p && p.s && p.r);
+    render();
+  } catch(e){
+    $('list').innerHTML = '<div class="empty">배달음식점 서버에 연결하지 못했습니다. 인터넷 연결과 Firebase 규칙(delivery 읽기·쓰기 허용)을 확인하세요.</div>';
+  }
+}
+
+function render(){
+  const reg = $('region').value, cat = $('cat').value, q = $('q').value.trim().toLowerCase(), sort = $('sort').value;
+  const qd = digits(q);
+  let v = items.filter(p => (!reg || p.r === reg) && (!cat || p.c === cat) &&
+    (!q || [p.s, p.d, p.c, p.b, p.p, p.r, menuText(p)].join(' ').toLowerCase().includes(q) || (qd.length >= 3 && digits(p.p).includes(qd))));
+  v.sort(sort === 'name' ? (a, b) => String(a.s).localeCompare(String(b.s), 'ko') : (a, b) => b.ts - a.ts);
+  $('count').textContent = `등록된 배달음식점 ${v.length}곳` + (reg ? ` (${reg})` : ' (전국)');
+  const box = $('list'); box.innerHTML = '';
+  if (!v.length){ box.innerHTML = '<div class="empty">아직 등록된 가게가 없습니다. 첫 가게를 등록해 보세요!</div>'; $('more').hidden = true; return; }
+  v.slice(0, shown).forEach(p => box.append(card(p)));
+  $('more').hidden = v.length <= shown;
+}
+
+function card(p){
+  const d = document.createElement('article'); d.className = 'post';
+  const top = document.createElement('div'); top.className = 'btop';
+  const b1 = document.createElement('span'); b1.className = 'badge'; b1.textContent = '📍 ' + p.r;
+  const b2 = document.createElement('span'); b2.className = 'badge c'; b2.textContent = p.c || '기타';
+  top.append(b1, b2);
+  const h = document.createElement('h3'); h.textContent = '🛵 ' + p.s;
+  d.append(top, h);
+  const line = (txt, cls) => { const x = document.createElement('div'); x.className = cls || 'addr'; x.textContent = txt; x.style.marginBottom = '2px'; d.append(x); };
+  if (p.d) line('📦 배달 가능 지역: ' + p.d);
+  if (p.h) line('🕒 영업시간: ' + p.h);
+  if (p.o) line('💰 최소 주문: ' + p.o);
+  if (p.p) line('📞 ' + p.p);
+  const mnl = menuList(p).filter(m => m && m.n);
+  if (mnl.length){
+    const mb = document.createElement('div'); mb.className = 'menu';
+    mnl.forEach(m => { const it = document.createElement('div'); it.className = 'mi'; const a = document.createElement('span'); a.textContent = m.n; const b = document.createElement('b'); b.textContent = won(m.p); it.append(a, b); mb.append(it); });
+    d.append(mb);
+  } else line('🍽 메뉴·가격 정보가 없습니다 (등록자가 입력하지 않았습니다)');
+  if (p.b){ const bd = document.createElement('div'); bd.className = 'body'; bd.textContent = p.b; d.append(bd); }
+  const mt = document.createElement('div'); mt.className = 'meta'; mt.textContent = '등록 ' + fmt(p.ts); d.append(mt);
+  const acts = document.createElement('div'); acts.className = 'acts';
+  const link = (href, text, cls) => { const a = document.createElement('a'); a.href = href; a.textContent = text; if (cls) a.className = cls; if (/^https?:/.test(href)){ a.target = '_blank'; a.rel = 'noopener noreferrer'; } return a; };
+  if (digits(p.p).length >= 8) acts.append(link('tel:' + String(p.p).replace(/[^0-9+]/g, ''), '📞 전화하기', 'map'));
+  const eq = encodeURIComponent((p.d && p.r !== '전국' ? p.r + ' ' : '') + p.s);
+  if (safeUrl(p.m)){ const a = link(p.m, '🔗 주문·안내 링크', 'map'); acts.append(a); }
+  const mp = link(`https://map.kakao.com/?q=${eq}`, '🗺 지도', 'map'); mp.style.background = '#3a3a3a'; acts.append(mp);
+  const del = document.createElement('button'); del.type = 'button'; del.className = 'btn red'; del.textContent = isAdm ? '삭제 (관리자)' : '삭제';
+  del.onclick = () => removeItem(p);
+  acts.append(del); d.append(acts);
+  return d;
+}
+
+async function removeItem(p){
+  if (!isAdm){
+    const pw = prompt('등록할 때 정한 비밀번호를 입력하세요.');
+    if (pw === null) return;
+    if ((await sha(pw)) !== p.pw){ alert('비밀번호가 맞지 않습니다.'); return; }
+  } else if (!confirm('이 가게를 삭제할까요?')) return;
+  try {
+    const r = await fetch(`${DB}/delivery/${p.id}.json`, {method: 'DELETE'});
+    if (!r.ok) throw new Error(r.status);
+    items = items.filter(x => x.id !== p.id); render();
+  } catch(e){ alert('삭제하지 못했습니다.'); }
+}
+
+async function submit(){
+  const f = id => $(id).value.trim().replace(/[ \t]+/g, ' ');
+  const msg = t => { $('fmsg').textContent = t; };
+  if (!DB){ msg('Firebase 주소가 없어 등록할 수 없습니다.'); return; }
+  let last = 0; try { last = +(localStorage.getItem('delivery_last') || 0); } catch(e){}
+  if (Date.now() - last < COOLDOWN){ msg(`도배 방지: ${Math.ceil((COOLDOWN - (Date.now() - last)) / 1000)}초 뒤에 다시 등록할 수 있습니다.`); return; }
+  const p = {s: f('fs'), r: $('fr').value, c: $('fc').value, d: f('fd'), p: f('fp'), h: f('fh'), o: f('fo'), b: $('fb').value.trim(), m: $('fm').value.trim()};
+  if (!p.s){ msg('가게 이름을 입력하세요.'); return; }
+  if (!p.r){ msg('시·도를 선택하세요.'); return; }
+  if (!p.d){ msg('배달 가능 지역을 입력하세요.'); return; }
+  const mn = []; let bad = false;
+  $('menus').querySelectorAll('.mrow').forEach(r => {
+    const n = r.querySelector('.mn').value.trim().replace(/[ \t]+/g, ' '), pd = digits(r.querySelector('.mp').value), pr = parseInt(pd, 10);
+    if (!n && !pd) return;
+    if (!n || !pd || !(pr > 0) || pr > 9999999){ bad = true; return; }
+    mn.push({n: n.slice(0, 30), p: pr});
+  });
+  if (bad){ msg('메뉴 줄마다 이름과 가격(숫자)을 함께 입력하세요.'); return; }
+  if (!mn.length){ msg('메뉴와 가격을 한 줄 이상 입력하세요.'); return; }
+  if (!/^[0-9+\-\s()]{8,16}$/.test(p.p) || digits(p.p).length < 8 || digits(p.p).length > 12){ msg('전화번호를 바르게 입력하세요. 예: 031-123-4567'); return; }
+  if (/^01[016789]/.test(digits(p.p))){ msg('개인 휴대전화 번호(010 등)는 등록할 수 없습니다. 가게 전화번호를 입력하세요.'); return; }
+  if (items.some(x => digits(x.p) === digits(p.p))){ msg('이미 등록된 전화번호입니다.'); return; }
+  const pw = $('fpw').value;
+  if (pw.length < 4){ msg('삭제용 비밀번호를 4자 이상 입력하세요.'); return; }
+  if (p.m && !safeUrl(p.m)){ msg('링크는 http:// 또는 https:// 로 시작하는 주소여야 합니다.'); return; }
+  if (!$('fok2').checked){ msg('아래 확인란에 체크해 주세요.'); return; }
+  ['h','o','b','m'].forEach(k => { if (!p[k]) delete p[k]; });
+  p.mn = mn.slice(0, 15); p.pw = await sha(pw); p.ts = Date.now();
+  msg('등록 중…'); $('fok').disabled = true;
+  try {
+    const r = await fetch(`${DB}/delivery.json`, {method: 'POST', body: JSON.stringify(p)});
+    if (!r.ok) throw new Error(r.status);
+    try { localStorage.setItem('delivery_last', String(Date.now())); } catch(e){}
+    ['fs','fd','fp','fh','fo','fb','fm','fpw'].forEach(id => $(id).value = ''); $('fok2').checked = false; resetMenus();
+    msg('✅ 등록되었습니다. 화면 맨 아래 자막에 흘러갑니다.');
+    try { window.nbRefresh && window.nbRefresh(true); } catch(e){}
+    shown = PAGE; await load();
+  } catch(e){ msg('등록하지 못했습니다. Firebase 규칙에 delivery 쓰기 허용이 있는지 확인하세요.'); }
+  $('fok').disabled = false;
+}
+
+$('fcancel').onclick = () => { try { foldSet('dlvreg', true); } catch(e){} };
+$('fok').onclick = submit;
+$('region').onchange = () => { shown = PAGE; render(); };
+$('cat').onchange = () => { shown = PAGE; render(); };
+$('sort').onchange = () => { shown = PAGE; render(); };
+let qt; $('q').oninput = () => { clearTimeout(qt); qt = setTimeout(() => { shown = PAGE; render(); }, 200); };
+$('more').onclick = () => { shown += PAGE; render(); };
+
+function admLabel(){ $('adm').textContent = isAdm ? '🔓 관리자 중 (끝내기)' : '🔒 관리자'; }
+$('adm').onclick = async () => {
+  if (isAdm){ isAdm = false; try { sessionStorage.removeItem('board_admin'); } catch(e){} admLabel(); render(); return; }
+  const pw = prompt('관리자 비밀번호를 입력하세요.'); if (pw === null) return;
+  let ok = false;
+  try { ok = (await pwHash(pw)) === ADMIN_HASH; } catch(e){ alert('이 주소에서는 확인할 수 없습니다. https:// 주소나 파일로 열어 주세요.'); return; }
+  if (!ok){ alert('비밀번호가 맞지 않습니다.'); return; }
+  isAdm = true; try { sessionStorage.setItem('board_admin', '1'); } catch(e){}
+  admLabel(); render();
+};
+admLabel();
+load();
+setInterval(() => { if (!document.hidden) load(); }, 60000);
+
+} catch(e){ console.warn('배달음식점 등록을 시작하지 못했습니다:', e); }
+})();
+
 // ===== 옆 메뉴: 라디오가 중심, 나머지는 오른쪽 버튼으로 열기 =====
 (function(){
-  const L = [['tvsec', '📺', 'TV'], ['krinfo', '🚦', '교통·날씨'], ['musicroom', '🎵', '음악 방'], ['myhome', '🏠', '마이홈'], ['chatsec', '💬', '채팅'], ['boardsec', '🍚', '맛집']];
+  const L = [['tvsec', '📺', 'TV'], ['krinfo', '🚦', '교통·날씨'], ['musicroom', '🎵', '음악 방'], ['myhome', '🏠', '마이홈'], ['chatsec', '💬', '채팅'], ['boardsec', '🍚', '맛집'], ['dlvreg', '🛵', '배달등록'], ['dlvsec', '🔎', '배달찾기']];
   const rail = document.createElement('nav'); rail.id = 'siderail'; rail.setAttribute('aria-label', '메뉴');
   let cur = '';
   const mark = () => rail.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === cur));
@@ -3426,17 +3784,18 @@ body.hasticker #roomview{padding-bottom:calc(52px + env(safe-area-inset-bottom,0
       btnOpen=document.getElementById('nbopen');
   if(!bar||!view||!track) return;
 
-  var K={hide:'nb_hide',speed:'nb_speed',cache:'nb_cache'};
+  var K={hide:'nb_hide',speed:'nb_speed2',cache:'nb_cache'};
   function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
   function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 
-  var SPEEDS=[{n:'느리게',v:60},{n:'보통',v:100},{n:'빠르게',v:160}];
+  var SPEEDS=[{n:'아주 느리게',v:20},{n:'느리게',v:35},{n:'보통',v:55},{n:'빠르게',v:90}];
   var sp=parseInt(lsGet(K.speed),10); if(!(sp>=0&&sp<SPEEDS.length)) sp=1;
 
   var NEWS_Q='https://news.google.com/rss/search?q='+encodeURIComponent('속보 when:1d')+'&hl=ko&gl=KR&ceid=KR:ko';
   var NEWS_TOP='https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko';
   var TREND='https://trends.google.com/trending/rss?geo=KR';
   var SECTIONS=[
+    {id:'dlv',  tag:'🛵 배달음식점', custom:true, max:20, kind:'dlv'},
     {tag:'🚨 속보',    url:NEWS_Q,   max:12, kind:'news'},
     {tag:'📰 주요뉴스', url:NEWS_TOP, max:25, kind:'news'},
     {tag:'🔥 핫이슈',   url:TREND,    max:15, kind:'trend'}
@@ -3497,7 +3856,8 @@ body.hasticker #roomview{padding-bottom:calc(52px + env(safe-area-inset-bottom,0
         var chip=document.createElement('span'); chip.className='nb-chip'; chip.textContent=sec.tag; g.appendChild(chip);
         sec.items.forEach(function(it){
           var a=document.createElement(it.l?'a':'span'); a.className='nb-item';
-          if(it.l){a.href=it.l;a.target='_blank';a.rel='noopener noreferrer';}
+          if(it.l==='#dlv'){a.href='#';a.setAttribute('data-dlv','1');}
+          else if(it.l){a.href=it.l;a.target='_blank';a.rel='noopener noreferrer';}
           a.appendChild(document.createTextNode(it.t));
           if(it.s){var s=document.createElement('span');s.className='nb-src';s.textContent=it.s;a.appendChild(s);}
           g.appendChild(a);
@@ -3519,18 +3879,52 @@ body.hasticker #roomview{padding-bottom:calc(52px + env(safe-area-inset-bottom,0
     track.style.setProperty('--nbdur',Math.max(10,W/SPEEDS[sp].v)+'s');
     void track.offsetWidth; track.style.animation='';
   }
+  // 새로 등록된 배달음식점 (Firebase /delivery) → 자막에 자동으로 흘림
+  function dlvItems(){
+    if(typeof DB==='undefined'||!DB) return Promise.resolve([]);
+    return tfetch(DB+'/delivery.json?orderBy="$key"&limitToLast=30',9000).then(function(r){return r.json();}).then(function(d){
+      d=d||{};
+      var arr=Object.keys(d).map(function(k){return d[k];}).filter(function(p){return p&&p.s&&p.r;});
+      arr.sort(function(a,b){return (b.ts||0)-(a.ts||0);});
+      return arr.slice(0,20).map(function(p){
+        var mn=Array.isArray(p.mn)?p.mn:Object.keys(p.mn||{}).map(function(k){return p.mn[k];});
+        var m=mn.filter(function(x){return x&&x.n;})[0];
+        var t=clean(p.s)+' ['+clean(p.r)+' · '+clean(p.c||'기타')+']';
+        if(m) t+=' '+clean(m.n)+' '+Number(m.p).toLocaleString('ko-KR')+'원';
+        if(p.p) t+=' ☎ '+clean(p.p);
+        return {t:t,s:'',l:'#dlv'};
+      });
+    });
+  }
+  function refreshDlv(){
+    return dlvItems().then(function(items){
+      var cur=data.filter(function(s){return s.id==='dlv';})[0];
+      if(!cur){ if(!items.length) return; data.unshift({tag:'🛵 배달음식점',id:'dlv',items:items}); }
+      else if(JSON.stringify(cur.items)===JSON.stringify(items)) return;
+      else cur.items=items;
+      lsSet(K.cache,JSON.stringify({t:Date.now(),d:data}));
+      layout();
+    }).catch(function(){});
+  }
+  track.addEventListener('click',function(e){
+    var a=e.target.closest?e.target.closest('a[data-dlv]'):null;
+    if(a){e.preventDefault(); if(window.foldSet) window.foldSet('dlvsec',false);}
+  });
+  window.nbRefresh=function(show){ if(show) setHidden(false); return refreshDlv(); };
+  setInterval(function(){ if(!document.hidden) refreshDlv(); },120000);
+
   function setMsg(t){track.style.animation='none';track.innerHTML='';var m=document.createElement('span');m.className='nb-msg';m.textContent=t;track.appendChild(m);}
 
   function two(n){return (n<10?'0':'')+n;}
   function load(){
     clearTimeout(retry);
     Promise.all(SECTIONS.map(function(sec){
-      return getFeed(sec.url).then(function(raw){return normalize(sec,raw);},function(){return [];});
+      return (sec.custom ? dlvItems() : getFeed(sec.url).then(function(raw){return normalize(sec,raw);})).then(function(x){return x;},function(){return [];});
     })).then(function(res){
       var total=0;
       res.forEach(function(r){total+=r.length;});
       if(total){
-        data=SECTIONS.map(function(s,i){return {tag:s.tag,items:res[i]};});
+        data=SECTIONS.map(function(s,i){return {tag:s.tag,id:s.id,items:res[i]};});
         lsSet(K.cache,JSON.stringify({t:Date.now(),d:data}));
         var d=new Date(); tag.title='마지막 갱신 '+two(d.getHours())+':'+two(d.getMinutes());
         layout();
