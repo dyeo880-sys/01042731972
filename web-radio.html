@@ -114,6 +114,14 @@ body.hidebad .vr.bad{display:none}
 #rpmsg{opacity:.85}
 .st.good .n::before{content:'● ';color:#6fd36f;font-size:10px}
 .st.bad{opacity:.45}.st.bad .n{text-decoration:line-through}
+.kiw{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;margin-bottom:8px}
+.kiw button{background:#241610;color:var(--ink);border:1px solid #b99a5b66;border-radius:8px;padding:6px 4px;cursor:pointer;text-align:center;line-height:1.35}
+.kiw button.on{border-color:var(--amber);background:#b99a5b33}.kiw b{display:block;font-size:12px;opacity:.85}.kiw span{font-size:20px}
+#kiwd{background:#1a0f08;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:14px;line-height:1.7}
+#kcvid{width:100%;max-height:50vh;background:#000;border-radius:8px}
+main .chat.fold>:not(.chathead){display:none!important}
+.foldbtn{min-width:30px}
+#rpopts{display:contents}#rpopts[hidden]{display:none}
 .mwctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;padding:8px;background:#1a0f08;border-radius:6px}
 .mwctl[hidden]{display:none}
 .mwctl input{flex:1;min-width:160px;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 9px;font-size:13px}
@@ -286,12 +294,14 @@ body.hidebad .vr.bad{display:none}
     </select>
   </div>
   <div class="rpbar" id="rpbar">
+    <button class="addhome" type="button" id="rptoggle" aria-expanded="false">⚙ 확인·설정 ▾</button><span id="rpmsg"></span>
+    <span id="rpopts" hidden>
     <label><input type="checkbox" id="rphide" checked> 안 되는 방송국 숨기기</label>
     <label><input type="checkbox" id="rpauto" checked> 24시간마다 자동 확인</label>
     <label><input type="checkbox" id="rsume" checked> 마지막 방송 자동 재생</label>
     <button class="addhome" type="button" id="rpgo" title="지금 보이는 방송국이 실제로 나오는지 하나씩 확인합니다">🔍 지금 확인</button>
     <button class="addhome" type="button" id="rpreload" title="방송국 목록을 서버에서 다시 불러옵니다">🔄 목록 새로고침</button>
-    <span id="rpmsg"></span>
+    </span>
   </div>
   <div class="count" id="count"></div>
   <div class="list" id="list" role="list"></div>
@@ -323,6 +333,25 @@ body.hidebad .vr.bad{display:none}
       <div class="chatnote" id="tvfmsg"></div>
       <div class="vres" id="tvlist" style="max-height:60vh"></div>
     </div>
+  </section>
+  <section class="chat" id="krinfo" aria-label="한국 교통·날씨">
+    <div class="chathead"><strong>🚦 교통 CCTV · 🌤 지역별 날씨 (한국)</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="kiref">🔄 새로고침</button></span></div>
+    <div class="kiw" id="kiw"><div class="msg">날씨를 불러오는 중…</div></div>
+    <div id="kiwd" hidden></div>
+    <div class="rpbar">
+      <select id="kcreg" aria-label="지역"><option value="126.6,127.2,37.4,37.75">서울·인천</option><option value="126.4,127.7,36.9,38.0">경기</option><option value="127.5,129.4,37.0,38.6">강원</option><option value="126.1,128.1,35.9,37.2">충청·대전·세종</option><option value="125.9,127.8,34.3,36.0">전라·광주</option><option value="127.8,130.0,35.5,37.2">대구·경북</option><option value="127.6,129.5,34.7,35.9">부산·울산·경남</option><option value="126.1,126.99,33.1,33.6">제주</option></select>
+      <select id="kctype" aria-label="도로"><option value="ex">고속도로</option><option value="its">국도</option></select>
+      <button class="addhome" type="button" id="kcgo">🚦 CCTV 불러오기</button>
+      <input id="kckey" type="password" autocomplete="off" placeholder="ITS 인증키 (비우면 체험용)" aria-label="국가교통정보센터 인증키" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 9px;font-size:13px;width:170px">
+      <a href="https://www.its.go.kr/opendata/" target="_blank" rel="noopener noreferrer" style="color:var(--amber);font-size:13px">🔑 무료 키 발급</a>
+      <span id="kcmsg"></span>
+    </div>
+    <div id="kcplayer" hidden style="margin-bottom:8px">
+      <div class="rdrow" style="margin-bottom:6px"><strong id="kcname" style="flex:1;color:var(--amber)"></strong><button class="addhome" type="button" id="kcprev">⏮</button><button class="addhome" type="button" id="kcnext">⏭</button><a class="addhome" id="kclink" target="_blank" rel="noopener noreferrer" style="text-decoration:none">↗ 새 탭</a><button class="addhome" type="button" id="kcclose">■ 닫기</button></div>
+      <video id="kcvid" controls muted autoplay playsinline></video>
+    </div>
+    <div class="list" id="kclist" role="list" hidden></div>
+    <div class="chatnote">날씨: Open-Meteo(기상 모델 예보 · 7일, 10분마다 갱신) · CCTV: 국가교통정보센터 공개 API(영상 주소는 몇 분 뒤 만료되니 안 나오면 다시 불러오세요). 공식 정보는 <a href="https://www.weather.go.kr" target="_blank" rel="noopener noreferrer" style="color:var(--amber)">기상청</a> · <a href="https://www.its.go.kr" target="_blank" rel="noopener noreferrer" style="color:var(--amber)">국가교통정보센터</a> · <a href="https://www.utic.go.kr" target="_blank" rel="noopener noreferrer" style="color:var(--amber)">UTIC</a> · <a href="https://topis.seoul.go.kr" target="_blank" rel="noopener noreferrer" style="color:var(--amber)">서울 TOPIS</a> 에서 확인하세요.</div>
   </section>
   <section class="chat" id="myhome" aria-label="마이홈">
     <div class="chathead"><strong>🏠 마이홈</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="mhradio">⭐ 라디오 즐겨찾기 보기</button></span></div>
@@ -2104,6 +2133,7 @@ $('invsend').onclick = async () => {
 };
 function showInvite(m){
   const i = m.inv; if (!i || !i.id) return;
+  foldSet('musicroom', false);
   const d = document.createElement('div'); d.className = 'gate'; d.style.margin = '0 0 8px';
   const p = document.createElement('p');
   p.textContent = '💌 ' + String(m.n || '손님').slice(0, 12) + '님이 「' + String(i.t || '음악 방').slice(0, 20) + '」 음악 방에 초대했습니다.' + (i.p && !i.k ? ' (비밀번호는 방장에게 문의하세요)' : '');
@@ -2125,7 +2155,7 @@ function askHost(id, nick, title){
 // ---- 버튼 연결 ----
 const closePanels = () => { document.querySelectorAll('.tp').forEach(x => x.hidden = true); document.querySelectorAll('.tbtn').forEach(x => x.setAttribute('aria-expanded', 'false')); };
 document.querySelectorAll('.tbtn').forEach(b => { b.onclick = () => { const t = $(b.dataset.p), open = t.hidden; closePanels(); if (open){ t.hidden = false; b.setAttribute('aria-expanded', 'true'); } }; });
-$('newroom').onclick = () => { $('musicroom').scrollIntoView({behavior: 'smooth', block: 'center'}); openMk(true); };
+$('newroom').onclick = () => { foldSet('musicroom', false); $('musicroom').scrollIntoView({behavior: 'smooth', block: 'center'}); openMk(true); };
 $('mkopen').onclick = () => openMk($('mkform').hidden);
 $('mkok').onclick = makeMusicRoom;
 $('mkcancel').onclick = () => openMk(false);
@@ -3245,6 +3275,103 @@ function mhBuild(){
 }
 $('mhradio').onclick = () => { $('mode').value = 'fav'; $('mode').dispatchEvent(new Event('change')); $('list').scrollIntoView({behavior: 'smooth', block: 'start'}); };
 mhBuild();
+
+// ===== 🚦 한국 지역별 날씨 + 교통 CCTV =====
+const KW = [['서울',37.5665,126.978],['인천',37.4563,126.7052],['수원',37.2636,127.0286],['춘천',37.8813,127.7298],['강릉',37.7519,128.8761],['대전',36.3504,127.3845],['세종',36.48,127.289],['청주',36.6424,127.489],['광주',35.1595,126.8526],['전주',35.8242,127.148],['목포',34.8118,126.3922],['여수',34.7604,127.6622],['대구',35.8714,128.6014],['구미',36.1195,128.3446],['안동',36.5684,128.7294],['포항',36.019,129.3435],['울산',35.5384,129.3114],['부산',35.1796,129.0756],['창원',35.2285,128.6811],['제주',33.4996,126.5312]];
+const wmo = c => c === 0 ? ['☀️', '맑음'] : c <= 2 ? ['🌤', '구름 조금'] : c === 3 ? ['☁️', '흐림'] : c <= 48 ? ['🌫', '안개'] : c <= 57 ? ['🌦', '이슬비'] : c <= 67 ? ['🌧', '비'] : c <= 77 ? ['🌨', '눈'] : c <= 82 ? ['🌦', '소나기'] : c <= 86 ? ['🌨', '눈 소나기'] : ['⛈', '뇌우'];
+let kwData = null, kwSel = -1;
+async function kwLoad(){
+  try {
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + KW.map(x => x[1]).join(',') + '&longitude=' + KW.map(x => x[2]).join(',') + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=7&wind_speed_unit=ms');
+    const j = await r.json(); kwData = Array.isArray(j) ? j : [j];
+    const box = $('kiw'); box.innerHTML = '';
+    KW.forEach((c, i) => {
+      const d = kwData[i]; if (!d || !d.current) return;
+      const w = wmo(d.current.weather_code), b = document.createElement('button'); b.type = 'button'; b.className = i === kwSel ? 'on' : '';
+      b.innerHTML = '<b>' + c[0] + '</b><span>' + w[0] + '</span><div>' + Math.round(d.current.temperature_2m) + '°</div>';
+      b.onclick = () => kwShow(i); box.append(b);
+    });
+    if (kwSel >= 0) kwShow(kwSel);
+  } catch(e){ $('kiw').innerHTML = '<div class="msg">날씨를 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침을 눌러 주세요.</div>'; }
+}
+const dust = (v, a) => v == null ? '-' : (v <= a[0] ? '좋음' : v <= a[1] ? '보통' : v <= a[2] ? '나쁨' : '매우 나쁨') + ' (' + Math.round(v) + ')';
+async function kwShow(i){
+  kwSel = i; const c = KW[i], d = kwData && kwData[i]; if (!d) return;
+  [...$('kiw').children].forEach((el, k) => el.classList.toggle('on', k === i));
+  const w = wmo(d.current.weather_code), box = $('kiwd'); box.hidden = false;
+  const wd = ['일', '월', '화', '수', '목', '금', '토'];
+  const fc = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px;margin-top:6px">' + d.daily.time.map((t, k) => {
+    const dt = new Date(t + 'T00:00:00'), lab = k === 0 ? '오늘' : (dt.getMonth() + 1) + '/' + dt.getDate() + '(' + wd[dt.getDay()] + ')';
+    return '<div style="background:#241610;border-radius:6px;padding:5px 6px;text-align:center;font-size:12px;line-height:1.5"><b>' + lab + '</b><br><span style="font-size:20px">' + wmo(d.daily.weather_code[k])[0] + '</span><br>' + Math.round(d.daily.temperature_2m_min[k]) + '° / <b>' + Math.round(d.daily.temperature_2m_max[k]) + '°</b><br>☔ ' + (d.daily.precipitation_probability_max[k] ?? '-') + '%</div>';
+  }).join('') + '</div>';
+  const base = '<strong style="color:var(--amber)">' + c[0] + '</strong> ' + w[0] + ' ' + w[1] + ' · <b>' + Math.round(d.current.temperature_2m) + '°</b> (체감 ' + Math.round(d.current.apparent_temperature) + '°) · 습도 ' + d.current.relative_humidity_2m + '% · 바람 ' + d.current.wind_speed_10m + 'm/s · 강수 ' + d.current.precipitation + 'mm' + fc;
+  box.innerHTML = base + '<br>미세먼지 불러오는 중…';
+  try {
+    const r = await fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=' + c[1] + '&longitude=' + c[2] + '&current=pm10,pm2_5&timezone=Asia%2FSeoul'), a = (await r.json()).current || {};
+    if (kwSel === i) box.innerHTML = base + '<br>😷 미세먼지 ' + dust(a.pm10, [30, 80, 150]) + ' · 초미세먼지 ' + dust(a.pm2_5, [15, 35, 75]);
+  } catch(e){ if (kwSel === i) box.innerHTML = base; }
+}
+let kcItems = [], kcI = -1, kcHls = null;
+const kcMsg = t => { $('kcmsg').textContent = t; };
+try { $('kckey').value = kload('its'); } catch(e){}
+async function kcLoad(){
+  const [x1, x2, y1, y2] = $('kcreg').value.split(','), typed = $('kckey').value.trim(), key = typed || 'test';
+  if (typed) ksave('its', typed);
+  kcMsg('불러오는 중…');
+  try {
+    const r = await fetch('https://openapi.its.go.kr:9443/cctvInfo?apiKey=' + encodeURIComponent(key) + '&type=' + $('kctype').value + '&cctvType=1&minX=' + x1 + '&maxX=' + x2 + '&minY=' + y1 + '&maxY=' + y2 + '&getType=json'), t = await r.text();
+    let it = [];
+    try { const d = JSON.parse(t).response.data; it = (Array.isArray(d) ? d : d ? [d] : []).map(o => ({n: o.cctvname, u: o.cctvurl})); }
+    catch(e){ const g = (el, k) => (el.getElementsByTagName(k)[0] || {}).textContent; it = [...new DOMParser().parseFromString(t, 'text/xml').getElementsByTagName('data')].map(el => ({n: g(el, 'cctvname'), u: g(el, 'cctvurl')})); }
+    kcItems = it.filter(x => x.n && x.u && /^https?:/i.test(x.u)).slice(0, 400);
+    const box = $('kclist'); box.innerHTML = ''; box.hidden = !kcItems.length;
+    if (!kcItems.length){ kcMsg(r.ok ? '이 지역에는 불러올 CCTV가 없습니다. 인증키를 확인하거나 다른 지역을 골라 보세요.' : '인증키가 맞지 않거나 사용량이 넘었습니다. 국가교통정보센터에서 무료 키를 발급받아 입력해 주세요.'); return; }
+    kcItems.forEach((x, i) => { const b = document.createElement('button'); b.className = 'st'; b.type = 'button'; b.innerHTML = '<span class="n"></span>'; b.firstChild.textContent = '🚦 ' + x.n; b.onclick = () => kcPlay(i); box.append(b); });
+    kcMsg('CCTV ' + kcItems.length + '곳');
+  } catch(e){ kcMsg('CCTV 목록을 불러오지 못했습니다. (브라우저가 막았거나 서버 점검 중일 수 있습니다) 아래 국가교통정보센터·UTIC 링크에서 확인해 주세요.'); }
+}
+function kcPlay(i){
+  const x = kcItems[i]; if (!x) return; kcI = i;
+  $('kcplayer').hidden = false; $('kcname').textContent = x.n; $('kclink').href = x.u;
+  const v = $('kcvid'); if (kcHls){ kcHls.destroy(); kcHls = null; } v.muted = true;
+  if (window.Hls && Hls.isSupported()){
+    kcHls = new Hls(); kcHls.loadSource(x.u); kcHls.attachMedia(v);
+    kcHls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) kcMsg('이 CCTV는 여기서 바로 재생되지 않습니다. 「↗ 새 탭」이나 국가교통정보센터를 이용하세요. (주소가 만료됐다면 다시 불러오세요)'); });
+  } else { v.src = x.u; }
+  v.play().catch(() => {});
+  document.querySelectorAll('#kclist .st').forEach((el, k) => el.classList.toggle('on', k === i));
+}
+$('kcgo').onclick = kcLoad;
+$('kcprev').onclick = () => { if (kcItems.length) kcPlay((kcI - 1 + kcItems.length) % kcItems.length); };
+$('kcnext').onclick = () => { if (kcItems.length) kcPlay((kcI + 1) % kcItems.length); };
+$('kcclose').onclick = () => { if (kcHls){ kcHls.destroy(); kcHls = null; } const v = $('kcvid'); v.pause(); v.removeAttribute('src'); v.load(); $('kcplayer').hidden = true; };
+$('kiref').onclick = kwLoad;
+kwLoad(); setInterval(() => { if (!document.hidden) kwLoad(); }, 600000);
+
+// ===== 메뉴 접기/펼치기 (기본은 접힘, 상태 기억) =====
+(function(){
+  const IDS = [['tvsec', 1], ['krinfo', 1], ['myhome', 1], ['musicroom', 1], ['chatsec', 0], ['boardsec', 1]];
+  let st = {}; try { st = JSON.parse(localStorage.getItem('radio_fold') || '{}') || {}; } catch(e){}
+  window.foldSet = (id, c) => {
+    const el = $(id); if (!el) return; el.classList.toggle('fold', c);
+    const b = el.querySelector('.foldbtn'); if (b){ b.textContent = c ? '▸' : '▾'; b.setAttribute('aria-expanded', String(!c)); }
+    st[id] = c ? 1 : 0; try { localStorage.setItem('radio_fold', JSON.stringify(st)); } catch(e){}
+  };
+  IDS.forEach(([id, def]) => {
+    const el = $(id), h = el && el.querySelector('.chathead'); if (!h) return;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome foldbtn'; b.style.cssText = 'margin:0 6px 0 0;padding:2px 9px'; b.title = '접기/펼치기';
+    h.insertBefore(b, h.firstChild);
+    b.onclick = () => foldSet(id, !el.classList.contains('fold'));
+    const t = h.querySelector('strong'); if (t){ t.style.cursor = 'pointer'; t.onclick = b.onclick; }
+    foldSet(id, id in st ? !!st[id] : !!def);
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('main .chat.fold .chathead button:not(.foldbtn)');
+    if (b) foldSet(b.closest('.chat').id, false);
+  }, true);
+  if (INVITE) foldSet('musicroom', false);
+  $('rptoggle').onclick = () => { const o = $('rpopts'); o.hidden = !o.hidden; $('rptoggle').textContent = o.hidden ? '⚙ 확인·설정 ▾' : '⚙ 확인·설정 ▴'; $('rptoggle').setAttribute('aria-expanded', String(!o.hidden)); };
+})();
 </script>
 </body>
 </html>
