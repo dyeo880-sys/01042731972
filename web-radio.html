@@ -89,6 +89,31 @@ body.hidebad .vr.bad{display:none}
 #mwvid{width:100%;max-width:calc(640px * var(--mws))}
 #liveAudio.scr{width:100%;max-width:100%;max-height:calc(70vh * var(--mws));background:#000;object-fit:contain}
 #mwyt{width:100%;max-width:calc(640px * var(--mws));aspect-ratio:16/9}
+.rdbar{margin-top:8px;padding:8px 10px;background:#1a0f08;border:1px solid #b99a5b55;border-radius:6px}
+.rdrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.rdrow strong{color:var(--amber)}
+#rdnow{flex:1;min-width:120px;color:var(--ink);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rdrow .addhome{margin:0;padding:4px 10px;font-size:14px}
+.rdrow label{display:flex;align-items:center;gap:6px;font-size:13px}
+.rdrow input[type=range]{width:110px;accent-color:var(--brass)}
+#rdpick{margin-top:8px}
+#rdpick[hidden]{display:none}
+#rdpick .rdf{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+#rdpick .rdf select,#rdpick .rdf input{background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 9px;font-size:13px}
+#rdpick .rdf input{flex:1;min-width:140px}
+#rdlist{max-height:30vh}
+#roomview.mini #rdpick,#roomview.mini .rdrow label,#roomview.mini #rdtoggle{display:none!important}
+#myhome .mhc{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 6px;border-bottom:1px solid #ffffff12}
+#myhome .mhn{flex:1 1 170px;min-width:150px;font-weight:700;color:var(--amber);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#myhome .mhs{font-size:12px;opacity:.85;white-space:nowrap}
+#myhome .mhc input{background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 9px;font-size:13px;width:120px}
+#myhome .mhc .addhome{margin:0;padding:4px 10px;font-size:13px}
+.rpbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:8px 0;font-size:13px}
+.rpbar label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.rpbar .addhome{margin:0;padding:4px 10px;font-size:13px}
+#rpmsg{opacity:.85}
+.st.good .n::before{content:'● ';color:#6fd36f;font-size:10px}
+.st.bad{opacity:.45}.st.bad .n{text-decoration:line-through}
 .mwctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;padding:8px;background:#1a0f08;border-radius:6px}
 .mwctl[hidden]{display:none}
 .mwctl input{flex:1;min-width:160px;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 9px;font-size:13px}
@@ -208,6 +233,9 @@ body.hidebad .vr.bad{display:none}
 #roomview:is(.sideR,.sideL):not(.mini) #chatlog{height:calc(100vh - 330px);min-height:240px}
 #roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]){grid-template-columns:minmax(0,1fr)}
 #roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]) #chatsec{grid-column:1;position:static}
+#chatsec>.debate{margin:10px 0 0}
+#roomview:is(.sideR,.sideL):not(.mini) #chatsec{max-height:calc(100vh - 24px);overflow-y:auto}
+#roomview:is(.sideR,.sideL):not(.mini) #chatsec:has(>.debate:not([hidden])) #chatlog{height:max(200px,calc(100vh - 640px))}
 #roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]) #chatlog{height:180px;min-height:0}
 }
 </style>
@@ -257,6 +285,14 @@ body.hidebad .vr.bad{display:none}
       <option value="all">전체</option><option value="fav">즐겨찾기</option>
     </select>
   </div>
+  <div class="rpbar" id="rpbar">
+    <label><input type="checkbox" id="rphide" checked> 안 되는 방송국 숨기기</label>
+    <label><input type="checkbox" id="rpauto" checked> 24시간마다 자동 확인</label>
+    <label><input type="checkbox" id="rsume" checked> 마지막 방송 자동 재생</label>
+    <button class="addhome" type="button" id="rpgo" title="지금 보이는 방송국이 실제로 나오는지 하나씩 확인합니다">🔍 지금 확인</button>
+    <button class="addhome" type="button" id="rpreload" title="방송국 목록을 서버에서 다시 불러옵니다">🔄 목록 새로고침</button>
+    <span id="rpmsg"></span>
+  </div>
   <div class="count" id="count"></div>
   <div class="list" id="list" role="list"></div>
   <section class="chat" id="tvsec" aria-label="TV 보기">
@@ -287,6 +323,11 @@ body.hidebad .vr.bad{display:none}
       <div class="chatnote" id="tvfmsg"></div>
       <div class="vres" id="tvlist" style="max-height:60vh"></div>
     </div>
+  </section>
+  <section class="chat" id="myhome" aria-label="마이홈">
+    <div class="chathead"><strong>🏠 마이홈</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="mhradio">⭐ 라디오 즐겨찾기 보기</button></span></div>
+    <div id="mhlist"></div>
+    <div class="chatnote">음악 방 목록에서 ☆를 누르면 여기에 저장됩니다. 방마다 내 이름과 비밀번호를 정해 두면 「입장」만 눌러 바로 들어갑니다. (이름·비밀번호는 이 기기에만 저장됩니다)</div>
   </section>
   <section class="chat" id="musicroom" aria-label="음악 방">
     <div class="chathead"><strong>🎵 음악 방</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="mkopen">＋ 음악 방 만들기</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="livereload">새로고침</button></span></div>
@@ -420,6 +461,20 @@ body.hidebad .vr.bad{display:none}
       <div id="guestTile" hidden title="누르면 크게 (크기 조절·이동 가능)"><video id="guestVid" muted autoplay playsinline></video><small id="guestLbl"></small></div>
     </div>
     <audio id="bcAudio" controls hidden style="width:100%;margin-top:8px"></audio>
+    <div class="rdbar" id="rdbar">
+      <div class="rdrow"><strong>📻 라디오</strong><span id="rdnow">방송국을 고르세요</span>
+        <button class="addhome" type="button" id="rdprev" title="이전 방송국" aria-label="이전 방송국">⏮</button>
+        <button class="addhome" type="button" id="rdplay" title="재생/정지" aria-label="라디오 재생 또는 정지">▶</button>
+        <button class="addhome" type="button" id="rdnext" title="다음 방송국" aria-label="다음 방송국">⏭</button>
+        <label>볼륨 <input type="range" id="rdvol" min="0" max="1" step="0.01" value="0.8" aria-label="라디오 볼륨"></label>
+        <button class="addhome" type="button" id="rdtoggle" aria-expanded="false">📻 방송국 고르기 ▾</button>
+      </div>
+      <div id="rdpick" hidden>
+        <div class="rdf"><select id="rdcountry" aria-label="국가"></select><input id="rdq" type="search" placeholder="방송국 이름 검색 (예: KBS, 클래식, jazz)" aria-label="방송국 검색"></div>
+        <div class="list" id="rdlist" role="list"></div>
+        <div class="chatnote" style="margin-top:6px">라디오는 내 기기에서만 들립니다. 방 사람들에게도 들려주려면 방장이 🖥 PC 소리로 이 탭의 소리를 공유하세요.</div>
+      </div>
+    </div>
     <div class="mwctl" id="mwctl" hidden>
       <label class="addhome" style="margin:0;cursor:pointer">📂 영상 파일<input id="bcvfile" type="file" accept="video/*" hidden></label>
       <input id="vurl" placeholder="영상 링크 붙여넣기 (유튜브 · mp4 · m3u8)" aria-label="영상 링크">
@@ -485,19 +540,22 @@ async function loadStations(){
     stations = await api(`/json/stations/search?countrycode=${$('country').value}&hidebroken=true&order=votes&reverse=true&limit=3000`);
     stations = stations.filter(s => s.url_resolved || s.url);
     render();
+    rpSoon();
   } catch(e){
     $('list').innerHTML = `<div class="msg">${e.message}</div>`;
   }
 }
 
 function render(){
+  if (typeof rdRender === 'function') setTimeout(rdRender, 0);
   const q = $('q').value.trim().toLowerCase();
   const tag = $('tag').value;
   const favOnly = $('mode').value === 'fav';
   view = stations.filter(s =>
     (!q || s.name.toLowerCase().includes(q) || (s.tags||'').toLowerCase().includes(q)) &&
     (!tag || (s.tags||'').toLowerCase().includes(tag)) &&
-    (!favOnly || favs.includes(s.stationuuid)));
+    (!favOnly || favs.includes(s.stationuuid)) &&
+    (!($('rphide') && $('rphide').checked) || rpGet(s) !== 0));
   $('count').textContent = `방송국 ${view.length}개`;
   const box = $('list');
   box.innerHTML = '';
@@ -507,7 +565,8 @@ function render(){
     const row = document.createElement('div');
     row.style.display = 'flex'; row.setAttribute('role','listitem');
     const b = document.createElement('button');
-    b.className = 'st' + (cur >= 0 && stations[cur] && stations[cur].stationuuid === s.stationuuid ? ' on' : '');
+    b.className = 'st' + (cur >= 0 && stations[cur] && stations[cur].stationuuid === s.stationuuid ? ' on' : '') + rpCls(s);
+    b.dataset.u = s.stationuuid;
     b.innerHTML = `<img alt="" loading="lazy" src="${s.favicon || ''}" onerror="this.style.visibility='hidden'"><span class="n"></span><span class="t"></span>`;
     b.querySelector('.n').textContent = s.name.trim() || '(이름 없음)';
     b.querySelector('.t').textContent = (s.tags || '').split(',').slice(0,2).join(', ');
@@ -529,12 +588,13 @@ function render(){
 }
 
 let curView = -1;
-function playView(i){
+function playView(i, keepRoom, restore){
   const s = view[i]; if (!s) return;
-  try { if (mtv.on) mtvOff(); } catch(e){}
+  try { if (mtv.on && !restore) mtvOff(); } catch(e){}
   curView = i;
-  stopListen();
+  if (!keepRoom){ stopListen(); try { localStorage.removeItem('radio_last_room'); } catch(e){} }
   cur = stations.indexOf(s);
+  lastSaveStation(s);
   const url = s.url_resolved || s.url;
   $('now').textContent = s.name.trim();
   $('meta').textContent = [s.country, (s.codec||'').toUpperCase(), s.bitrate ? s.bitrate + 'kbps' : ''].filter(Boolean).join(' · ');
@@ -548,7 +608,7 @@ function playView(i){
   } else {
     audio.src = url;
   }
-  audio.play().catch(() => setStatus('재생할 수 없습니다. 다른 방송국을 선택하세요'));
+  audio.play().catch(e => setStatus(e && e.name === 'NotAllowedError' ? '▶ 화면을 한 번 누르면 이어서 나옵니다' : '재생할 수 없습니다. 다른 방송국을 선택하세요'));
   document.querySelectorAll('.st').forEach((el, k) => el.classList.toggle('on', k === i));
   if ($('room').value === 'station' && typeof fetchChat === 'function') { lastSig = ''; fetchChat(true); }
   if (navigator.mediaSession){
@@ -564,13 +624,135 @@ audio.addEventListener('error', () => { if (!hls) setStatus('재생할 수 없�
 
 $('play').onclick = () => {
   if (curView < 0){ if (view.length) playView(0); return; }
-  audio.paused ? audio.play().catch(()=>{}) : audio.pause();
+  audio.paused ? audio.play().catch(()=>{}) : (audio.pause(), lastOff(1));
 };
 $('next').onclick = () => { if (view.length) playView((curView + 1) % view.length); };
 $('prev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length); };
 $('vol').oninput = e => audio.volume = +e.target.value;
 audio.volume = 0.8;
 
+
+// ===== 📡 방송국 접속 확인 (되는 곳 표시 · 안 되는 곳 숨김 · 24시간마다 자동 재확인) =====
+const RP_KEY = 'radio_probe', RP_TTL = 24 * 3600 * 1000;
+let rp = {}, rpQ = [], rpRun = 0, rpDone = 0, rpAll = 0, rpGood = 0, rpGen = 0, rpT = 0;
+try { rp = JSON.parse(localStorage.getItem(RP_KEY) || '{}') || {}; } catch(e){ rp = {}; }
+const rpGet = s => { const e = rp[s.stationuuid]; return e ? e[0] : -1; };
+const rpFresh = s => { const e = rp[s.stationuuid]; return !!e && Date.now() - e[1] < RP_TTL; };
+const rpCls = s => { const v = rpGet(s); return v === 1 ? ' good' : v === 0 ? ' bad' : ''; };
+function rpSave(){
+  const old = Date.now() - 7 * 24 * 3600 * 1000;
+  Object.keys(rp).forEach(k => { if (rp[k][1] < old) delete rp[k]; });
+  try { localStorage.setItem(RP_KEY, JSON.stringify(rp)); } catch(e){}
+}
+function rpSet(s, ok){ rp[s.stationuuid] = [ok ? 1 : 0, Date.now()]; rpMark(s); }
+function rpMark(s){
+  const v = rpGet(s), hide = $('rphide').checked;
+  document.querySelectorAll('#list [data-u="' + s.stationuuid + '"]').forEach(b => {
+    b.classList.toggle('good', v === 1); b.classList.toggle('bad', v === 0);
+    if (b.parentNode) b.parentNode.style.display = (v === 0 && hide) ? 'none' : 'flex';
+  });
+}
+function rpPing(s){
+  return new Promise(res => {
+    const url = s.url_resolved || s.url, a = new Audio(); a.preload = 'auto'; a.muted = true;
+    let h = null, done = false;
+    const fin = ok => {
+      if (done) return; done = true; clearTimeout(t);
+      try { if (h) h.destroy(); a.pause(); a.removeAttribute('src'); a.load(); } catch(e){}
+      res(ok);
+    };
+    const t = setTimeout(() => fin(false), 10000);
+    ['loadeddata', 'canplay', 'playing'].forEach(ev => a.addEventListener(ev, () => fin(true)));
+    a.addEventListener('error', () => fin(false));
+    const isHls = /\.m3u8(\?|$)/i.test(url) || s.hls === 1;
+    if (isHls && window.Hls && Hls.isSupported()){
+      h = new Hls(); h.loadSource(url); h.attachMedia(a);
+      h.on(Hls.Events.MANIFEST_PARSED, () => fin(true));
+      h.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) fin(false); });
+    } else { a.src = url; }
+  });
+}
+const rpMsg = t => { $('rpmsg').textContent = t; };
+function rpStart(force){
+  const list = view.slice(0, 600).filter(s => force || !rpFresh(s));
+  list.sort((x, y) => favs.includes(y.stationuuid) - favs.includes(x.stationuuid));
+  if (!list.length){ rpMsg('확인할 방송국이 없습니다 (모두 24시간 안에 확인됨)'); return; }
+  const gen = ++rpGen; rpQ = list; rpAll = list.length; rpDone = 0; rpGood = 0; rpRun = 0;
+  rpMsg('확인 중 0/' + rpAll);
+  for (let k = 0; k < 5; k++){
+    rpRun++;
+    (async () => {
+      while (gen === rpGen && rpQ.length){
+        const s = rpQ.shift(), ok = await rpPing(s);
+        if (gen !== rpGen) break;
+        rpSet(s, ok); rpDone++; if (ok) rpGood++;
+        rpMsg('확인 중 ' + rpDone + '/' + rpAll + ' · 되는 곳 ' + rpGood);
+        if (rpDone % 20 === 0) rpSave();
+      }
+      if (--rpRun === 0 && gen === rpGen){
+        rpSave(); rpMsg('확인 끝 · ' + rpAll + '곳 중 ' + rpGood + '곳 나옴 (' + new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}) + ')');
+        render();
+      }
+    })();
+  }
+}
+function rpSoon(){ clearTimeout(rpT); rpT = setTimeout(() => { if ($('rpauto').checked && !rpRun) rpStart(false); }, 1500); }
+$('rpgo').onclick = () => rpStart(true);
+$('rpreload').onclick = async () => {
+  const u = stations[cur] && stations[cur].stationuuid;
+  await loadStations();
+  if (u){ cur = stations.findIndex(x => x.stationuuid === u); curView = view.findIndex(x => x.stationuuid === u); }
+};
+$('rphide').onchange = () => { try { localStorage.setItem('radio_rp_hide', $('rphide').checked ? '1' : '0'); } catch(e){} render(); };
+$('rpauto').onchange = () => { try { localStorage.setItem('radio_rp_auto', $('rpauto').checked ? '1' : '0'); } catch(e){} if ($('rpauto').checked) rpSoon(); };
+try { $('rphide').checked = localStorage.getItem('radio_rp_hide') !== '0'; $('rpauto').checked = localStorage.getItem('radio_rp_auto') !== '0'; } catch(e){}
+setInterval(() => { if ($('rpauto').checked && !document.hidden && !rpRun) rpStart(false); }, 30 * 60 * 1000);
+// 직접 들어 본 결과도 바로 반영
+audio.addEventListener('playing', () => { const s = stations[cur]; if (s && rpGet(s) !== 1) rpSet(s, true); });
+audio.addEventListener('error', () => { const s = stations[cur]; if (s && audio.src) rpSet(s, false); });
+
+// ===== ⏮ 마지막 방송 기억 → 다음에 열 때 자동으로 이어 듣기 =====
+const lastGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch(e){ return null; } };
+const lastOff = v => { try { v ? localStorage.setItem('radio_last_off', '1') : localStorage.removeItem('radio_last_off'); } catch(e){} };
+function lastSaveStation(s){
+  try {
+    localStorage.setItem('radio_last_st', JSON.stringify({c: $('country').value, s: {stationuuid: s.stationuuid, name: s.name, url: s.url, url_resolved: s.url_resolved, hls: s.hls, country: s.country, codec: s.codec, bitrate: s.bitrate, tags: s.tags, favicon: s.favicon}}));
+  } catch(e){}
+}
+audio.addEventListener('playing', () => lastOff(0));
+try { $('rsume').checked = localStorage.getItem('radio_resume') !== '0'; } catch(e){}
+$('rsume').onchange = () => { try { localStorage.setItem('radio_resume', $('rsume').checked ? '1' : '0'); } catch(e){} };
+function armResume(){
+  const go = () => {
+    document.removeEventListener('click', go); document.removeEventListener('keydown', go);
+    if (audio.paused && audio.src) audio.play().catch(() => {});
+  };
+  document.addEventListener('click', go); document.addEventListener('keydown', go);
+}
+async function restoreLast(){
+  if (!$('rsume').checked || INVITE) return;
+  const room = lastGet('radio_last_room');
+  if (room && room.id && DB){
+    for (let k = 0; k < 40 && !chatAllowed; k++) await new Promise(r => setTimeout(r, 500));
+    if (chatAllowed){
+      try { await loadLive(); } catch(e){}
+      const id = mhLive[room.id] ? room.id : Object.keys(mhLive).find(i => String(mhLive[i].n) === String(room.name));
+      if (id && !mhLive[id].e){
+        const info = mhLive[id], f = mhFind(id, String(info.n)), pw = (f && f.pw) || '';
+        if (info.p && !pw){ setBc('마지막 음악 방 「' + String(info.n) + '」은 비밀번호가 필요해 자동 입장하지 않았습니다. 마이홈에 비밀번호를 저장해 두세요.'); }
+        else { if (f && f.nick) applyMyName(f.nick); listen(id, String(info.n), !!info.p, pw); return; }
+      }
+    }
+  }
+  try { if (localStorage.getItem('radio_last_off') === '1') return; } catch(e){}
+  const st = lastGet('radio_last_st'); if (!st || !st.s || curView >= 0) return;
+  const find = () => view.findIndex(x => x.stationuuid === st.s.stationuuid);
+  let i = find();
+  if (i < 0){ if (!stations.some(x => x.stationuuid === st.s.stationuuid)) stations.unshift(st.s); render(); i = find(); }
+  if (i < 0) return;
+  playView(i, true, true);
+  setTimeout(() => { if (audio.paused && audio.src) armResume(); }, 1200);
+}
 let timer;
 $('q').oninput = () => { clearTimeout(timer); timer = setTimeout(render, 200); };
 $('tag').onchange = render;
@@ -1042,17 +1224,25 @@ function roomHead(){
   $('roomtitle').textContent = host ? '👑 내가 방장입니다' : '음악 방에 참여 중';
   $('rstat').style.display = host ? 'none' : '';
 }
-function showRoomView(){ setMini(false); $('roomview').hidden = false; $('rvbody').append($('roomwrap'), $('chatsec')); document.body.style.overflow = 'hidden'; $('roomview').scrollTop = 0; }
+// 토론 반응 박스: 큰 화면에서는 채팅창 아래, 작은 창/방 밖에서는 미디어 창 안
+function placeDebate(){
+  const d = $('debate'); if (!d) return;
+  const inRoom = !$('roomview').hidden && !$('roomview').classList.contains('mini');
+  if (inRoom){ if (d.parentNode !== $('chatsec')) $('chatsec').append(d); }
+  else { const mw = $('mediawin'), rf = $('rxfloat'); if (d.parentNode !== mw) mw.insertBefore(d, rf); }
+}
+function showRoomView(){ setMini(false); $('roomview').hidden = false; $('rvbody').append($('roomwrap'), $('chatsec')); document.body.style.overflow = 'hidden'; $('roomview').scrollTop = 0; placeDebate(); }
 function hideRoomView(){
   if ($('roomview').hidden) return;
   $('musicroom').insertBefore($('roomwrap'), $('bcstat')); $('musicroom').after($('chatsec'));
-  setMini(false); $('roomview').hidden = true; document.body.style.overflow = '';
+  setMini(false); $('roomview').hidden = true; document.body.style.overflow = ''; placeDebate();
 }
 // ---- 미니 창 (방을 유지한 채 작은 창으로 줄이기) ----
 const MINI_KEY = 'radio_mini_pos';
 function setMini(on){
   const rv = $('roomview'), btn = $('rvmini');
   rv.classList.toggle('mini', on);
+  placeDebate();
   rv.style.left = rv.style.top = rv.style.right = rv.style.bottom = '';
   if (btn){ btn.textContent = on ? '⬜ 크게' : '▁ 작게'; btn.setAttribute('aria-label', on ? '큰 화면으로 펼치기' : '작은 창으로 줄이기'); }
   if (on){
@@ -1761,6 +1951,7 @@ async function listen(bid, name, locked, presetPw){
   if (locked){ pw = presetPw || prompt('이 음악 방은 비밀번호가 필요합니다.') || ''; if (!pw) return; }
   stopListen(); audio.pause();
   $('now').textContent = name; $('meta').textContent = '음악 방'; setStatus('연결 중…'); enterRoom(bid, name);
+  try { localStorage.setItem('radio_last_room', JSON.stringify({id: bid, name: String(name)})); } catch(e){}
   return connectListen(bid, name, pw);
 }
 // 듣는 사람: 수신 버퍼를 늘려 화면을 조금 늦게 재생하는 대신 끊김을 줄임 (Chrome/Edge 114+)
@@ -1843,8 +2034,9 @@ function stopListen(){
 async function claimEmptyRoom(R, info){
   if (!DB || !chatAllowed) return;
   let pw = '';
+  const fv = mhFind(R, String(info.n)); if (fv && fv.nick) applyMyName(fv.nick);
   if (info.p){
-    pw = prompt('이 음악 방은 비밀번호가 필요합니다.') || ''; if (!pw) return;
+    pw = (fv && fv.pw) || prompt('이 음악 방은 비밀번호가 필요합니다.') || ''; if (!pw) return;
     if (info.lk && lockOf(pw, R) !== info.lk){ setBc('비밀번호가 맞지 않습니다.'); return; }
   }
   let cur = null; try { cur = await lj('livereg/' + R, 'GET'); } catch(e){ return; }
@@ -1863,6 +2055,7 @@ async function loadLive(){
     const d = await lj('livereg', 'GET') || {}, now = Date.now();
     Object.keys(d).forEach(id => { if (!d[id] || (now - d[id].ts > 300000 && !(d[id].e && now < d[id].e))){ lj('livereg/' + id, 'DELETE').catch(() => {}); lj('sig_' + id, 'DELETE').catch(() => {}); lj('roommem_' + id, 'DELETE').catch(() => {}); lj('roommedia_' + id, 'DELETE').catch(() => {}); } });
     const ids = Object.keys(d).filter(id => d[id] && (now - d[id].ts < 60000 || (d[id].e && now < d[id].e)));
+    mhLive = {}; ids.forEach(id => { mhLive[id] = d[id]; }); mhStatus();
     box.innerHTML = '';
     if (!ids.length){ box.innerHTML = '<div class="empty" style="margin:14px 0">' + (INVITE ? '초대받은 음악 방이 아직 열리지 않았거나 이미 닫혔습니다.' : '지금 열려 있는 음악 방이 없습니다.') + '</div>'; return; }
     ids.sort((a, b) => (b === INVITE) - (a === INVITE));
@@ -1872,8 +2065,12 @@ async function loadLive(){
       n.textContent = (id === INVITE ? '▶ 초대받은 음악 방 입장: ' : '🎵 ') + String(d[id].n).slice(0, 24) + (d[id].p ? ' 🔒' : '') + (d[id].e ? ' · 빈 방 — 들어가면 내가 방장 (' + Math.max(1, Math.ceil((d[id].e - now) / 60000)) + '분 남음)' : ' · ' + (d[id].c || 0) + '명 듣는 중') + (bc && bc.rid === id ? ' (내 방)' : '');
       if (id === INVITE) b.classList.add('on');
       b.append(n);
-      if (!(bc && bc.rid === id)) b.onclick = d[id].e ? () => claimEmptyRoom(id, d[id]) : () => listen(id, String(d[id].n), !!d[id].p);
-      const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center'; row.append(b);
+      if (!(bc && bc.rid === id)) b.onclick = d[id].e ? () => claimEmptyRoom(id, d[id]) : () => listenFav(id, d[id]);
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center';
+      const star = document.createElement('button'); star.className = 'fav'; star.type = 'button';
+      const paint = () => { const on = !!mhFind(id, String(d[id].n)); star.classList.toggle('on', on); star.textContent = on ? '★' : '☆'; star.title = on ? '마이홈에서 빼기' : '마이홈에 저장'; star.setAttribute('aria-label', star.title); };
+      star.onclick = () => { mhToggle(id, d[id]); paint(); };
+      paint(); row.append(star, b);
       if (!(bc && bc.rid === id) && !d[id].e){
         const m = document.createElement('button'); m.className = 'fav'; m.type = 'button';
         m.style.cssText = 'font-size:13px;white-space:nowrap;padding:0 10px';
@@ -1941,7 +2138,7 @@ $('bcstop').onclick = async () => {
   try { await lj('roomclosed_' + R, 'PUT', {ts: Date.now()}); } catch(e){}
   stopBroadcast(true);
 };
-$('leavebtn').onclick = () => { stopListen(); setStatus('정지'); };
+$('leavebtn').onclick = () => { try { localStorage.removeItem('radio_last_room'); } catch(e){} stopListen(); setStatus('정지'); };
 $('mwre').onclick = () => { if (lis){ setBc('영상을 다시 연결하는 중입니다…'); reconnectListen(); } };
 $('rvmini').onclick = () => setMini(!$('roomview').classList.contains('mini'));
 (function(){ // 채팅 위치: 영상 옆 오른쪽(기본) / 왼쪽 / 아래 — 넓은 화면(900px 이상)에서만 적용
@@ -1954,6 +2151,7 @@ $('rvmini').onclick = () => setMini(!$('roomview').classList.contains('mini'));
   apply();
 })();
 $('rvleave').onclick = () => {
+  try { localStorage.removeItem('radio_last_room'); } catch(e){}
   if (!liveRoom){ hideRoomView(); return; }
   if (isHost()){
     if (!confirm('방을 나가면 지금 방에 있는 사람 중 한 명이 새 방장이 됩니다. (아무도 없어도 방은 1시간 동안 빈 방으로 남아 누구나 들어와 방장이 될 수 있습니다. 방을 아예 없애려면 "💣 방 폭파"를 누르세요.) 나갈까요?')) return;
@@ -2742,7 +2940,12 @@ $('addhome').onclick = () => {
   }
 };
 
-(async () => { await loadCountries(); await loadStations(); })();
+(async () => {
+  await loadCountries();
+  try { const ls = lastGet('radio_last_st'); if (ls && ls.c && [...$('country').options].some(o => o.value === ls.c)) $('country').value = ls.c; } catch(e){}
+  await loadStations();
+  restoreLast();
+})();
 
 // ===== 지역별 맛집 자유게시판 (라디오와 같은 Firebase의 /board 경로) =====
 (function(){
@@ -2933,6 +3136,115 @@ setInterval(() => { if (!document.hidden) load(); }, 30000);
 
 } catch(e){ console.warn('게시판을 시작하지 못했습니다:', e); }
 })();
+
+// ===== 📻 방 안에서도 라디오 (방을 나가지 않고 재생) =====
+function rdSync(){
+  $('rdnow').textContent = $('now').textContent || '방송국을 고르세요';
+  $('rdplay').textContent = audio.paused ? '▶' : '⏸';
+  document.querySelectorAll('#rdlist .st').forEach(el => el.classList.toggle('on', +el.dataset.i === curView));
+}
+function rdRender(){
+  const pick = $('rdpick'); if (!pick || pick.hidden) return;
+  const box = $('rdlist'); box.innerHTML = '';
+  if (!view.length){ box.innerHTML = '<div class="msg">조건에 맞는 방송국이 없거나 불러오는 중입니다.</div>'; return; }
+  const frag = document.createDocumentFragment();
+  view.slice(0, 300).forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'st' + (i === curView ? ' on' : ''); b.dataset.i = i; b.setAttribute('role', 'listitem');
+    b.innerHTML = '<span class="n"></span><span class="t"></span>';
+    b.querySelector('.n').textContent = s.name.trim() || '(이름 없음)';
+    b.querySelector('.t').textContent = (s.tags || '').split(',').slice(0, 2).join(', ');
+    b.onclick = () => playView(i, true);
+    frag.append(b);
+  });
+  box.append(frag);
+}
+$('rdtoggle').onclick = () => {
+  const pick = $('rdpick'), open = pick.hidden;
+  if (open){ $('rdcountry').innerHTML = $('country').innerHTML; $('rdcountry').value = $('country').value; $('rdq').value = $('q').value; }
+  pick.hidden = !open; $('rdtoggle').setAttribute('aria-expanded', open);
+  $('rdtoggle').textContent = open ? '📻 방송국 닫기 ▴' : '📻 방송국 고르기 ▾';
+  if (open) rdRender();
+};
+$('rdcountry').onchange = e => { $('country').value = e.target.value; $('country').dispatchEvent(new Event('change')); };
+$('rdq').oninput = e => { $('q').value = e.target.value; $('q').dispatchEvent(new Event('input')); };
+$('rdplay').onclick = () => { if (curView < 0){ if (view.length) playView(0, true); return; } audio.paused ? audio.play().catch(() => {}) : (audio.pause(), lastOff(1)); };
+$('rdnext').onclick = () => { if (view.length) playView((curView + 1) % view.length, true); };
+$('rdprev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length, true); };
+$('rdvol').oninput = e => { audio.volume = +e.target.value; $('vol').value = e.target.value; };
+$('vol').addEventListener('input', () => { $('rdvol').value = $('vol').value; });
+['playing', 'pause', 'waiting', 'error'].forEach(ev => audio.addEventListener(ev, rdSync));
+new MutationObserver(rdSync).observe($('now'), {childList: true, characterData: true, subtree: true});
+rdSync();
+
+// ===== 🏠 마이홈: 즐겨찾기한 음악 방 + 방마다 내 이름·비밀번호 =====
+let mhLive = {}, mh = [];
+try { mh = JSON.parse(localStorage.getItem('radio_myhome') || '[]'); if (!Array.isArray(mh)) mh = []; } catch(e){ mh = []; }
+const mhSave = () => { try { localStorage.setItem('radio_myhome', JSON.stringify(mh)); } catch(e){} };
+function mhFind(id, name){ return mh.find(f => f.id === id) || mh.find(f => f.name === name) || null; }
+function applyMyName(v){
+  v = String(v || '').trim().slice(0, 12); if (!v || v === $('nick').value.trim()) return;
+  $('nick').value = v;
+  try { localStorage.setItem('radio_nick', v); } catch(e){}
+  try { if (liveRoom) memBeat(); if (DB && chatAllowed) admit(); } catch(e){}
+}
+function listenFav(id, info){
+  const f = mhFind(id, String(info.n));
+  if (f && f.nick) applyMyName(f.nick);
+  return listen(id, String(info.n), !!info.p, f && f.pw ? f.pw : '');
+}
+function mhToggle(id, info){
+  const f = mhFind(id, String(info.n));
+  if (f){ mh = mh.filter(x => x !== f); }
+  else {
+    let pw = '';
+    if (info.p){ const v = prompt('이 방의 비밀번호를 저장할까요? (비워 두면 저장하지 않고, 나중에 마이홈에서 넣을 수 있어요)'); if (v) pw = v.slice(0, 12); }
+    mh.push({id: id, name: String(info.n).slice(0, 24), nick: $('nick').value.trim().slice(0, 12), pw: pw});
+  }
+  mhSave(); mhBuild();
+}
+function mhLiveId(f){
+  if (mhLive[f.id]) return f.id;
+  const k = Object.keys(mhLive).find(i => String(mhLive[i].n) === f.name);
+  if (k){ f.id = k; mhSave(); }
+  return k || '';
+}
+function mhEnter(f){
+  const id = mhLiveId(f);
+  if (!id){ setBc('「' + f.name + '」 방은 지금 열려 있지 않습니다.'); return; }
+  const info = mhLive[id];
+  applyMyName(f.nick);
+  if (info.e) claimEmptyRoom(id, info); else listen(id, String(info.n), !!info.p, f.pw || '');
+}
+function mhStatus(){
+  document.querySelectorAll('#mhlist .mhc').forEach(el => {
+    const f = mh[+el.dataset.i]; if (!f) return;
+    const id = mhLiveId(f), info = id ? mhLive[id] : null;
+    el.querySelector('.mhs').textContent = !info ? '⚪ 지금 닫힘' : info.e ? '🟡 빈 방 (들어가면 내가 방장)' : '🟢 열림 · ' + (info.c || 0) + '명' + (info.p ? ' 🔒' : '');
+    el.querySelector('.mhgo').disabled = !info;
+  });
+}
+function mhBuild(){
+  const box = $('mhlist'); box.innerHTML = '';
+  if (!mh.length){ box.innerHTML = '<div class="empty" style="margin:14px 0">저장한 음악 방이 없습니다. 아래 🎵 음악 방 목록에서 ☆를 눌러 보세요.</div>'; return; }
+  mh.forEach((f, i) => {
+    const row = document.createElement('div'); row.className = 'mhc'; row.dataset.i = i;
+    const n = document.createElement('span'); n.className = 'mhn'; n.textContent = '🎵 ' + f.name;
+    const st = document.createElement('span'); st.className = 'mhs';
+    const nk = document.createElement('input'); nk.maxLength = 12; nk.placeholder = '내 이름'; nk.value = f.nick || ''; nk.setAttribute('aria-label', f.name + ' 방에서 쓸 내 이름');
+    nk.onchange = () => { f.nick = nk.value.trim().slice(0, 12); mhSave(); };
+    const pw = document.createElement('input'); pw.type = 'password'; pw.maxLength = 12; pw.placeholder = '비밀번호'; pw.autocomplete = 'off'; pw.value = f.pw || ''; pw.setAttribute('aria-label', f.name + ' 방 비밀번호');
+    pw.onchange = () => { f.pw = pw.value.slice(0, 12); mhSave(); };
+    const go = document.createElement('button'); go.type = 'button'; go.className = 'addhome mhgo'; go.textContent = '입장';
+    go.onclick = () => { f.nick = nk.value.trim().slice(0, 12); f.pw = pw.value.slice(0, 12); mhSave(); mhEnter(f); };
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'addhome'; del.textContent = '🗑 삭제';
+    del.onclick = () => { mh = mh.filter(x => x !== f); mhSave(); mhBuild(); loadLive(); };
+    row.append(n, st, nk, pw, go, del); box.append(row);
+  });
+  mhStatus();
+}
+$('mhradio').onclick = () => { $('mode').value = 'fav'; $('mode').dispatchEvent(new Event('change')); $('list').scrollIntoView({behavior: 'smooth', block: 'start'}); };
+mhBuild();
 </script>
 </body>
 </html>
