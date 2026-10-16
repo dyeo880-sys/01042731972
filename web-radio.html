@@ -362,7 +362,7 @@ button,select,input{font:inherit}
 <div id="roomview" hidden role="dialog" aria-label="음악 방"><div class="rvbox">
   <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
   <section id="mediawin" hidden aria-label="미디어 창">
-    <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><span id="mwnow">대기 중</span></div>
+    <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
     <div class="mwscreen" id="mwscreen">
       <div class="mwidle" id="mwidle">🎶</div>
       <video id="mwvid" controls playsinline style="display:none"></video>
@@ -1065,7 +1065,7 @@ function hostFile(f){
   mwvid.src = URL.createObjectURL(f); mvShow('vid'); mwUpdate('🎬 ' + f.name);
   mwvid.addEventListener('playing', () => {
     const cs = mwvid.captureStream ? mwvid.captureStream() : (mwvid.mozCaptureStream ? mwvid.mozCaptureStream() : null);
-    if (!cs || !cs.getAudioTracks().length){ setBc('이 브라우저는 영상 파일 방송을 지원하지 않습니다. PC의 Chrome/Edge를 쓰거나 영상 링크를 이용하세요.'); return; }
+    if (!cs || !cs.getVideoTracks().length){ setBc('이 브라우저는 영상 파일 방송을 지원하지 않습니다. PC의 Chrome/Edge를 쓰거나 영상 링크를 이용하세요.'); return; }
     swapSource(cs); setVideoTrack(cs.getVideoTracks()[0]); mvPut({k: 'file'});
     setBc('🎬 영상이 방에 연결되었습니다. (듣는 사람 화면에도 영상이 나옵니다)');
   }, {once: true});
@@ -1093,7 +1093,7 @@ function setVideoTrack(nt){
 // 듣는 사람: 방장 상태 따라가기
 function lisVidRefresh(){
   const on = lisVidReady && (MV.rk === 'file' || MV.rk === 'cam');
-  if (liveAudio.srcObject) liveAudio.style.display = on ? 'block' : 'none';
+  if (liveAudio.srcObject) liveAudio.style.display = (on || liveAudio.controls) ? 'block' : 'none';
   mwUpdate();
 }
 async function mvPoll(){
@@ -1102,7 +1102,8 @@ async function mvPoll(){
   let reg = null;
   try { [s, reg] = await Promise.all([lj('roommedia_' + id, 'GET'), lj('livereg/' + id, 'GET')]); } catch(e){ return; }
   if (!liveRoom || liveRoom.id !== id) return;
-  if (!reg || reg.e || Date.now() - reg.ts > 90000){
+  if (reg && reg.ts !== MV.regTs){ MV.regTs = reg.ts; MV.regAt = Date.now(); }
+  if (!reg || reg.e || Date.now() - (MV.regAt || Date.now()) > 90000){
     if (++MV.gone >= 2){ MV.hostless = true; electStep(id); return; }
   } else {
     MV.gone = 0;
@@ -1111,6 +1112,11 @@ async function mvPoll(){
   if (MV.hostless) return;
   MV.last = s;
   MV.rk = (s && s.k) || ''; lisVidRefresh(); mvApply(s);
+  if ((MV.rk === 'file' || MV.rk === 'cam') && !lisVidReady){
+    MV.vwait = (MV.vwait || 0) + 1;
+    if (MV.vwait === 2) mwUpdate('🎬 영상 연결 중…');
+    if (MV.vwait === 5 && !MV.vre){ MV.vre = 1; setBc('영상이 오지 않아 다시 연결하는 중입니다…'); reconnectListen(); }
+  } else { MV.vwait = 0; if (MV.rk !== 'file' && MV.rk !== 'cam') MV.vre = 0; }
 }
 // ---- 방장이 나갔을 때: 방에 남은 사람이 새 방장이 됨 ----
 async function electStep(R){
@@ -1149,6 +1155,7 @@ async function takeOver(R){
 }
 function reconnectListen(){
   if (!lis || !liveRoom) return;
+  MV.vwait = 0;
   const l = lis; lis = null;
   try { l.pc.close(); } catch(e){}
   lj('sig_' + l.bid + '/o_' + l.lid, 'DELETE').catch(() => {}); lj('sig_' + l.bid + '/a_' + l.lid, 'DELETE').catch(() => {});
@@ -1191,6 +1198,7 @@ function mwUpdate(text){
   if (text != null) $('mwnow').textContent = text;
 }
 function mwOpen(host){
+  MV.regTs = null; MV.regAt = 0; MV.vwait = 0; MV.vre = 0; $('mwre').hidden = host;
   $('mediawin').hidden = false;
   $('mwctl').hidden = !host;
   clearInterval(MV.poll); if (!host){ MV.poll = setInterval(mvPoll, 3000); mvPoll(); }
@@ -1268,13 +1276,13 @@ function swapSource(ns){
   const me = bc;
   if (!me){ if (ns) ns.getTracks().forEach(t => t.stop()); setBc('먼저 "음악 방 만들기"로 방을 만들어 주세요.'); return; }
   const nt = ns && ns.getAudioTracks()[0];
-  if (!nt){ setBc('소리를 가져오지 못했습니다.'); return; }
+  if (!nt && !(ns && ns.getVideoTracks().length)){ setBc('소리를 가져오지 못했습니다.'); return; }
   if (!ns.getVideoTracks().length && MV.k === 'file'){ mvStop(); setVideoTrack(null); mvPut({k: me.cam ? 'cam' : ''}); }
   if (me.src && me.src !== ns) me.src.getTracks().forEach(t => t.stop());
   me.src = ns;
   const old = me.stream.getAudioTracks()[0]; if (old) me.stream.removeTrack(old);
-  me.stream.addTrack(nt);
-  Object.keys(me.pcs).forEach(k => { const sd = me.pcs[k].getSenders().find(x => x.track && x.track.kind === 'audio'); if (sd) sd.replaceTrack(nt).catch(() => {}); });
+  if (nt) me.stream.addTrack(nt);
+  Object.keys(me.pcs).forEach(k => { const sd = me.pcs[k].getSenders().find(x => x.track && x.track.kind === 'audio'); if (sd && nt) sd.replaceTrack(nt).catch(() => {}); });
   setBc('🎵 음악이 방에 연결되었습니다.'); closePanels();
 }
 async function bcPoll(){
@@ -1321,11 +1329,11 @@ async function connectListen(bid, name, pw){
   const pc = new RTCPeerConnection(RTC_CFG); lis = {pc, bid, lid, pw};
   pc.addTransceiver('audio', {direction: 'recvonly'});
   pc.addTransceiver('video', {direction: 'recvonly'});
-  liveAudio.style.display = 'none'; lisVidReady = false; MV.rk = '';
+  liveAudio.controls = false; liveAudio.style.display = 'none'; lisVidReady = false; MV.rk = '';
   pc.ontrack = e => {
     if (e.track.kind === 'video') e.track.addEventListener('unmute', () => { lisVidReady = true; lisVidRefresh(); });
     liveAudio.srcObject = e.streams[0] || new MediaStream([e.track]);
-    liveAudio.play().catch(() => setStatus('재생 버튼을 눌러 주세요')); setStatus('● 음악 방 듣는 중'); mwUpdate('● 방송 듣는 중');
+    liveAudio.play().catch(() => { liveAudio.controls = true; liveAudio.style.display = 'block'; setStatus('재생 버튼을 눌러 주세요'); mwUpdate(); }); setStatus('● 음악 방 듣는 중'); mwUpdate('● 방송 듣는 중');
   };
   pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' && lis && lis.pc === pc) setStatus('연결하지 못했습니다 (네트워크 제한)'); };
   try {
@@ -1451,6 +1459,7 @@ $('bcstop').onclick = async () => {
   stopBroadcast(true);
 };
 $('leavebtn').onclick = () => { stopListen(); setStatus('정지'); };
+$('mwre').onclick = () => { if (lis){ setBc('영상을 다시 연결하는 중입니다…'); reconnectListen(); } };
 $('rvmini').onclick = () => setMini(!$('roomview').classList.contains('mini'));
 $('rvleave').onclick = () => {
   if (!liveRoom){ hideRoomView(); return; }
