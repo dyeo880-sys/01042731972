@@ -70,11 +70,16 @@ button,select,input{font:inherit}
 .mwhead strong{color:var(--amber);font-size:15px}
 #mwnow{font-size:13px;opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mwscreen{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#120a05;border-radius:8px;min-height:84px;padding:8px}
-.mwscreen{--mws:1;overflow:auto;max-height:85vh}
+.mwscreen{--mws:1;overflow:auto;max-height:85vh;position:relative}
+#guestTile{position:absolute;right:8px;bottom:8px;width:min(34%,calc(200px * var(--mws)));background:#000;border:2px solid var(--amber);border-radius:8px;overflow:hidden;z-index:2;cursor:pointer;box-shadow:0 2px 10px #000a}#guestTile[hidden]{display:none}#guestTile.big{width:min(72%,calc(440px * var(--mws)))}#guestTile video{width:100%;display:block;max-height:none!important;border-radius:0!important}#guestTile small{position:absolute;left:4px;top:4px;background:#000b;color:var(--amber);padding:1px 7px;border-radius:6px;font-size:11px}#roomview.mini #guestTile{width:96px}
 .mwscreen video{max-width:100%;max-height:calc(34vh * var(--mws));border-radius:8px;background:#000}
 .vr.bad{opacity:.4;text-decoration:line-through}.vr.good::before{content:'● ';color:#6fd36f;font-size:10px}
 body.hidebad .vr.bad{display:none}
 .mwtalk{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;font-size:13px}.mwtalk[hidden]{display:none}.mwtalk button{margin:0;padding:4px 10px;font-size:13px}#talkhost{flex-basis:100%;background:#1a0f08;border-radius:6px;padding:6px 8px}#talkhost .tk{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:3px 0}#talkhost .tk b{color:var(--amber)}
+@keyframes tkblink{0%,100%{opacity:1;box-shadow:0 0 0 0 #ff4d4d}50%{opacity:.35;box-shadow:0 0 10px 3px #ff4d4d}}
+.blink{animation:tkblink 1s ease-in-out infinite}
+#tkbadge{background:#c0392b;color:#fff;font-size:12px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}#tkbadge[hidden]{display:none}
+#talkhost .tk.pend{border-left:3px solid #ff4d4d;padding-left:6px;margin:2px 0}
 .mwsize{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:13px;flex-wrap:wrap}
 .mwsize input[type=range]{flex:1;min-width:120px;max-width:420px;accent-color:var(--brass)}
 .mwsize output{min-width:44px;text-align:right;color:var(--amber)}
@@ -300,7 +305,7 @@ body.hidebad .vr.bad{display:none}
       <div id="members" style="min-width:150px;max-width:230px;background:#1a0f08;border-radius:6px;padding:8px 10px;font-size:14px;line-height:1.7"></div>
     </div>
     <div class="chatnote" id="bcstat"></div>
-    <div class="chatnote">방을 만든 사람의 기기에서 직접 소리를 보내는 방식이라 듣는 사람은 최대 8명(카메라를 켜면 4명)까지 연결됩니다. 방을 여는 동안 이 페이지를 닫지 마세요. 듣는 사람은 "🎤 말하기 요청"을 누르고 방장이 허용하면 말할 수 있습니다(동시에 2명).</div>
+    <div class="chatnote">방을 만든 사람의 기기에서 직접 소리를 보내는 방식이라 듣는 사람은 최대 8명(카메라를 켜면 4명)까지 연결됩니다. 방을 여는 동안 이 페이지를 닫지 마세요. 손님은 "🎤 마이크 요청"·"📷 카메라 요청"을 누르고 방장이 허용하면 켜집니다(마이크 동시 2명, 카메라 1명). 방장은 언제든 강제로 끌 수 있습니다.</div>
   </section>
   <section class="chat" id="chatsec" aria-label="채팅">
     <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"></div>
@@ -369,17 +374,18 @@ body.hidebad .vr.bad{display:none}
   <p class="note">※ 실제 AM/FM 전파가 아니라, 각 방송국이 인터넷으로 송출하는 스트림을 radio-browser.info 공개 목록에서 불러옵니다. 일부 방송국은 지역 제한이나 주소 변경으로 재생되지 않을 수 있습니다. 이 파일을 내 컴퓨터에서 직접 열어 사용하세요.</p>
 </main>
 <div id="roomview" hidden role="dialog" aria-label="음악 방"><div class="rvbox">
-  <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
+  <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><span id="tkbadge" class="blink" hidden>🔔 요청</span><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
   <section id="mediawin" hidden aria-label="미디어 창">
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
     <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button></div>
-    <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 말하기 요청</button><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div></div>
+    <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div></div>
     <div class="mwscreen" id="mwscreen">
       <div class="mwidle" id="mwidle">🎶</div>
       <video id="mwvid" controls playsinline style="display:none"></video>
       <div id="mwyt" style="display:none"></div>
       <video id="liveAudio" autoplay playsinline style="display:none"></video>
       <video id="bcPreview" muted autoplay playsinline style="display:none;transform:scaleX(-1)"></video>
+      <div id="guestTile" hidden title="누르면 크게/작게"><video id="guestVid" muted autoplay playsinline></video><small id="guestLbl"></small></div>
     </div>
     <audio id="bcAudio" controls hidden style="width:100%;margin-top:8px"></audio>
     <div class="mwctl" id="mwctl" hidden>
@@ -1096,7 +1102,7 @@ function setVideoTrack(nt){
   const h = (nt && nt.getSettings && nt.getSettings().height) || 0;
   me.vbr = nt ? 700000 : 250000; me.vscale = h > 360 ? h / 360 : 1;
   Object.keys(me.pcs).forEach(k => {
-    const sd = me.pcs[k].getSenders().find(x => x.track && x.track.kind === 'video') || me.pcs[k].getSenders().find(x => !x.track);
+    const pk = me.pcs[k], sd = pk.getSenders().find(x => x !== pk._gs && x.track && x.track.kind === 'video') || pk.getSenders().find(x => x !== pk._gs && !x.track);
     if (!sd) return;
     sd.replaceTrack(t).then(() => { try { const q = sd.getParameters(); q.encodings = q.encodings && q.encodings.length ? q.encodings : [{}]; q.encodings[0].maxBitrate = me.vbr; q.encodings[0].scaleResolutionDownBy = me.vscale; sd.setParameters(q).catch(() => {}); } catch(e){} }).catch(() => {});
   });
@@ -1110,9 +1116,10 @@ function lisVidRefresh(){
 async function mvPoll(){
   if (!liveRoom || isHost() || !DB) return;
   const id = liveRoom.id; let s = null;
-  let reg = null;
-  try { [s, reg] = await Promise.all([lj('roommedia_' + id, 'GET'), lj('livereg/' + id, 'GET')]); } catch(e){ return; }
+  let reg = null, gg = null;
+  try { [s, reg, gg] = await Promise.all([lj('roommedia_' + id, 'GET'), lj('livereg/' + id, 'GET'), lj('roomguest_' + id, 'GET').catch(() => null)]); } catch(e){ return; }
   if (!liveRoom || liveRoom.id !== id) return;
+  guestSet(gg);
   if (reg && reg.ts !== MV.regTs){ MV.regTs = reg.ts; MV.regAt = Date.now(); }
   if (!reg || reg.e || Date.now() - (MV.regAt || Date.now()) > 90000){
     if (++MV.gone >= 2){ MV.hostless = true; electStep(id); return; }
@@ -1157,7 +1164,7 @@ async function takeOver(R){
     if (!(await buildBc(R, name, pw, false, keepVideo))){ leaveRoom(); return; }
     MV.hostless = false; MV.gone = 0;
     liveRoom.host = true; $('hostctl').hidden = false; $('leavebtn').hidden = true;
-    $('mediawin').hidden = false; $('mwctl').hidden = false; $('talkbtn').hidden = true; talkStop('');
+    $('mediawin').hidden = false; $('mwctl').hidden = false; $('talkbtn').hidden = true; $('camreqbtn').hidden = true; talkStop('');
     roomHead(); memBeat(); fillInvite(); loadLive();
     if (keepVideo){ MV.timer = setInterval(mvPush, 5000); mvPush(); mwUpdate('▶ 영상 계속 재생 중 (내가 방장)'); }
     else mwUpdate('음악·영상을 새로 골라 주세요 (내가 방장)');
@@ -1211,11 +1218,16 @@ function mwUpdate(text){
 function mwOpen(host){
   MV.regTs = null; MV.regAt = 0; MV.vwait = 0; MV.vre = 0; $('mwre').hidden = host;
   $('mediawin').hidden = false;
-  $('mwctl').hidden = !host; $('talkbtn').hidden = host; if (!host) $('talkhost').hidden = true;
+  $('mwctl').hidden = !host; $('talkbtn').hidden = host; $('camreqbtn').hidden = host; if (!host) $('talkhost').hidden = true;
   clearInterval(MV.poll); if (!host){ MV.poll = setInterval(mvPoll, 3000); mvPoll(); }
   mwUpdate(host ? '음악을 고르면 여기에 표시됩니다 (아래 🎵 음악 메뉴)' : '방장이 음악을 틀면 여기서 들립니다');
 }
-function mwClose(){ try { talkStop(''); } catch(e){} clearInterval(MV.poll); mvStop(); MV.rk = ''; MV.hostless = false; MV.gone = 0; lisVidReady = false; $('mediawin').hidden = true; $('mwnow').textContent = '대기 중'; mwUpdate(); }
+function guestSet(g){
+  const t = $('guestTile'); if (!t || isHost()) return;
+  if (g && g.n && $('guestVid').srcObject){ $('guestLbl').textContent = String(g.n).slice(0, 12); t.hidden = false; const v = $('guestVid'); if (v.paused) v.play().catch(() => {}); } else t.hidden = true;
+}
+$('guestTile').onclick = () => $('guestTile').classList.toggle('big');
+function mwClose(){ try { talkStop(''); } catch(e){} $('guestTile').hidden = true; $('guestVid').srcObject = null; clearInterval(MV.poll); mvStop(); MV.rk = ''; MV.hostless = false; MV.gone = 0; lisVidReady = false; $('mediawin').hidden = true; $('mwnow').textContent = '대기 중'; mwUpdate(); }
 function enterRoom(id, name){
   liveRoom = {id, name, host: !!(bc && bc.rid === id)}; renderRooms('b:' + id); $('room').onchange();
   $('roomwrap').hidden = false; $('hostctl').hidden = !liveRoom.host; $('leavebtn').hidden = true; showRoomView(); mwOpen(liveRoom.host);
@@ -1230,7 +1242,7 @@ function leaveRoom(){
 // ---- 방 만들기 ----
 function openMk(show){ $('mkform').hidden = !show; if (show){ $('bctitle').focus(); } }
 async function buildBc(rid, title, pw, wantCam, keepState){
-  lj('roomclosed_' + rid, 'DELETE').catch(() => {});
+  lj('roomclosed_' + rid, 'DELETE').catch(() => {}); lj('roomguest_' + rid, 'DELETE').catch(() => {});
   let ac, stream;
   try { ac = new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); stream = ac.createMediaStreamDestination().stream; }
   catch(e){ setBc('이 브라우저에서는 음악 방을 만들 수 없습니다.'); return false; }
@@ -1250,7 +1262,7 @@ async function buildBc(rid, title, pw, wantCam, keepState){
       vbase = cv.captureStream(1).getVideoTracks()[0]; stream.addTrack(vbase); timers.push(setInterval(tick, 1000));
     } catch(e){ vbase = null; }
   }
-  const me = {stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, ok: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: ''};
+  const me = {stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null};
   bc = me;
   me.reg = () => lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: Date.now(), p: me.pw ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length}).catch(() => {});
   await me.reg(); if (!keepState) mvPut({k: hasCam ? 'cam' : ''});
@@ -1279,7 +1291,7 @@ function stopBroadcast(noKeep){
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep) lj('livereg/' + me.rid, 'DELETE').catch(() => {});
   else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: Date.now(), p: me.pw ? 1 : 0, c: 0, e: Date.now() + 3600000, lk: me.lock || ''}).catch(() => {});
-  lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true;
+  lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
   leaveRoom(); setBc(''); loadLive();
 }
@@ -1317,8 +1329,13 @@ async function bcPoll(){
 }
 async function answerOffer(me, lid, off){
   const pc = new RTCPeerConnection(RTC_CFG); me.pcs[lid] = pc;
-  pc.ontrack = e => { if (e.track.kind === 'audio' && off.u){ me.tk[lid] = {track: e.track, uid: String(off.u), node: null, el: null}; hostTalkApply(me); } };
+  pc.ontrack = e => { if (!off.u) return; const x = me.tk[lid] || (me.tk[lid] = {uid: String(off.u), at: null, vt: null, node: null, el: null}); if (e.track.kind === 'audio') x.at = e.track; else x.vt = e.track; hostTalkApply(me); };
   me.stream.getTracks().forEach(t => pc.addTrack(t, me.stream));
+  try { // 손님 카메라를 내보내는 별도 영상 칸 (방장 영상과 따로)
+    if (!me.stream.getVideoTracks().length) pc.addTransceiver('video', {direction: 'sendonly'});
+    pc._gs = pc.addTransceiver('video', {direction: 'sendonly'}).sender;
+    if (me.vtrack) pc._gs.replaceTrack(me.vtrack).catch(() => {});
+  } catch(e){}
   pc.onconnectionstatechange = () => {
     if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) setTimeout(() => {
       if (pc.connectionState !== 'connected'){ pc.close(); if (me.pcs[lid] === pc) delete me.pcs[lid]; lj('sig_' + me.rid + '/o_' + lid, 'DELETE').catch(() => {}); lj('sig_' + me.rid + '/a_' + lid, 'DELETE').catch(() => {}); }
@@ -1332,9 +1349,9 @@ async function answerOffer(me, lid, off){
     await lj('sig_' + me.rid + '/a_' + lid, 'PUT', {sdp: pc.localDescription.sdp});
   } catch(e){ pc.close(); delete me.pcs[lid]; }
 }
-// ---- 🎤 듣는 사람 말하기 (방장이 허락한 사람만 · 동시에 최대 2명) ----
+// ---- 🎤📷 손님 마이크·카메라 (방장이 허락해야 켜짐 · 방장이 언제든 강제로 끌 수 있음) ----
 const MAX_SPEAK = 2;
-// 방장: 듣는 사람 목소리를 음악과 한 줄로 섞어 모두에게 내보냄
+// 방장: 손님 목소리를 음악과 한 줄로 섞어 모두에게 내보냄
 function mixInit(me){
   if (me.mix) return me.mix;
   const dest = me.ac.createMediaStreamDestination(), m = me.mix = {dest, node: null};
@@ -1345,18 +1362,41 @@ function mixInit(me){
   Object.keys(me.pcs).forEach(k => { const sd = me.pcs[k].getSenders().find(x => x.track && x.track.kind === 'audio'); if (sd) sd.replaceTrack(nt).catch(() => {}); });
   return m;
 }
+// 손님 카메라를 모든 사람 화면의 '작은 화면'으로 내보냄 (방장 영상은 그대로)
+function gSend(pc, track, me){
+  const sd = pc._gs; if (!sd) return;
+  sd.replaceTrack(track).then(() => { if (!track) return; try { const q = sd.getParameters(); q.encodings = q.encodings && q.encodings.length ? q.encodings : [{}]; q.encodings[0].maxBitrate = 250000; sd.setParameters(q).catch(() => {}); } catch(e){} }).catch(() => {});
+}
+function vidOn(me, lid, track, name){
+  me.vact = lid; me.vtrack = track;
+  Object.keys(me.pcs).forEach(k => gSend(me.pcs[k], track, me));
+  const g = $('guestVid'); g.srcObject = new MediaStream([track]); g.play().catch(() => {});
+  $('guestLbl').textContent = String(name || '손님').slice(0, 12); $('guestTile').hidden = false;
+  lj('roomguest_' + me.rid, 'PUT', {n: String(name || '손님').slice(0, 12), ts: Date.now()}).catch(() => {});
+}
+function vidOff(me){
+  me.vact = null; me.vtrack = null;
+  Object.keys(me.pcs).forEach(k => gSend(me.pcs[k], null, me));
+  $('guestTile').hidden = true; $('guestVid').srcObject = null;
+  lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
+}
 function hostTalkApply(me){
+  let act = null;
   Object.keys(me.tk).forEach(lid => {
-    const e = me.tk[lid], want = me.ok[e.uid] === true && me.pcs[lid];
-    if (want && !e.node){
-      const m = mixInit(me), ms = new MediaStream([e.track]);
+    const e = me.tk[lid], live = !!me.pcs[lid];
+    const wantA = live && e.at && me.okA[e.uid] === true;
+    if (wantA && !e.node){
+      const m = mixInit(me), ms = new MediaStream([e.at]);
       e.el = new Audio(); e.el.srcObject = ms; e.el.muted = true; e.el.play().catch(() => {}); // 크롬에서 원격 소리를 살리기 위한 장치
       e.node = me.ac.createMediaStreamSource(ms); e.node.connect(m.dest); e.node.connect(me.ac.destination);
-    } else if (!want && e.node){
+    } else if (!wantA && e.node){
       try { e.node.disconnect(); } catch(x){} e.node = null; if (e.el){ e.el.srcObject = null; e.el = null; }
     }
-    if (!me.pcs[lid]) delete me.tk[lid];
+    if (live && e.vt && me.okV[e.uid] === true) act = lid;
+    if (!live) delete me.tk[lid];
   });
+  if (act && me.vact !== act) vidOn(me, act, me.tk[act].vt, me.rq[me.tk[act].uid] && me.rq[me.tk[act].uid].n);
+  else if (!act && me.vact) vidOff(me);
 }
 async function talkPoll(me){
   let rq = null; try { rq = await lj('talkreq_' + me.rid, 'GET'); } catch(e){ return; }
@@ -1367,71 +1407,100 @@ async function talkPoll(me){
     const sn = me.seen2[u]; if (!sn || sn.ts !== r.ts) me.seen2[u] = {ts: r.ts, at: now};
     if (now - me.seen2[u].at < 20000) me.rq[u] = r; else lj('talkreq_' + me.rid + '/' + u, 'DELETE').catch(() => {});
   });
-  Object.keys(me.ok).forEach(u => { if (!me.rq[u]){ delete me.ok[u]; me.okDirty = true; } });
-  if (me.okDirty){ me.okDirty = false; if (Object.keys(me.ok).length) lj('talkok_' + me.rid, 'PUT', me.ok).catch(() => {}); else lj('talkok_' + me.rid, 'DELETE').catch(() => {}); }
+  [['okA', 'a'], ['okV', 'v']].forEach(([m, k]) => Object.keys(me[m]).forEach(u => { if (!(me.rq[u] && me.rq[u][k])){ delete me[m][u]; me.okDirty = true; } }));
+  if (me.okDirty){
+    me.okDirty = false; const o = {};
+    Object.keys(me.okA).forEach(u => { (o[u] = o[u] || {}).a = me.okA[u]; });
+    Object.keys(me.okV).forEach(u => { (o[u] = o[u] || {}).v = me.okV[u]; });
+    if (Object.keys(o).length) lj('talkok_' + me.rid, 'PUT', o).catch(() => {}); else lj('talkok_' + me.rid, 'DELETE').catch(() => {});
+  }
   hostTalkApply(me); renderTalkHost(me);
 }
-function talkDecide(me, u, yes){
+function talkDecide(me, kind, u, yes){
+  const m = kind === 'a' ? me.okA : me.okV;
   if (yes){
-    if (Object.values(me.ok).filter(v => v === true).length >= MAX_SPEAK){ setBc('동시에 말할 수 있는 사람은 최대 ' + MAX_SPEAK + '명입니다. 먼저 한 명의 말하기를 끄세요.'); return; }
-    me.ok[u] = true;
-  } else me.ok[u] = false;
+    if (kind === 'a' && Object.values(me.okA).filter(v => v === true).length >= MAX_SPEAK){ setBc('동시에 말할 수 있는 사람은 최대 ' + MAX_SPEAK + '명입니다. 먼저 한 명의 마이크를 끄세요.'); return; }
+    if (kind === 'v'){
+      if (Object.values(me.okV).some(v => v === true)){ setBc('손님 카메라는 한 명만 켤 수 있습니다. 먼저 켜진 카메라를 끄세요.'); return; }
+    }
+    m[u] = true;
+  } else m[u] = false;
   me.okDirty = true; me.tsig = ''; hostTalkApply(me); renderTalkHost(me);
 }
 function renderTalkHost(me){
   const box = $('talkhost'); if (!box || !isHost()) return;
-  const wait = Object.keys(me.rq).filter(u => me.ok[u] === undefined), spk = Object.keys(me.ok).filter(u => me.ok[u] === true && me.rq[u]);
-  const sig = wait.join(',') + '|' + spk.join(','); if (sig === me.tsig) return; me.tsig = sig;
-  box.innerHTML = ''; box.hidden = !(wait.length || spk.length);
-  const row = (u, label, btns) => {
-    const d = document.createElement('div'); d.className = 'tk';
-    const b = document.createElement('b'); b.textContent = String((me.rq[u] && me.rq[u].n) || '손님').slice(0, 14); d.append(b, document.createTextNode(label));
-    btns.forEach(([t, fn]) => { const x = document.createElement('button'); x.type = 'button'; x.className = 'addhome'; x.textContent = t; x.onclick = fn; d.append(x); });
-    box.append(d);
-  };
-  wait.forEach(u => row(u, ' 님이 말하기를 요청했습니다', [['✔ 허용', () => talkDecide(me, u, true)], ['✕ 거절', () => talkDecide(me, u, false)]]));
-  spk.forEach(u => row(u, ' 님 말하는 중', [['🔇 끄기', () => talkDecide(me, u, false)]]));
+  const st = (u, k) => { const m = k === 'a' ? me.okA : me.okV; return !(me.rq[u] && me.rq[u][k]) ? '' : m[u] === true ? 'on' : m[u] === undefined ? 'wait' : ''; };
+  const us = Object.keys(me.rq).filter(u => st(u, 'a') || st(u, 'v'));
+  const npend = us.reduce((n, u) => n + (st(u, 'a') === 'wait' ? 1 : 0) + (st(u, 'v') === 'wait' ? 1 : 0), 0);
+  const tb = $('tkbadge'); tb.hidden = !npend; tb.textContent = '🔔 요청 ' + npend;
+  const sig = us.map(u => u + ':' + st(u, 'a') + st(u, 'v') + ((me.rq[u] && me.rq[u].n) || '')).join('|'); if (sig === me.tsig) return; me.tsig = sig;
+  box.innerHTML = ''; box.hidden = !us.length;
+  const mkb = (t, fn) => { const x = document.createElement('button'); x.type = 'button'; x.className = 'addhome'; x.textContent = t; x.onclick = fn; return x; };
+  us.forEach(u => {
+    [['a', '🎤 마이크'], ['v', '📷 카메라']].forEach(([k, nm]) => {
+      const s2 = st(u, k); if (!s2) return;
+      const d = document.createElement('div'); d.className = 'tk' + (s2 === 'wait' ? ' pend blink' : '');
+      const b = document.createElement('b'); b.textContent = String(me.rq[u].n || '손님').slice(0, 14);
+      d.append(b, document.createTextNode(s2 === 'wait' ? ' 님이 ' + nm + ' 사용을 요청합니다' : ' 님 ' + nm + ' 켜짐'));
+      if (s2 === 'wait') d.append(mkb('✔ 허용', () => talkDecide(me, k, u, true)), mkb('✕ 거절', () => talkDecide(me, k, u, false)));
+      else d.append(mkb('⛔ 강제로 끄기', () => talkDecide(me, k, u, false)));
+      box.append(d);
+    });
+  });
 }
-// 듣는 사람: 마이크 켜고 요청 → 허락되면 전송
-const talk = {st: '', mic: null, tm: 0, rid: '', msg: ''};
+// 손님: 마이크/카메라를 켜 두고 요청 → 허락되면 전송 → 방장이 끄면 즉시 멈춤
+const talk = {a: '', v: '', mic: null, cam: null, tm: 0, rid: '', msg: ''};
 function talkUI(){
-  const b = $('talkbtn'), m = $('talkmsg');
-  b.textContent = talk.st === 'ok' ? '🎙️ 말하기 끄기' : talk.st === 'req' ? '✕ 요청 취소' : '🎤 말하기 요청';
-  m.textContent = talk.msg || (talk.st === 'req' ? '⏳ 방장의 허락을 기다리는 중…' : talk.st === 'ok' ? '🔴 말하는 중 — 이어폰을 쓰면 울림이 없습니다' : '');
+  const ba = $('talkbtn'), bv = $('camreqbtn'), m = $('talkmsg');
+  const lab = (st, nm, on) => st === 'ok' ? on : st === 'req' ? '⏳ ' + nm + ' 요청 취소' : nm + ' 요청';
+  ba.textContent = lab(talk.a, '🎤 마이크', '🎙️ 마이크 끄기'); bv.textContent = lab(talk.v, '📷 카메라', '📹 카메라 끄기');
+  ba.classList.toggle('blink', talk.a === 'req'); bv.classList.toggle('blink', talk.v === 'req');
+  m.textContent = talk.msg || ((talk.a === 'req' || talk.v === 'req') ? '방장의 허락을 기다리는 중…' : (talk.a === 'ok' || talk.v === 'ok') ? '🔴 켜짐 — 마이크는 이어폰을 쓰면 울림이 없습니다' : '');
 }
-function talkAttach(on){
-  if (!lis || !lis.snd || !talk.mic) return;
-  const t = on ? talk.mic.getAudioTracks()[0] : null;
-  if (lis.snd.track !== t) lis.snd.replaceTrack(t).catch(() => {});
+function talkAttach(){
+  if (!lis) return;
+  if (lis.snd){ const t = talk.a === 'ok' && talk.mic ? talk.mic.getAudioTracks()[0] : null; if (lis.snd.track !== t) lis.snd.replaceTrack(t).catch(() => {}); }
+  if (lis.vsnd){
+    const t = talk.v === 'ok' && talk.cam ? talk.cam.getVideoTracks()[0] : null;
+    if (lis.vsnd.track !== t) lis.vsnd.replaceTrack(t).then(() => { try { const q = lis.vsnd.getParameters(); q.encodings = q.encodings && q.encodings.length ? q.encodings : [{}]; q.encodings[0].maxBitrate = 250000; lis.vsnd.setParameters(q).catch(() => {}); } catch(e){} }).catch(() => {});
+  }
 }
-async function talkStart(){
+async function talkStart(kind){
   if (!lis || !liveRoom || isHost()){ setBc('방에 연결된 뒤에 요청할 수 있습니다.'); return; }
-  try { talk.mic = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}}); }
-  catch(e){ setBc('마이크를 사용할 수 없습니다. 브라우저의 마이크 권한을 확인하세요 (https 필요).'); return; }
-  talk.rid = liveRoom.id; talk.st = 'req'; talk.msg = '';
-  clearInterval(talk.tm); talk.tm = setInterval(talkBeat, 3000); talkBeat(); talkUI();
+  try {
+    if (kind === 'a') talk.mic = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}});
+    else talk.cam = await navigator.mediaDevices.getUserMedia({video: {width: {ideal: 320}, height: {ideal: 240}, frameRate: {ideal: 15}, facingMode: 'user'}});
+  } catch(e){ setBc((kind === 'a' ? '마이크' : '카메라') + '를 사용할 수 없습니다. 브라우저 권한을 확인하세요 (https 필요).'); return; }
+  talk.rid = liveRoom.id; talk[kind] = 'req'; talk.msg = '';
+  if (!talk.tm) talk.tm = setInterval(talkBeat, 3000);
+  talkBeat(); talkUI();
+}
+function talkKindStop(kind, msg){
+  const s = kind === 'a' ? 'mic' : 'cam';
+  talk[kind] = ''; try { talkAttach(); } catch(e){}
+  if (talk[s]){ talk[s].getTracks().forEach(t => t.stop()); talk[s] = null; }
+  talk.msg = msg || ''; if (msg) setBc(msg);
+  if (!talk.a && !talk.v){ clearInterval(talk.tm); talk.tm = 0; if (talk.rid && DB) lj('talkreq_' + talk.rid + '/' + myId, 'DELETE').catch(() => {}); talk.rid = ''; }
+  else talkBeat();
+  talkUI();
 }
 async function talkBeat(){
-  if (!talk.st || !talk.rid) return; const rid = talk.rid;
+  if ((!talk.a && !talk.v) || !talk.rid) return; const rid = talk.rid;
   try {
-    lj('talkreq_' + rid + '/' + myId, 'PUT', {n: myNick(), ts: Date.now()}).catch(() => {});
-    const v = await lj('talkok_' + rid + '/' + myId, 'GET');
-    if (!talk.st) return;
-    if (v === true){ talk.st = 'ok'; talkAttach(true); }
-    else if (v === false){ talkStop(talk.st === 'ok' ? '방장이 말하기를 껐습니다.' : '방장이 말하기 요청을 거절했습니다.'); return; }
-    else if (talk.st === 'ok'){ talkAttach(false); talk.st = 'req'; }
-    talkUI();
+    lj('talkreq_' + rid + '/' + myId, 'PUT', {n: myNick(), ts: Date.now(), a: talk.a ? 1 : 0, v: talk.v ? 1 : 0}).catch(() => {});
+    const o = (await lj('talkok_' + rid + '/' + myId, 'GET')) || {};
+    ['a', 'v'].forEach(k => {
+      if (!talk[k]) return; const val = o[k], nm = k === 'a' ? '마이크' : '카메라';
+      if (val === true) talk[k] = 'ok';
+      else if (val === false) talkKindStop(k, talk[k] === 'ok' ? '방장이 ' + nm + '를 껐습니다.' : '방장이 ' + nm + ' 요청을 거절했습니다.');
+      else if (talk[k] === 'ok') talk[k] = 'req'; // 허락이 사라짐 (새 방장 등) → 다시 대기
+    });
+    talkAttach(); talkUI();
   } catch(e){}
 }
-function talkStop(msg){
-  clearInterval(talk.tm); talk.tm = 0;
-  try { talkAttach(false); } catch(e){}
-  if (talk.mic){ talk.mic.getTracks().forEach(t => t.stop()); talk.mic = null; }
-  if (talk.rid && DB) lj('talkreq_' + talk.rid + '/' + myId, 'DELETE').catch(() => {});
-  const had = !!talk.st; talk.st = ''; talk.rid = ''; talk.msg = msg || '';
-  talkUI(); if (msg && had) setBc(msg);
-}
-$('talkbtn').onclick = () => { if (talk.st) talkStop(''); else talkStart(); };
+function talkStop(msg){ ['a', 'v'].forEach(k => { if (talk[k]) talkKindStop(k, msg); }); talk.msg = msg || ''; talkUI(); }
+$('talkbtn').onclick = () => { if (talk.a) talkKindStop('a', ''); else talkStart('a'); };
+$('camreqbtn').onclick = () => { if (talk.v) talkKindStop('v', ''); else talkStart('v'); };
 // ---- 입장 ----
 async function listen(bid, name, locked, presetPw){
   if (!DB || !chatAllowed) return;
@@ -1445,9 +1514,11 @@ async function connectListen(bid, name, pw){
   const lid = myId + Date.now().toString(36).slice(-4);
   const pc = new RTCPeerConnection(RTC_CFG); lis = {pc, bid, lid, pw};
   lis.snd = pc.addTransceiver('audio', {direction: 'sendrecv'}).sender; // 말하기 허락을 받으면 이 자리로 마이크를 보냄
-  pc.addTransceiver('video', {direction: 'recvonly'});
+  lis.vsnd = pc.addTransceiver('video', {direction: 'sendrecv'}).sender; // 카메라 허락을 받으면 이 자리로 영상을 보냄
+  lis.gtr = pc.addTransceiver('video', {direction: 'recvonly'}); // 다른 손님 카메라(작은 화면) 받는 자리
   liveAudio.controls = false; liveAudio.style.display = 'none'; lisVidReady = false; MV.rk = '';
   pc.ontrack = e => {
+    if (lis && lis.gtr && e.transceiver === lis.gtr){ const g = $('guestVid'); g.srcObject = new MediaStream([e.track]); g.play().catch(() => {}); return; }
     if (e.track.kind === 'video') e.track.addEventListener('unmute', () => { lisVidReady = true; lisVidRefresh(); });
     liveAudio.srcObject = e.streams[0] || new MediaStream([e.track]);
     liveAudio.play().catch(() => { liveAudio.controls = true; liveAudio.style.display = 'block'; setStatus('재생 버튼을 눌러 주세요'); mwUpdate(); }); setStatus('● 음악 방 듣는 중'); mwUpdate('● 방송 듣는 중');
