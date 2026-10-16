@@ -923,6 +923,44 @@ function iceDone(pc){
   });
 }
 // ---- 방 참가자 목록 ----
+let memList = [], openMem = '';
+// 참가자를 누르면 ✉ 귓속말 / 💬 채팅(이름 호출) 선택
+function memWhisper(k, n){
+  if (!peers[k]) peers[k] = {n: String(n).slice(0, 12), on: true};
+  peerSig = ''; renderRooms('u:' + k); $('room').onchange();
+  const cs = $('chatsec'); if (cs) cs.scrollIntoView({behavior: 'smooth', block: 'center'});
+  $('chatin').focus();
+}
+function memCall(k, n){
+  if (liveRoom){ renderRooms('b:' + liveRoom.id); $('room').onchange(); }
+  const inp = $('chatin'); inp.value = '@' + n + ' ' + inp.value.replace(/^@\S+\s/, '');
+  const cs = $('chatsec'); if (cs) cs.scrollIntoView({behavior: 'smooth', block: 'center'});
+  inp.focus();
+}
+function renderMembers(){
+  const box = $('members'); box.innerHTML = '';
+  const t = document.createElement('div'); t.style.cssText = 'font-size:12px;opacity:.7;margin-bottom:4px'; t.textContent = '👥 방 참가자 (' + memList.length + '명) · 이름을 누르면 귓속말·채팅'; box.append(t);
+  memList.forEach(m => {
+    const r = document.createElement('div');
+    const me = m.k === myId;
+    r.textContent = (m.h ? '👑 ' : '· ') + m.n + (me ? ' (나) ✎' : (openMem === m.k ? ' ▾' : ' ✉'));
+    r.style.cursor = 'pointer'; r.setAttribute('role', 'button'); r.tabIndex = 0;
+    if (me){
+      r.title = '이름 바꾸기'; r.onclick = renameMe; r.onkeydown = e => { if (e.key === 'Enter') renameMe(); };
+      box.append(r); return;
+    }
+    r.title = '귓속말 · 채팅';
+    const tog = () => { openMem = openMem === m.k ? '' : m.k; renderMembers(); };
+    r.onclick = tog; r.onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); tog(); } };
+    box.append(r);
+    if (openMem === m.k){
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 8px 14px';
+      const mk = (txt, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:4px 10px;font-size:13px'; b.textContent = txt; b.onclick = () => { openMem = ''; renderMembers(); fn(); }; return b; };
+      row.append(mk('✉ 귓속말', () => memWhisper(m.k, m.n)), mk('💬 채팅', () => memCall(m.k, m.n)));
+      box.append(row);
+    }
+  });
+}
 function memRec(){
   const r = {n: myNick(), h: isHost() ? 1 : 0, ts: Date.now()};
   if (typeof talk !== 'undefined'){ if (talk.a) r.a = 1; if (talk.v) r.v = 1; }
@@ -932,6 +970,7 @@ function memRec(){
     Object.keys(bc.okV).forEach(u => { (ok[u] = ok[u] || {}).v = bc.okV[u]; });
     if (Object.keys(ok).length) r.ok = ok;
     if (bc.vact && bc.vname) r.g = bc.vname;
+    const ak = {}; Object.keys(bc.rq || {}).forEach(u => { ak[u] = 1; }); if (Object.keys(ak).length) r.ak = ak; // 요청을 받았다는 확인
   }
   return r;
 }
@@ -944,15 +983,8 @@ async function memBeat(){
     if (!liveRoom || liveRoom.id !== id) return;
     const list = Object.keys(d).map(k => Object.assign({k}, d[k])).filter(m => m && m.n && now - m.ts < 45000)
       .sort((a, b) => (b.h || 0) - (a.h || 0) || String(a.n).localeCompare(String(b.n)));
-    const box = $('members'); box.innerHTML = '';
-    const t = document.createElement('div'); t.style.cssText = 'font-size:12px;opacity:.7;margin-bottom:4px'; t.textContent = '👥 방 참가자 (' + list.length + '명)'; box.append(t);
-    list.forEach(m => {
-      const r = document.createElement('div');
-      const me = m.k === myId;
-      r.textContent = (m.h ? '👑 ' : '· ') + m.n + (me ? ' (나) ✎' : '');
-      if (me){ r.style.cursor = 'pointer'; r.title = '이름 바꾸기'; r.setAttribute('role', 'button'); r.tabIndex = 0; r.onclick = renameMe; r.onkeydown = e => { if (e.key === 'Enter') renameMe(); }; }
-      box.append(r);
-    });
+    memList = list; if (openMem && !list.some(m => m.k === openMem)) openMem = '';
+    renderMembers();
   } catch(e){}
 }
 function renameMe(){
@@ -1295,6 +1327,7 @@ async function makeMusicRoom(){
 function stopBroadcast(noKeep){
   if (!bc) return;
   const me = bc; bc = null;
+  if (me.baseTitle) document.title = me.baseTitle;
   me.timers.forEach(clearInterval);
   Object.keys(me.pcs).forEach(k => me.pcs[k].close());
   me.stream.getTracks().forEach(t => t.stop());
@@ -1440,6 +1473,13 @@ function renderTalkHost(me){
   const us = Object.keys(me.rq).filter(u => st(u, 'a') || st(u, 'v'));
   const npend = us.reduce((n, u) => n + (st(u, 'a') === 'wait' ? 1 : 0) + (st(u, 'v') === 'wait' ? 1 : 0), 0);
   const tb = $('tkbadge'); tb.hidden = !npend; tb.textContent = '🔔 요청 ' + npend;
+  if (!me.baseTitle) me.baseTitle = document.title.replace(/^🔔 요청 \d+ · /, '');
+  document.title = npend ? '🔔 요청 ' + npend + ' · ' + me.baseTitle : me.baseTitle;
+  if (npend > (me.npend || 0)){
+    try { const o = me.ac.createOscillator(), g = me.ac.createGain(); o.frequency.value = 880; g.gain.value = 0.08; o.connect(g); g.connect(me.ac.destination); o.start(); o.stop(me.ac.currentTime + 0.25); } catch(e){}
+    memBeat(); // 손님에게 '전달됨' 확인 표시를 바로 보냄
+  }
+  me.npend = npend;
   const sig = us.map(u => u + ':' + st(u, 'a') + st(u, 'v') + ((me.rq[u] && me.rq[u].n) || '')).join('|'); if (sig === me.tsig) return; me.tsig = sig;
   box.innerHTML = ''; box.hidden = !us.length;
   const mkb = (t, fn) => { const x = document.createElement('button'); x.type = 'button'; x.className = 'addhome'; x.textContent = t; x.onclick = fn; return x; };
@@ -1456,13 +1496,13 @@ function renderTalkHost(me){
   });
 }
 // 손님: 마이크/카메라를 켜 두고 요청 → 허락되면 전송 → 방장이 끄면 즉시 멈춤
-const talk = {a: '', v: '', mic: null, cam: null, tm: 0, rid: '', msg: ''};
+const talk = {a: '', v: '', mic: null, cam: null, tm: 0, rid: '', msg: '', info: '', qa: 0, qv: 0};
 function talkUI(){
   const ba = $('talkbtn'), bv = $('camreqbtn'), m = $('talkmsg');
   const lab = (st, nm, on) => st === 'ok' ? on : st === 'req' ? '⏳ ' + nm + ' 요청 취소' : nm + ' 요청';
   ba.textContent = lab(talk.a, '🎤 마이크', '🎙️ 마이크 끄기'); bv.textContent = lab(talk.v, '📷 카메라', '📹 카메라 끄기');
   ba.classList.toggle('blink', talk.a === 'req'); bv.classList.toggle('blink', talk.v === 'req');
-  m.textContent = talk.msg || ((talk.a === 'req' || talk.v === 'req') ? '방장의 허락을 기다리는 중…' : (talk.a === 'ok' || talk.v === 'ok') ? '🔴 켜짐 — 마이크는 이어폰을 쓰면 울림이 없습니다' : '');
+  m.textContent = talk.msg || ((talk.a === 'req' || talk.v === 'req') ? talk.info || '요청을 보내는 중…' : (talk.a === 'ok' || talk.v === 'ok') ? '🔴 켜짐 — 마이크는 이어폰을 쓰면 울림이 없습니다' : '');
 }
 function talkAttach(){
   if (!lis) return;
@@ -1472,15 +1512,31 @@ function talkAttach(){
     if (lis.vsnd.track !== t) lis.vsnd.replaceTrack(t).then(() => { try { const q = lis.vsnd.getParameters(); q.encodings = q.encodings && q.encodings.length ? q.encodings : [{}]; q.encodings[0].maxBitrate = 250000; lis.vsnd.setParameters(q).catch(() => {}); } catch(e){} }).catch(() => {});
   }
 }
+// 방 채팅에도 알림 글을 남김 (방장이 채팅창에서도 바로 볼 수 있게)
+function talkNotify(kind){
+  if (!DB || !chatAllowed || !liveRoom) return;
+  const msg = {n: myNick(), t: '🔔 ' + (kind === 'a' ? '🎤 마이크' : '📷 카메라') + ' 사용을 요청했습니다 — 방장님, 미디어 창에서 허용/거절해 주세요.', ts: Date.now()};
+  fetch(`${DB}/chat/live_${liveRoom.id}.json`, {method: 'POST', body: JSON.stringify(msg)}).then(() => { try { if (!(es && esOk)) fetchChat(true); } catch(e){} }).catch(() => {});
+}
+// 요청부터 보내고, 방장이 허락하면 그때 장치를 켬 (장치가 없어도 요청은 전달됨)
 async function talkStart(kind){
-  if (!lis || !liveRoom || isHost()){ setBc('방에 연결된 뒤에 요청할 수 있습니다.'); return; }
-  try {
-    if (kind === 'a') talk.mic = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}});
-    else talk.cam = await navigator.mediaDevices.getUserMedia({video: {width: {ideal: 320}, height: {ideal: 240}, frameRate: {ideal: 15}, facingMode: 'user'}});
-  } catch(e){ setBc((kind === 'a' ? '마이크' : '카메라') + '를 사용할 수 없습니다. 브라우저 권한을 확인하세요 (https 필요).'); return; }
-  talk.rid = liveRoom.id; talk[kind] = 'req'; talk.msg = '';
+  const nm = kind === 'a' ? '마이크' : '카메라';
+  if (!lis || !liveRoom || isHost()){ talk.msg = '방에 연결된 뒤에 요청할 수 있습니다.'; talkUI(); return; }
+  if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){ talk.msg = '이 주소에서는 ' + nm + '를 쓸 수 없습니다. https:// 주소(또는 파일로 직접 열기)로 접속하세요.'; talkUI(); return; }
+  try { const dv = await navigator.mediaDevices.enumerateDevices(); if (dv.length && !dv.some(d => d.kind === (kind === 'a' ? 'audioinput' : 'videoinput'))){ talk.msg = '이 기기에서 ' + nm + ' 장치를 찾을 수 없습니다.'; talkUI(); return; } } catch(e){}
+  talk.rid = liveRoom.id; talk[kind] = 'req'; talk.msg = ''; talk.info = '요청을 보내는 중…';
   if (!talk.tm) talk.tm = setInterval(talkBeat, 3000);
-  talkBeat(); talkUI();
+  talkNotify(kind); talkBeat(); talkUI();
+}
+async function talkAcquire(kind){
+  const s = kind === 'a' ? 'mic' : 'cam', nm = kind === 'a' ? '마이크' : '카메라';
+  if (talk[s] || talk['q' + kind]) return; talk['q' + kind] = 1;
+  let st = null;
+  try { st = await navigator.mediaDevices.getUserMedia(kind === 'a' ? {audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}} : {video: {width: {ideal: 320}, height: {ideal: 240}, frameRate: {ideal: 15}, facingMode: 'user'}}); }
+  catch(e){ talk['q' + kind] = 0; talkKindStop(kind, nm + '를 켤 수 없습니다. 브라우저의 ' + nm + ' 권한이나 장치를 확인하세요.'); return; }
+  talk['q' + kind] = 0;
+  if (!talk[kind]){ st.getTracks().forEach(t => t.stop()); return; }
+  talk[s] = st; talkAttach(); talkUI();
 }
 function talkKindStop(kind, msg){
   const s = kind === 'a' ? 'mic' : 'cam';
@@ -1500,11 +1556,11 @@ async function talkBeat(){
     const o = (h && h.ok && h.ok[myId]) || {};
     ['a', 'v'].forEach(k => {
       if (!talk[k]) return; const val = o[k], nm = k === 'a' ? '마이크' : '카메라';
-      if (val === true) talk[k] = 'ok';
+      if (val === true){ talk[k] = 'ok'; talkAcquire(k); }
       else if (val === false) talkKindStop(k, talk[k] === 'ok' ? '방장이 ' + nm + '를 껐습니다.' : '방장이 ' + nm + ' 요청을 거절했습니다.');
       else if (talk[k] === 'ok') talk[k] = 'req'; // 허락이 사라짐 (새 방장 등) → 다시 대기
     });
-    if (!h && (talk.a === 'req' || talk.v === 'req')) talk.msg = '방장을 찾는 중… (방장이 접속 중인지 확인하세요)'; else if (talk.msg && talk.msg.indexOf('방장을 찾는') === 0) talk.msg = '';
+    talk.info = !h ? '방장을 찾는 중… (방장이 접속 중인지 확인하세요)' : (h.ak && h.ak[myId]) ? '✓ 방장에게 전달됨 — 허락을 기다리는 중…' : '요청 전송됨 — 방장 확인 대기 중… (방장 화면도 새로 고침한 최신 버전이어야 합니다)';
     talkAttach(); talkUI();
   } catch(e){ talk.msg = '요청을 서버에 보내지 못했습니다. 인터넷 연결이나 데이터베이스 규칙을 확인하세요.'; talkUI(); }
 }
