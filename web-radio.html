@@ -87,6 +87,7 @@ body.hidebad .vr.bad{display:none}
 .mwidle{font-size:34px;opacity:.55}
 #liveAudio,#bcPreview{max-width:min(100%,calc(320px * var(--mws)))}
 #mwvid{width:100%;max-width:calc(640px * var(--mws))}
+#liveAudio.scr{width:100%;max-width:100%;max-height:calc(70vh * var(--mws));background:#000;object-fit:contain}
 #mwyt{width:100%;max-width:calc(640px * var(--mws));aspect-ratio:16/9}
 .mwctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;padding:8px;background:#1a0f08;border-radius:6px}
 .mwctl[hidden]{display:none}
@@ -422,6 +423,8 @@ body.hidebad .vr.bad{display:none}
       <button class="addhome" style="margin:0" type="button" id="vgo">▶ 링크 재생</button>
       <button class="addhome" style="margin:0" type="button" id="vplay">⏯ 재생/멈춤</button>
       <button class="addhome" style="margin:0" type="button" id="vstop">■ 끄기</button>
+      <button class="addhome" style="margin:0" type="button" id="bcshare" title="내 PC 화면(창·탭·전체)을 방 사람들에게 영상으로 보냅니다">🖥 내 화면 공유</button>
+      <button class="addhome" style="margin:0" type="button" id="bcshare2" title="내 PC 화면을 보내면서 오른쪽 아래에 내 얼굴(카메라)을 동그랗게 함께 넣습니다">🖥📷 화면+내 얼굴</button>
       <div class="mwsearch">
         <input id="vq" placeholder="영상 검색 (예: 안전 교육, science, 지게차)" aria-label="영상 검색">
         <select id="vsrc" aria-label="검색할 곳"><option value="all">전체 (해외 사이트 한꺼번에)</option><option value="ia">Internet Archive</option><option value="pre">Prelinger (옛 교육·산업 영화)</option><option value="nasa">NASA</option><option value="wm">Wikimedia Commons</option><option value="pt">PeerTube (세계 각국 영상)</option><option value="tv">📺 TV·위성 방송 (나라별 · 무료)</option><option value="yt">유튜브 (무료 키 필요)</option><option value="px">Pexels (무료 키 필요)</option><option value="pb">Pixabay (무료 키 필요)</option></select>
@@ -1096,11 +1099,11 @@ function loadYT(){
 }
 function mvShow(kind){ mwvid.style.display = kind === 'vid' ? 'block' : 'none'; $('mwyt').style.display = kind === 'yt' ? 'block' : 'none'; mwUpdate(); }
 function mvStop(){
-  clearInterval(MV.timer);
+  clearInterval(MV.timer); try { scrCleanup(); } catch(e){}
   try { mwvid.pause(); mwvid.removeAttribute('src'); mwvid.load(); } catch(e){}
   if (MV.hls){ MV.hls.destroy(); MV.hls = null; }
   if (MV.yt){ try { MV.yt.destroy(); } catch(e){} MV.yt = null; }
-  $('mwyt').innerHTML = ''; MV.k = ''; MV.u = ''; MV.lp = -1; $('mwlink').hidden = true; mvShow('');
+  $('mwyt').innerHTML = ''; MV.k = ''; MV.u = ''; MV.lp = -1; MV.yerr = false; $('mwlink').hidden = true; mvShow('');
 }
 function attachUrl(u){
   if (MV.hls){ MV.hls.destroy(); MV.hls = null; }
@@ -1109,6 +1112,7 @@ function attachUrl(u){
 }
 const mvPut = o => { if (!bc) return; return lj('roommedia_' + bc.rid, 'PUT', Object.assign({ts: Date.now()}, o)).catch(() => {}); };
 function mvCur(){
+  if (MV.k === 'yt' && MV.yerr) return {t: (Date.now() - (MV.ys || Date.now())) / 1000, p: 1}; // 방장 쪽 플레이어가 막혀도 손님은 계속 재생
   if (MV.k === 'yt' && MV.yt && MV.yt.getCurrentTime) return {t: MV.yt.getCurrentTime(), p: MV.yt.getPlayerState() === 1 ? 1 : 0};
   return {t: mwvid.currentTime || 0, p: (!mwvid.paused && !mwvid.ended) ? 1 : 0};
 }
@@ -1116,6 +1120,8 @@ function mvPush(){ if (!bc || (MV.k !== 'yt' && MV.k !== 'url')) return; mvPut(O
 ['play', 'pause', 'seeked'].forEach(ev => mwvid.addEventListener(ev, () => { if (bc && MV.k === 'url') mvPush(); }));
 // 방장: 링크 재생
 function ytErr(code){
+  MV.yerr = true; try { MV.ys = Date.now() - ((MV.yt && MV.yt.getCurrentTime && MV.yt.getCurrentTime()) || 0) * 1000; } catch(e){ MV.ys = MV.ys || Date.now(); }
+  mwUpdate('⚠ 방장 화면에서만 유튜브가 막혔습니다 (오류 ' + (code || '?') + ') — 손님 화면에는 계속 재생됩니다');
   if (MV.u){ const l = $('mwlink'); l.href = 'https://www.youtube.com/watch?v=' + MV.u; l.hidden = false; }
   const here = location.protocol === 'file:' ? '컴퓨터에서 파일로 직접 연 상태(file://)' : location.origin;
   if (location.protocol === 'file:'){
@@ -1134,12 +1140,13 @@ async function hostLink(raw){
   if (id){
     await loadYT();
     if (!(window.YT && YT.Player)){ setBc('유튜브 플레이어를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'); return; }
+    MV.yerr = false;
     if (location.protocol === 'file:') ytErr(153);
-    MV.k = 'yt'; MV.u = id; $('mwyt').innerHTML = '<div id="mwytp"></div>'; mvShow('yt');
+    const pre = MV.yerr; MV.k = 'yt'; MV.u = id; MV.yerr = !!pre && location.protocol === 'file:'; MV.ys = Date.now(); $('mwyt').innerHTML = '<div id="mwytp"></div>'; mvShow('yt');
     MV.yt = new YT.Player('mwytp', {width: '100%', height: '100%', videoId: id, playerVars: {autoplay: 1, playsinline: 1, rel: 0, cc_load_policy: 1, cc_lang_pref: 'ko', hl: 'ko'},
       events: {onReady: e => { try { e.target.playVideo(); } catch(_){} mvPush(); }, onStateChange: () => mvPush(),
                onError: e => ytErr(e && e.data)}});
-    mwUpdate('▶ 유튜브 영상 함께 보는 중');
+    if (!MV.yerr) mwUpdate('▶ 유튜브 영상 함께 보는 중');
   } else {
     MV.k = 'url'; MV.u = u; attachUrl(u); mvShow('vid');
     mwvid.onerror = () => setBc('이 주소의 영상을 재생할 수 없습니다. mp4·webm·m3u8 같은 영상 파일 직접 주소여야 합니다.');
@@ -1166,14 +1173,14 @@ function hostVideoOff(){
   if (!bc) return;
   mvStop(); setVideoTrack(null); mvPut({k: bc.cam ? 'cam' : ''}); mwUpdate('영상을 껐습니다'); closePanels();
 }
-function setVideoTrack(nt){
+function setVideoTrack(nt, hi){
   const me = bc; if (!me) return;
   const t = nt || me.vbase; if (!t) return;
   const old = me.stream.getVideoTracks()[0]; if (old === t) return;
   if (old) me.stream.removeTrack(old);
   me.stream.addTrack(t);
   const h = (nt && nt.getSettings && nt.getSettings().height) || 0;
-  me.vbr = nt ? 700000 : 250000; me.vscale = h > 360 ? h / 360 : 1;
+  const tgt = hi ? 720 : 360; me.vbr = nt ? (hi ? 1200000 : 700000) : 250000; me.vscale = h > tgt ? h / tgt : 1;
   Object.keys(me.pcs).forEach(k => {
     const pk = me.pcs[k], sd = pk.getSenders().find(x => x !== pk._gs && x.track && x.track.kind === 'video') || pk.getSenders().find(x => x !== pk._gs && !x.track);
     if (!sd) return;
@@ -1182,6 +1189,7 @@ function setVideoTrack(nt){
 }
 // 듣는 사람: 방장 상태 따라가기
 function lisVidRefresh(){
+  liveAudio.classList.toggle('scr', !!MV.rsc && MV.rk === 'file');
   const on = lisVidReady && (MV.rk === 'file' || MV.rk === 'cam');
   if (liveAudio.srcObject) liveAudio.style.display = (on || liveAudio.controls) ? 'block' : 'none';
   mwUpdate();
@@ -1202,7 +1210,7 @@ async function mvPoll(){
   }
   if (MV.hostless) return;
   MV.last = s;
-  MV.rk = (s && s.k) || ''; lisVidRefresh(); mvApply(s);
+  MV.rk = (s && s.k) || ''; MV.rsc = s && s.sc ? 1 : 0; lisVidRefresh(); mvApply(s);
   if ((MV.rk === 'file' || MV.rk === 'cam') && !lisVidReady){
     MV.vwait = (MV.vwait || 0) + 1;
     if (MV.vwait === 2) mwUpdate('🎬 영상 연결 중…');
@@ -2505,6 +2513,70 @@ $('bcmic').onclick = async () => {
   try { swapSource(await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: false}})); mwUpdate('🎤 마이크 방송 중'); }
   catch(e){ setBc('마이크를 사용할 수 없습니다. 권한을 확인하세요 (https 또는 파일 열기 필요).'); }
 };
+
+// ---- 🖥 방장 화면 공유 (강의용): 내 PC 화면을 영상으로 송출, 선택하면 내 얼굴을 구석에 동그랗게 함께 넣음 ----
+function scrCleanup(){
+  const sc = MV.scr; if (!sc) return; MV.scr = null;
+  try { clearInterval(sc.timer); } catch(e){}
+  try { if (sc.worker) sc.worker.terminate(); } catch(e){}
+  [sc.d, sc.cam].forEach(m => { if (m) m.getTracks().forEach(t => { t.onended = null; try { t.stop(); } catch(e){} }); });
+  if (MV.k === 'scr') MV.k = '';
+  const pv = $('bcPreview');
+  if (bc && bc.cam && bc.vbase){ pv.srcObject = new MediaStream([bc.vbase]); pv.style.transform = 'scaleX(-1)'; pv.style.display = 'block'; }
+  else { pv.style.display = 'none'; pv.srcObject = null; pv.style.transform = 'scaleX(-1)'; }
+  mwUpdate();
+}
+function scrEnded(d){ if (MV.scr && MV.scr.d === d && bc){ hostVideoOff(); mwUpdate('🖥 화면 공유를 끝냈습니다'); } }
+async function startScreen(withFace){
+  if (!bc){ setBc('먼저 "음악 방 만들기"로 방을 만들어 주세요.'); return; }
+  if (!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)){ setBc('이 브라우저는 화면 공유를 지원하지 않습니다. PC의 Chrome/Edge에서 시도하세요.'); return; }
+  let d = null;
+  try { d = await navigator.mediaDevices.getDisplayMedia({video: {frameRate: {ideal: 15}}, audio: true}); }
+  catch(e){ setBc('화면 공유를 시작하지 못했습니다. (취소했거나 권한이 막혀 있습니다 · https 또는 localhost 주소에서만 가능)'); return; }
+  const dv = d.getVideoTracks()[0];
+  if (!dv){ d.getTracks().forEach(t => t.stop()); setBc('공유할 화면을 고르지 않았습니다.'); return; }
+  if (!bc){ d.getTracks().forEach(t => t.stop()); return; }
+  mvStop(); // 이전 영상·공유 정리 (MV.scr은 아래에서 새로 만듦)
+  const sc = MV.scr = {d, cam: null, timer: 0, worker: null};
+  let vt = dv, note = '';
+  if (withFace){
+    try { sc.cam = await navigator.mediaDevices.getUserMedia({video: {width: {ideal: 320}, height: {ideal: 240}, frameRate: {ideal: 15}, facingMode: 'user'}}); }
+    catch(e){ sc.cam = null; note = ' (카메라를 쓸 수 없어 화면만 보냅니다)'; }
+  }
+  if (sc.cam){
+    const mkv = tr => { const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.srcObject = new MediaStream([tr]); v.play().catch(() => {}); return v; };
+    const sv = mkv(dv), fv = mkv(sc.cam.getVideoTracks()[0]);
+    const st = dv.getSettings ? dv.getSettings() : {};
+    let W = st.width || 1280, H = st.height || 720; if (W > 1280){ H = Math.round(H * 1280 / W); W = 1280; }
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const cx = cv.getContext('2d');
+    const draw = () => {
+      cx.fillStyle = '#000'; cx.fillRect(0, 0, W, H);
+      const sw = sv.videoWidth || W, sh = sv.videoHeight || H, k = Math.min(W / sw, H / sh), dw = sw * k, dh = sh * k;
+      cx.drawImage(sv, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      const r = Math.round(Math.min(W, H) * 0.16), px = W - r - 20, py = H - r - 20;
+      const fw = fv.videoWidth || 320, fh = fv.videoHeight || 240, fk = Math.max(2 * r / fw, 2 * r / fh);
+      cx.save(); cx.beginPath(); cx.arc(px, py, r, 0, Math.PI * 2); cx.clip(); cx.translate(px, py); cx.scale(-1, 1);
+      cx.drawImage(fv, -fw * fk / 2, -fh * fk / 2, fw * fk, fh * fk); cx.restore();
+      cx.lineWidth = 4; cx.strokeStyle = '#ffcf7a'; cx.beginPath(); cx.arc(px, py, r, 0, Math.PI * 2); cx.stroke();
+    };
+    try { // 다른 창을 보고 있어도 느려지지 않도록 워커 시계 사용
+      const wk = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},66)'], {type: 'text/javascript'})));
+      wk.onmessage = draw; sc.worker = wk;
+    } catch(e){ sc.timer = setInterval(draw, 66); }
+    draw(); vt = cv.captureStream(15).getVideoTracks()[0];
+  }
+  const at = d.getAudioTracks();
+  if (at.length) swapSource(new MediaStream(at));
+  setVideoTrack(vt, true);
+  MV.k = 'scr'; mvPut({k: 'file', sc: 1});
+  const pv = $('bcPreview'); pv.srcObject = new MediaStream([vt]); pv.style.transform = 'none'; pv.style.display = 'block';
+  dv.onended = () => scrEnded(d);
+  mwUpdate((withFace && sc.cam ? '🖥📷 화면+내 얼굴 공유 중' : '🖥 화면 공유 중') + (at.length ? '' : ' (소리 없음 · 말하려면 🎤 마이크)'));
+  setBc('🖥 화면을 방에 보내는 중입니다.' + note + (at.length ? '' : ' 소리가 필요하면 🎤 마이크를 누르거나, 공유 창에서 "시스템 오디오 공유"를 체크하세요.') + ' 끝내려면 "■ 끄기"를 누르세요.');
+  closePanels();
+}
+$('bcshare').onclick = () => startScreen(false);
+$('bcshare2').onclick = () => startScreen(true);
 $('bcscr').onclick = async () => {
   if (!bc){ setBc('먼저 "음악 방 만들기"로 방을 만들어 주세요.'); return; }
   try {
