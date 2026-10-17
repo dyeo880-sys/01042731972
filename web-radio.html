@@ -712,7 +712,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="mwsize" id="lagrow" hidden><label for="lagsel">🐢 끊김 줄이기</label><select id="lagsel" aria-label="끊김 줄이기 (영상을 조금 늦게 재생)" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:4px 8px;font-size:13px"><option value="0">끔 (가장 빠름)</option><option value="1000">1초 늦게</option><option value="1500">1.5초 늦게 (기본)</option><option value="2000">2초 늦게</option><option value="3000">3초 늦게</option><option value="4000">4초 늦게 (소리가 끊길 수 있음)</option></select><span class="chatnote" style="margin:0">늦게 볼수록 덜 끊깁니다</span></div>
     <div class="mwsize" id="lecmeter" hidden><strong style="color:var(--amber)">🎓 보내는 소리</strong><span>PC 소리 <meter id="mtsys" min="0" max="1" value="0" style="width:90px"></meter></span><span>내 마이크 <meter id="mtmic" min="0" max="1" value="0" style="width:90px"></meter></span><button class="addhome" type="button" id="lecmic" style="margin:0" title="강의 중 내 마이크만 끄거나 켭니다 (PC 소리는 계속 나갑니다)">🎤 마이크 끄기</button><span id="mtmsg" style="flex-basis:100%;font-size:13px"></span></div>
     <div class="chatnote" id="rxdiag" hidden style="margin:0 0 8px;font-size:13px"></div>
-    <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div></div>
+    <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><button class="addhome" id="kbtn" type="button" hidden>🎤 노래 신청</button><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div><div id="kform" hidden style="flex-basis:100%;background:#1a0f08;border-radius:6px;padding:8px 10px"><div class="chatnote" style="margin:0 0 6px">🎤 노래방 신청 — 부를 곡과 반주(노래방) 영상을 직접 골라 넣으세요. 방장이 「시작」을 누르면 그 영상이 방에 나오고 내 마이크가 켜집니다. 마이크는 이어폰을 쓰세요.</div><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kt" maxlength="30" placeholder="곡 제목" aria-label="곡 제목" style="max-width:180px"><input id="ku" placeholder="유튜브 반주 영상 주소" aria-label="유튜브 반주 영상 주소"></div><label class="chatnote" style="display:block;margin:6px 0"><input type="checkbox" id="ke" checked> 노래방 에코(울림) 효과</label><div class="chatform" style="margin:0"><button class="addhome" id="kgo" type="button" style="margin:0">🎤 신청하기</button><button class="addhome" id="kcancel" type="button" style="margin:0">취소</button></div><div class="chatnote" style="margin:6px 0 0">저작권 안내: 영상·가사는 이 사이트가 저장하지 않으며, 유튜브가 허용하는 영상만 재생됩니다. 권리자가 막은 영상은 재생되지 않을 수 있습니다.</div></div></div>
     <div class="debate" id="debate" hidden></div><div id="rxfloat" aria-hidden="true"></div>
     <div class="mwscreen" id="mwscreen">
       <div class="mwidle" id="mwidle">🎶</div>
@@ -1477,7 +1477,7 @@ function renderMembers(){
 }
 function memRec(){
   const r = {n: myNick(), h: isHost() ? 1 : 0, ts: Date.now()};
-  if (typeof talk !== 'undefined'){ if (talk.a) r.a = 1; if (talk.v) r.v = 1; }
+  if (typeof talk !== 'undefined'){ if (talk.a) r.a = 1; if (talk.v) r.v = 1; if (talk.a && talk.song) r.sg = talk.song; }
   if (typeof rx !== 'undefined' && liveRoom && rx.rid === liveRoom.id){ if (rx.st){ r.st = rx.st; r.sts = rx.sts; } if (rx.hd) r.hd = 1; if (rx.rl){ r.rl = rx.rl; r.rt = rx.rt; } if (Object.keys(rx.rc).length) r.rc = rx.rc; if (isHost()){ if (rx.rs) r.rs = rx.rs; if (rx.pv) r.pv = 1; if (rx.rv) r.rv = 1; } }
   if (isHost() && bc){
     const ok = {};
@@ -1810,7 +1810,7 @@ async function takeOver(R){
     if (!(await buildBc(R, name, pw, false, keepVideo))){ leaveRoom(); return; }
     MV.hostless = false; MV.gone = 0;
     liveRoom.host = true; $('hostctl').hidden = false; $('leavebtn').hidden = true;
-    $('mediawin').hidden = false; $('mwctl').hidden = false; $('talkbtn').hidden = true; $('camreqbtn').hidden = true; talkStop('');
+    $('mediawin').hidden = false; $('mwctl').hidden = false; $('talkbtn').hidden = true; $('camreqbtn').hidden = true; $('kbtn').hidden = true; $('kform').hidden = true; talkStop('');
     roomHead(); memBeat(); fillInvite(); loadLive();
     if (keepVideo){ MV.timer = setInterval(mvPush, 5000); mvPush(); mwUpdate('▶ 영상 계속 재생 중 (내가 방장)'); }
     else mwUpdate('음악·영상을 새로 골라 주세요 (내가 방장)');
@@ -1864,7 +1864,7 @@ function mwUpdate(text){
 function mwOpen(host){
   MV.regTs = null; MV.regAt = 0; MV.vwait = 0; MV.vre = 0; $('mwre').hidden = host; $('lagrow').hidden = !!host;
   $('mediawin').hidden = false;
-  $('mwctl').hidden = !host; $('talkbtn').hidden = host; $('camreqbtn').hidden = host; if (!host) $('talkhost').hidden = true;
+  $('mwctl').hidden = !host; $('talkbtn').hidden = host; $('camreqbtn').hidden = host; $('kbtn').hidden = host; if (!host) $('talkhost').hidden = true;
   clearInterval(MV.poll); if (!host){ MV.poll = setInterval(mvPoll, 3000); mvPoll(); }
   mwUpdate(host ? '음악을 고르면 여기에 표시됩니다 (아래 🎵 음악 메뉴)' : '방장이 음악을 틀면 여기서 들립니다');
 }
@@ -2132,7 +2132,7 @@ function renderTalkHost(me){
     memBeat(); // 손님에게 '전달됨' 확인 표시를 바로 보냄
   }
   me.npend = npend;
-  const sig = us.map(u => u + ':' + st(u, 'a') + st(u, 'v') + ((me.rq[u] && me.rq[u].n) || '')).join('|'); if (sig === me.tsig) return; me.tsig = sig;
+  const sig = us.map(u => u + ':' + st(u, 'a') + st(u, 'v') + ((me.rq[u] && me.rq[u].n) || '') + ((me.rq[u] && me.rq[u].sg && me.rq[u].sg.u) || '')).join('|'); if (sig === me.tsig) return; me.tsig = sig;
   box.innerHTML = ''; box.hidden = !us.length;
   const mkb = (t, fn) => { const x = document.createElement('button'); x.type = 'button'; x.className = 'addhome'; x.textContent = t; x.onclick = fn; return x; };
   us.forEach(u => {
@@ -2140,8 +2140,10 @@ function renderTalkHost(me){
       const s2 = st(u, k); if (!s2) return;
       const d = document.createElement('div'); d.className = 'tk' + (s2 === 'wait' ? ' pend blink' : '');
       const b = document.createElement('b'); b.textContent = String(me.rq[u].n || '손님').slice(0, 14);
-      d.append(b, document.createTextNode(s2 === 'wait' ? ' 님이 ' + nm + ' 사용을 요청합니다' : ' 님 ' + nm + ' 켜짐'));
-      if (s2 === 'wait') d.append(mkb('✔ 허용', () => talkDecide(me, k, u, true)), mkb('✕ 거절', () => talkDecide(me, k, u, false)));
+      const sg = k === 'a' && me.rq[u].sg && /^[\w-]{11}$/.test(String(me.rq[u].sg.u)) ? me.rq[u].sg : null, sgt = sg ? String(sg.t || '').slice(0, 30) : '';
+      d.append(b, document.createTextNode(sg ? (s2 === 'wait' ? ' 님이 노래를 신청했습니다 🎵 ' + sgt : ' 님 노래 부르는 중 🎵 ' + sgt) : s2 === 'wait' ? ' 님이 ' + nm + ' 사용을 요청합니다' : ' 님 ' + nm + ' 켜짐'));
+      if (s2 === 'wait' && sg) d.append(mkb('▶ 시작 (영상 재생 + 마이크 허용)', () => { talkDecide(me, k, u, true); hostLink('https://www.youtube.com/watch?v=' + sg.u); }), mkb('✕ 거절', () => talkDecide(me, k, u, false)));
+      else if (s2 === 'wait') d.append(mkb('✔ 허용', () => talkDecide(me, k, u, true)), mkb('✕ 거절', () => talkDecide(me, k, u, false)));
       else d.append(mkb('⛔ 강제로 끄기', () => talkDecide(me, k, u, false)));
       box.append(d);
     });
@@ -2192,12 +2194,13 @@ async function talkAcquire(kind){
   catch(e){ talk['q' + kind] = 0; talkKindStop(kind, nm + '를 켤 수 없습니다. 브라우저의 ' + nm + ' 권한이나 장치를 확인하세요.'); return; }
   talk['q' + kind] = 0;
   if (!talk[kind]){ st.getTracks().forEach(t => t.stop()); return; }
-  talk[s] = st; talkAttach(); talkUI();
+  talk[s] = kind === 'a' ? karaWrap(st) : st; talkAttach(); talkUI();
 }
 function talkKindStop(kind, msg){
   const s = kind === 'a' ? 'mic' : 'cam';
   talk[kind] = ''; try { talkAttach(); } catch(e){}
-  if (talk[s]){ talk[s].getTracks().forEach(t => t.stop()); talk[s] = null; }
+  if (kind === 'a') talk.song = null;
+  if (talk[s]){ const o = talk[s]._orig; if (o) o.getTracks().forEach(t => t.stop()); try { if (talk[s]._ctx) talk[s]._ctx.close(); } catch(e){} talk[s].getTracks().forEach(t => t.stop()); talk[s] = null; }
   talk.msg = msg || ''; if (msg) setBc(msg);
   if (!talk.a && !talk.v){ clearInterval(talk.tm); talk.tm = 0; talk.rid = ''; if (liveRoom) memBeat(); }
   else talkBeat();
@@ -2222,6 +2225,28 @@ async function talkBeat(){
 }
 function talkStop(msg){ ['a', 'v'].forEach(k => { if (talk[k]) talkKindStop(k, msg); }); talk.blk = {a: '', v: ''}; talk.msg = msg || ''; talkUI(); }
 $('talkbtn').onclick = () => { if (talk.a) talkKindStop('a', ''); else talkStart('a'); };
+// ===== 🎤 노래방 (음악 방): 손님이 곡·유튜브 반주를 정해 신청 → 방장이 시작하면 영상 재생 + 마이크 허용 =====
+const KARA = {echo: true};
+function karaWrap(st){
+  if (!KARA.echo) return st;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)(), src = ctx.createMediaStreamSource(st), dest = ctx.createMediaStreamDestination();
+    const dry = ctx.createGain(), wet = ctx.createGain(), fb = ctx.createGain(), dl = ctx.createDelay(1), lp = ctx.createBiquadFilter();
+    wet.gain.value = 0.35; fb.gain.value = 0.4; dl.delayTime.value = 0.14; lp.type = 'lowpass'; lp.frequency.value = 3500;
+    src.connect(dry); dry.connect(dest); src.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(wet); wet.connect(dest);
+    ctx.resume().catch(() => {});
+    const out = dest.stream; out._orig = st; out._ctx = ctx; return out;
+  } catch(e){ return st; }
+}
+$('kbtn').onclick = () => { $('kform').hidden = !$('kform').hidden; };
+$('kcancel').onclick = () => { $('kform').hidden = true; };
+$('kgo').onclick = () => {
+  const t = $('kt').value.trim().slice(0, 30), id = ytId($('ku').value.trim());
+  if (!t){ talk.msg = '곡 제목을 적어 주세요.'; talkUI(); return; }
+  if (!id){ talk.msg = '유튜브 반주 영상 주소를 넣어 주세요.'; talkUI(); return; }
+  KARA.echo = $('ke').checked; talk.song = {t, u: id}; talk.msg = ''; $('kform').hidden = true;
+  if (!talk.a) talkStart('a'); else talkBeat();
+};
 $('camreqbtn').onclick = () => { if (talk.v) talkKindStop('v', ''); else talkStart('v'); };
 // ---- 🗳 토론 반응 버튼 (찬성·반대·중립·손들기·100점 등) — 방 참가자 기록(roommem_)에 실어 모두에게 보여줌 ----
 const RX_ST = [['p', '👍', '찬성', '#2e9e4f'], ['c', '👎', '반대', '#d64545'], ['n', '😐', '중립', '#8a8a8a']];
