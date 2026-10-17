@@ -1694,7 +1694,7 @@ async function hostLink(raw){
     if (location.protocol === 'file:') ytErr(153);
     const pre = MV.yerr; MV.k = 'yt'; MV.u = id; MV.yerr = !!pre && location.protocol === 'file:'; MV.ys = Date.now(); $('mwyt').innerHTML = '<div id="mwytp"></div>'; mvShow('yt');
     MV.yt = new YT.Player('mwytp', {width: '100%', height: '100%', videoId: id, playerVars: {autoplay: 1, playsinline: 1, rel: 0, cc_load_policy: 1, cc_lang_pref: 'ko', hl: 'ko'},
-      events: {onReady: e => { try { e.target.playVideo(); } catch(_){} mvPush(); }, onStateChange: () => mvPush(),
+      events: {onReady: e => { try { e.target.playVideo(); } catch(_){} mvPush(); }, onStateChange: ev => { mvPush(); try { kqVidState(ev); } catch(_){} },
                onError: e => ytErr(e && e.data)}});
     if (!MV.yerr) mwUpdate('▶ 유튜브 영상 함께 보는 중');
   } else {
@@ -1811,7 +1811,7 @@ async function takeOver(R){
     if (!(await buildBc(R, name, pw, false, keepVideo))){ leaveRoom(); return; }
     MV.hostless = false; MV.gone = 0;
     liveRoom.host = true; $('hostctl').hidden = false; $('leavebtn').hidden = true;
-    $('mediawin').hidden = false; $('mwctl').hidden = false; $('talkbtn').hidden = true; $('camreqbtn').hidden = true; $('kbtn').hidden = true; $('kform').hidden = true; talkStop('');
+    $('mediawin').hidden = false; $('mwctl').hidden = false; $('talkbtn').hidden = true; $('camreqbtn').hidden = true; $('kbtn').hidden = false; $('kform').hidden = true; talkStop('');
     roomHead(); memBeat(); fillInvite(); loadLive();
     if (keepVideo){ MV.timer = setInterval(mvPush, 5000); mvPush(); mwUpdate('▶ 영상 계속 재생 중 (내가 방장)'); }
     else mwUpdate('음악·영상을 새로 골라 주세요 (내가 방장)');
@@ -1865,7 +1865,7 @@ function mwUpdate(text){
 function mwOpen(host){
   MV.regTs = null; MV.regAt = 0; MV.vwait = 0; MV.vre = 0; $('mwre').hidden = host; $('lagrow').hidden = !!host;
   $('mediawin').hidden = false;
-  $('mwctl').hidden = !host; $('talkbtn').hidden = host; $('camreqbtn').hidden = host; $('kbtn').hidden = host; if (!host) $('talkhost').hidden = true;
+  $('mwctl').hidden = !host; $('talkbtn').hidden = host; $('camreqbtn').hidden = host; $('kbtn').hidden = false; if (!host) $('talkhost').hidden = true;
   clearInterval(MV.poll); if (!host){ MV.poll = setInterval(mvPoll, 3000); mvPoll(); }
   mwUpdate(host ? '음악을 고르면 여기에 표시됩니다 (아래 🎵 음악 메뉴)' : '방장이 음악을 틀면 여기서 들립니다');
 }
@@ -1998,7 +1998,7 @@ function swapSource(ns){
   const nt = ns && ns.getAudioTracks()[0];
   if (!nt && !(ns && ns.getVideoTracks().length)){ setBc('소리를 가져오지 못했습니다.'); return; }
   if (!ns.getVideoTracks().length && MV.k === 'file'){ mvStop(); setVideoTrack(null); mvPut({k: me.cam ? 'cam' : ''}); }
-  if (me.src && me.src !== ns) me.src.getTracks().forEach(t => t.stop());
+  if (me.src && me.src !== ns){ me.src.getTracks().forEach(t => t.stop()); if (me.src._orig) me.src._orig.getTracks().forEach(t => t.stop()); try { if (me.src._ctx) me.src._ctx.close(); } catch(e){} }
   me.src = ns;
   if (me.mix){ // 듣는 사람이 말하는 중이면 소리를 섞어서 내보냄
     if (nt){ try { if (me.mix.node) me.mix.node.disconnect(); } catch(e){} me.mix.node = me.ac.createMediaStreamSource(new MediaStream([nt])); me.mix.node.connect(me.mix.dest); }
@@ -2244,7 +2244,7 @@ const kq = {list: [], auto: false};
 function kqAuto(b){
   if (!isHost()) return;
   const l = document.createElement('label'); l.style.cssText = 'display:block;margin-top:6px;font-size:12px;opacity:.9'; const c = document.createElement('input'); c.type = 'checkbox'; c.checked = !!kq.auto; c.onchange = () => { kq.auto = c.checked; };
-  l.append(c, ' 종료하면 다음 곡 자동 시작'); b.append(l);
+  l.append(c, ' 🤖 자동 진행 (방장이 자리를 비워도 순서대로 시작·종료)'); b.append(l);
 }
 $('kbtn').onclick = () => { $('kform').hidden = !$('kform').hidden; };
 $('kcancel').onclick = () => { $('kform').hidden = true; $('kprev').innerHTML = ''; };
@@ -2281,23 +2281,37 @@ function kqRender(){
   });
   kqAuto(b);
 }
+async function kqHostMic(){
+  try { swapSource(karaWrap(await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true}}))); mwUpdate('🎤 내 노래 방송 중'); }
+  catch(err){ setBc('마이크를 사용할 수 없습니다. 권한을 확인하세요.'); }
+}
+function kqHostMicOff(){
+  try { const sr = bc && bc.src; if (sr){ if (sr._orig) sr._orig.getTracks().forEach(t => t.stop()); try { if (sr._ctx) sr._ctx.close(); } catch(_){} sr.getTracks().forEach(t => t.stop()); } } catch(_){}
+  setBc('🎤 노래가 끝나 마이크를 껐습니다.');
+}
 async function kqStart(e){
   if (kq.list.some(x => x.st === 'now')){ setBc('진행 중인 노래를 먼저 「종료」하세요.'); return; }
   if (!/^[\w-]{11}$/.test(String(e.u))) return;
-  try { await lj('kq_' + liveRoom.id + '/' + e.k, 'PATCH', {st: 'now'}); } catch(_){}
-  hostLink('https://www.youtube.com/watch?v=' + e.u); kqTick();
+  try { await lj('kq_' + liveRoom.id + '/' + e.k, 'PATCH', {st: 'now', sts: Date.now()}); } catch(_){}
+  hostLink('https://www.youtube.com/watch?v=' + e.u); if (e.w === myId) kqHostMic(); kqTick();
   fetch(`${DB}/chat/live_${liveRoom.id}.json`, {method: 'POST', body: JSON.stringify({n: '🎤 노래방', t: '🎙 ' + String(e.n || '손님').slice(0, 12) + '님 차례 — ' + String(e.t).slice(0, 30), ts: Date.now()})}).then(() => { try { if (!(es && esOk)) fetchChat(true); } catch(_){} }).catch(() => {});
 }
 async function kqDel(e){
   try { await lj('kq_' + liveRoom.id + '/' + e.k, 'DELETE'); } catch(_){}
   kq.list = kq.list.filter(x => x.k !== e.k);
-  if (isHost() && e.st === 'now' && bc){
+  if (isHost() && e.st === 'now' && e.w === myId) kqHostMicOff();
+  else if (isHost() && e.st === 'now' && bc){
     setTimeout(() => { try { if (bc && bc.okA && bc.okA[e.w] === true && bc.rq && bc.rq[e.w] && bc.rq[e.w].a) talkDecide(bc, 'a', e.w, false); } catch(_){} }, 8000);
     if (kq.auto){ const nx = kq.list.find(x => x.st !== 'now'); if (nx){ kqRender(); await kqStart(nx); return; } }
   }
   kqTick();
 }
-let kqBusy = false;
+let kqBusy = false, kqStarting = false;
+// 자동 진행: 영상이 끝나면 다음 곡으로
+function kqVidState(ev){
+  if (!(ev && ev.data === 0 && isHost() && kq.auto)) return;
+  const nw = kq.list.find(x => x.st === 'now'); if (nw) kqDel(nw);
+}
 async function kqTick(){
   if (!liveRoom || !DB){ $('kqbox').hidden = true; return; }
   if (kqBusy) return; kqBusy = true; const rid = liveRoom.id;
@@ -2309,6 +2323,11 @@ async function kqTick(){
       const now = Date.now(), gone = kq.list.filter(e => e.st !== 'now' && now - (e.ts || 0) > 60000 && !memList.some(m => m.k === e.w));
       gone.forEach(e => lj('kq_' + rid + '/' + e.k, 'DELETE').catch(() => {}));
       if (gone.length) kq.list = kq.list.filter(e => !gone.includes(e));
+    }
+    if (isHost() && kq.auto){
+      const nw = kq.list.find(x => x.st === 'now');
+      if (!nw){ const nx = kq.list.find(x => x.st !== 'now'); if (nx && !kqStarting){ kqStarting = true; kqStart(nx).finally(() => { kqStarting = false; }); } }
+      else if (nw.w !== myId && Date.now() - (nw.sts || 0) > 90000 && !(bc && bc.okA && bc.okA[nw.w] === true)) kqDel(nw);   // 부를 사람이 90초 안에 마이크를 못 켜면 건너뜀
     }
     kqRender();
     if (!isHost()){
