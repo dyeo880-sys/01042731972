@@ -2775,8 +2775,8 @@ function lisFs(){
   const b = document.createElement('button');
   b.type = 'button'; b.id = 'lisfs'; b.className = 'addhome'; b.textContent = '⛶ 전체화면'; b.hidden = true;
   b.setAttribute('aria-label', '영상 전체화면');
-  b.style.cssText = 'position:absolute;right:10px;top:10px;z-index:5;margin:0;background:#000c';
-  b.onclick = lisFs; scr.append(b);
+  b.style.cssText = 'margin:0 0 0 auto;white-space:nowrap';
+  b.onclick = lisFs;
   // 방 소리 크기 (방장이 보내는 소리 전용 · 라디오 볼륨과 별개)
   // 평소에는 영상 바로 위 줄에 항상 보이고, 전체화면일 때는 영상 아래쪽에 겹쳐서 보임
   let lv = 1; try { const q = localStorage.getItem('radio_room_vol'); if (q !== null && q !== '') lv = Math.max(0, Math.min(1, +q || 0)); } catch(e){}
@@ -2796,15 +2796,28 @@ function lisFs(){
     box.append(mu, lb, rg); sets.push({mu, rg}); return box;
   };
   const bar = mkCtl('display:none;align-items:center;gap:8px;margin:0 0 8px;padding:4px 8px;border:1px solid #b99a5b88;border-radius:8px;background:#1a0f08');
-  bar.id = 'lisbar'; scr.parentNode.insertBefore(bar, scr);
+  bar.id = 'lisbar'; bar.append(b); scr.parentNode.insertBefore(bar, scr);
   const ov = mkCtl('display:none;position:absolute;left:10px;bottom:10px;z-index:5;align-items:center;gap:8px;background:#000c;border:1px solid #b99a5b88;border-radius:8px;padding:4px 8px');
-  ov.id = 'lisctl'; scr.append(ov); updAll();
+  ov.id = 'lisctl'; ov.style.transition = 'opacity .25s'; scr.append(ov);
+  const b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'addhome'; b2.textContent = '✕ 전체화면 나가기';
+  b2.style.cssText = 'margin:0 0 0 8px;padding:4px 10px;white-space:nowrap'; b2.onclick = lisFs; ov.append(b2); updAll();
+  let hideT = 0, wasFull = false;
+  const isFull = () => document.fullscreenElement === scr || document.webkitFullscreenElement === scr;
+  const wake = () => {
+    if (!isFull()) return;
+    ov.style.opacity = '1'; ov.style.pointerEvents = 'auto'; clearTimeout(hideT);
+    hideT = setTimeout(() => { if (isFull()){ ov.style.opacity = '0'; ov.style.pointerEvents = 'none'; } }, 3000);
+  };
+  ['mousemove', 'pointerdown', 'touchstart', 'keydown'].forEach(ev => scr.addEventListener(ev, wake, {passive: true}));
   const sync = () => {
-    b.hidden = !(liveAudio.style.display === 'block' && liveAudio.srcObject && liveAudio.videoWidth > 0);
+    b.style.display = (liveAudio.style.display === 'block' && liveAudio.srcObject && liveAudio.videoWidth > 0) ? '' : 'none';
     const listening = !!(typeof lis !== 'undefined' && lis && liveAudio.srcObject);
     const full = document.fullscreenElement === scr || document.webkitFullscreenElement === scr;
     bar.style.display = (listening && !full) ? 'flex' : 'none';
     ov.style.display = (listening && full) ? 'flex' : 'none';
+    if (full && !wasFull) wake();
+    if (!full){ clearTimeout(hideT); ov.style.opacity = '1'; ov.style.pointerEvents = 'auto'; }
+    wasFull = full;
   };
   liveAudio.addEventListener('loadedmetadata', sync); liveAudio.addEventListener('resize', sync);
   document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync);
