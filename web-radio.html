@@ -60,6 +60,8 @@ button,select,input{font:inherit}
 .chatlog .m small{opacity:.5;margin-left:6px}
 .chatlog .empty{opacity:.6;text-align:center;margin-top:60px}
 .chatlog .m b.nm{cursor:pointer}
+.chatlog .m.wh{color:#ffc9ec}
+.chatlog .m .wt{color:#ff8fd0;font-weight:700;font-size:13px;margin-right:6px}
 .chatlog .m b.nm:hover{text-decoration:underline}
 #nmenu{position:fixed;z-index:200;background:var(--panel);border:1px solid var(--brass);border-radius:8px;padding:6px;box-shadow:0 6px 20px #000b;min-width:160px}
 #nmenu .t{font-size:12px;opacity:.7;padding:4px 10px}
@@ -387,7 +389,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <video id="mtvvid" playsinline hidden></video>
       <div class="mtvidle" id="mtvidle">
         <button class="knob" id="mtvon" type="button" title="뮤직비디오 켜기" aria-label="뮤직비디오 켜기">▶</button>
-        <div class="mtvmsg" id="mtvmsg">🎵 MTV 뮤직비디오 24시간</div>
+        <div class="mtvmsg" id="mtvmsg">🚦 교통 CCTV · TV 랜덤 (소리 꺼짐)</div>
       </div>
       <div class="mtvname" id="mtvname" hidden></div>
       <div class="mtvbar" id="mtvbar" hidden>
@@ -863,7 +865,7 @@ function radioMutedStart(){
 }
 function playView(i, keepRoom, restore){
   const s = view[i]; if (!s) return;
-  try { if (mtv.on && !restore) mtvOff(); } catch(e){}
+  try { if (mtv.on && !restore) mtvQuiet(); } catch(e){}
   curView = i;
   if (!keepRoom){ stopListen(); try { localStorage.removeItem('radio_last_room'); } catch(e){} }
   cur = stations.indexOf(s);
@@ -1096,14 +1098,17 @@ function renderChat(forceBottom){
   log.innerHTML = '';
   const all = chat.concat(pending).filter(c => !isBlockedMsg(c));
   if (!all.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
+  const isDmRoom = $('room').value.indexOf('u:') === 0;
   all.forEach(c => {
-    const d = document.createElement('div'); d.className = 'm';
+    const d = document.createElement('div'); d.className = 'm' + (isDmRoom ? ' wh' : '');
     const b = document.createElement('b'); b.textContent = (c.h ? '👑 ' : '') + c.n;
     if (c.k === UID || c.n === $('nick').value.trim()){ b.style.cursor = 'pointer'; b.title = '이름 바꾸기'; b.onclick = renameMe; }
     else { b.className = 'nm'; b.title = '눌러서 귓속말 · 차단'; b.onclick = ev => nameMenu(ev, c); }
     const t = document.createElement('span'); t.textContent = c.t;
     const s = document.createElement('small'); s.textContent = hhmm(c.ts);
-    d.append(b, t, s); log.append(d);
+    if (isDmRoom){ const w = document.createElement('span'); w.className = 'wt'; w.textContent = '(귓속말)'; d.append(b, w, t, s); }
+    else d.append(b, t, s);
+    log.append(d);
   });
   if (near) log.scrollTop = log.scrollHeight;
 }
@@ -1914,7 +1919,7 @@ function mwClose(){ try { talkStop(''); } catch(e){} $('guestTile').hidden = tru
 function stopOtherMedia(){
   try { if (rdCast) rdCastOff(); } catch(e){}
   try { audio.pause(); } catch(e){}
-  try { if (mtv.on) mtvOff('🎵 음악 방에 들어와서 멈췄습니다. ▶ 눌러서 다시 켜기'); } catch(e){}
+  try { if (mtv.on) mtvQuiet(); } catch(e){}
   try { if (tvHls || !$('tvplayer').hidden) tvStop(); } catch(e){}
 }
 function enterRoom(id, name){
@@ -2826,7 +2831,7 @@ function tvStop(){
 let tvLast = null;
 function tvWatch(x, auto){
   if (!auto) tvAutoN = 0;
-  try { if (mtv.on) mtvOff(); } catch(e){}
+  try { if (mtv.on) mtvQuiet(); } catch(e){}
   tvLast = x; $('tvresume').hidden = true;
   if (!ytId(x.u)){
     try { localStorage.setItem('radio_last_kind', 'tv'); localStorage.removeItem('radio_tv_off'); localStorage.setItem('radio_last_tv', JSON.stringify({name: x.name, u: x.u, hls: x.hls ? 1 : 0})); } catch(e){}
@@ -3004,21 +3009,48 @@ function lisFs(){
 // ---- 🎬 맨 위 MTV 뮤직비디오 화면 (24시간 뮤직 채널, 라디오·TV와 별도) ----
 const mtv = {list: null, i: -1, hls: null, tries: 0, timer: 0, on: false, silent: false, rec: 0, lastT: -1, stuck: 0, re: 0, single: false, label: '', radio: false};
 const mtvV = $('mtvvid');
+// 라디오·TV·음악 방을 켜면 위쪽 영상은 끄지 않고 소리만 끈 채로 계속 보여 줍니다.
+function mtvQuiet(){ if (!mtv.on) return; mtv.silent = true; mtvV.muted = true; const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = mtvLbl(x); }
+const mtvShuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const k = Math.floor(Math.random() * (i + 1)); [a[i], a[k]] = [a[k], a[i]]; } return a; };
+// 🚦 국가교통정보센터 고속도로 CCTV (무작위 지역 2곳에서 최대 25개). 주소는 몇 분 뒤 만료되므로 목록을 4분마다 새로 받습니다.
+async function mtvCctv(){
+  const key = kload('its') || 'test', out = [];
+  const regs = mtvShuffle([...$('kcreg').options].map(o => o.value)).slice(0, 2);
+  await Promise.allSettled(regs.map(async rg => {
+    const [x1, x2, y1, y2] = rg.split(','), ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 7000);
+    try {
+      const r = await fetch('https://openapi.its.go.kr:9443/cctvInfo?apiKey=' + encodeURIComponent(key) + '&type=ex&cctvType=1&minX=' + x1 + '&maxX=' + x2 + '&minY=' + y1 + '&maxY=' + y2 + '&getType=json', {signal: ctl.signal});
+      let d = JSON.parse(await r.text()).response.data; d = Array.isArray(d) ? d : d ? [d] : [];
+      d.forEach(o => { const u = String(o.cctvurl || ''); if (o.cctvname && /^https?:/i.test(u) && !(location.protocol === 'https:' && u.startsWith('http:'))) out.push({name: '🚦 ' + o.cctvname, u, hls: !/\.mp4(\?|$)/i.test(u)}); });
+    } catch(e){} finally { clearTimeout(tm); }
+  }));
+  return mtvShuffle(out).slice(0, 25);
+}
 async function mtvList(){
-  if (mtv.list && mtv.list.length) return mtv.list;
-  const regs = ['sam-kr', 'sam-us', 'sam-gb', 'kr', 'us', 'gb', 'jp'];
-  const re = /music|mtv|vevo|kpop|k-pop|뮤직|trace|stingray|vh1|cmt|clubbing|concert|fuse|musica|musique|hits|dance/i;
-  const rs = await Promise.allSettled(regs.map(cc => tvLoad(cc)));
-  const seen = new Set(), items = [];
-  rs.forEach(r => { if (r.status === 'fulfilled') r.value.filter(x => re.test(x.name) && !ytId(x.u)).forEach(x => { if (!seen.has(x.u)){ seen.add(x.u); items.push(x); } }); });
-  return (mtv.list = items);
+  if (mtv.list && mtv.list.length && (mtv.single || !mtv.listTs || Date.now() - mtv.listTs < 240000)) return mtv.list;
+  const regs = ['sam-kr', 'kr', 'sam-us', 'sam-gb', 'us', 'gb', 'jp'];
+  const reMusic = /music|mtv|vevo|kpop|k-pop|뮤직|trace|stingray|vh1|cmt|clubbing|concert|fuse|musica|musique|hits|dance/i;
+  const reAmb = /교통|tbs|traffic|ytn|연합뉴스|yonhap|arirang|아리랑|뉴스|news|날씨|weather|kbs|mbc|sbs|jtbc|ebs/i;
+  const [cctv, rs] = await Promise.all([mtvCctv().catch(() => []), Promise.allSettled(regs.map(cc => tvLoad(cc)))]);
+  const seen = new Set(), amb = [], music = [];
+  rs.forEach((r, k) => {
+    if (r.status !== 'fulfilled') return;
+    r.value.forEach(x => {
+      if (ytId(x.u) || seen.has(x.u)) return;
+      if (k < 2 && reAmb.test(x.name)){ seen.add(x.u); amb.push(x); }
+      else if (reMusic.test(x.name)){ seen.add(x.u); music.push(Object.assign({m: 1}, x)); }
+    });
+  });
+  // 처음에는 교통 CCTV·교통/뉴스 방송이 무작위로, 뮤직 채널은 뒤쪽 예비로
+  mtv.listTs = Date.now();
+  return (mtv.list = mtvShuffle(cctv.concat(amb)).concat(mtvShuffle(music)));
 }
 function mtvOff(msg){
   clearTimeout(mtv.timer); mtv.on = false;
   if (mtv.hls){ mtv.hls.destroy(); mtv.hls = null; }
   try { mtvV.pause(); mtvV.removeAttribute('src'); mtvV.load(); } catch(e){}
   mtvV.hidden = true; $('mtvbar').hidden = true; $('mtvname').hidden = true; $('mtvidle').hidden = false;
-  $('mtvmsg').textContent = msg || (mtv.single && mtv.list && mtv.list[0] ? '📺 ' + mtv.list[0].name + ' · ▶ 눌러서 다시 켜기' : mtv.radio ? '📻 ' + $('now').textContent + ' · ▶ 눌러서 켜기' : (mtv.i >= 0 ? '▶ 눌러서 다시 켜기' : '🎵 MTV 뮤직비디오 24시간'));
+  $('mtvmsg').textContent = msg || (mtv.single && mtv.list && mtv.list[0] ? '📺 ' + mtv.list[0].name + ' · ▶ 눌러서 다시 켜기' : mtv.radio ? '📻 ' + $('now').textContent + ' · ▶ 눌러서 켜기' : (mtv.i >= 0 ? '▶ 눌러서 다시 켜기' : '🚦 교통 CCTV · TV 랜덤 (소리 꺼짐)'));
   if (document.fullscreenElement === $('mtvbox')) { try { document.exitFullscreen(); } catch(e){} }
 }
 function mtvFail(){
@@ -3031,11 +3063,10 @@ async function mtvPlay(i){
   if (!mtv.list){ $('mtvmsg').textContent = '채널 찾는 중…'; }
   const list = await mtvList();
   if (!mtv.on) return;
-  if (!list.length){ mtvOff('불러올 수 있는 뮤직 채널이 없습니다. 인터넷 연결을 확인하세요.'); mtv.list = null; return; }
+  if (!list.length){ mtvOff('불러올 수 있는 영상이 없습니다. 인터넷 연결을 확인하세요. (▶ 누르면 다시 찾습니다)'); mtv.list = null; return; }
   mtv.i = ((i % list.length) + list.length) % list.length;
   const x = list[mtv.i];
-  try { audio.pause(); } catch(e){}
-  try { tvStop(); } catch(e){}
+  if (!mtv.silent){ try { audio.pause(); } catch(e){} try { tvStop(); } catch(e){} }
   clearTimeout(mtv.timer);
   if (mtv.hls){ mtv.hls.destroy(); mtv.hls = null; }
   mtvV.hidden = false; $('mtvidle').hidden = true; $('mtvbar').hidden = false; $('mtvname').hidden = false;
@@ -3049,7 +3080,8 @@ async function mtvPlay(i){
   mtvV.play().catch(e => { if (e && e.name === 'NotAllowedError'){ mtvOff('▶ 눌러서 시작하세요'); } });
   mtv.timer = setTimeout(mtvFail, 15000);
 }
-mtvV.addEventListener('playing', () => { clearTimeout(mtv.timer); mtv.tries = 0; mtv.rec = 0; const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = (mtv.silent ? '🔇 화면을 누르면 소리가 켜집니다 · ' : (mtv.label || '🎵 ')) + x.name; });
+const mtvLbl = x => (mtv.silent ? '🔇 소리 꺼짐 (🔊 눌러 켜기) · ' : (/^🚦/.test(x.name) ? '' : (mtv.label || (x.m ? '🎵 ' : '📺 ')))) + x.name;
+mtvV.addEventListener('playing', () => { clearTimeout(mtv.timer); mtv.tries = 0; mtv.rec = 0; const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = mtvLbl(x); });
 mtvV.addEventListener('ended', () => { if (mtv.on){ mtv.tries = 0; mtvPlay(mtv.i + 1); } });
 mtvV.addEventListener('error', () => { if (mtv.on) mtvFail(); });
 $('mtvon').onclick = () => {
@@ -3072,23 +3104,15 @@ $('mtvprev').onclick = () => { mtvLeave(); mtv.tries = 0; mtvPlay(mtv.i < 0 ? 0 
   try { const s = parseFloat(localStorage.getItem('radio_mtv_vol')); if (s >= 0 && s <= 1) vol.value = s; } catch(e){}
   mtvV.volume = +vol.value;
   const sync = () => { mu.textContent = (mtvV.muted || mtvV.volume === 0) ? '🔇' : '🔊'; };
-  vol.oninput = () => { mtvV.volume = +vol.value; mtvV.muted = +vol.value === 0; try { localStorage.setItem('radio_mtv_vol', vol.value); } catch(e){} sync(); };
-  mu.onclick = () => { if (mtvV.muted || mtvV.volume === 0){ mtvV.muted = false; if (mtvV.volume === 0){ mtvV.volume = 0.5; vol.value = 0.5; } } else mtvV.muted = true; sync(); };
+  vol.oninput = () => { mtvV.volume = +vol.value; mtvV.muted = +vol.value === 0; mtv.silent = mtvV.muted; try { localStorage.setItem('radio_mtv_vol', vol.value); } catch(e){} sync(); };
+  mu.onclick = () => { if (mtvV.muted || mtvV.volume === 0){ mtvV.muted = false; if (mtvV.volume === 0){ mtvV.volume = 0.5; vol.value = 0.5; } } else mtvV.muted = true; mtv.silent = mtvV.muted; const cx = (mtv.list || [])[mtv.i]; if (mtv.on && cx) $('mtvname').textContent = mtvLbl(cx); sync(); };
   $('mtvfs').onclick = () => { const b = $('mtvbox'); try { if (document.fullscreenElement) document.exitFullscreen(); else (b.requestFullscreen || b.webkitRequestFullscreen).call(b); } catch(e){} };
   mtvV.addEventListener('volumechange', sync);
   sync();
 })();
 fsOn(mtvV, $('mtvbox'));
 
-// 접속하면 자동으로 켜짐 (브라우저 규칙상 처음에는 소리 없이 시작 → 화면 아무 곳이나 처음 누르면 소리 켜짐)
-const mtvUnmute = () => {
-  if (mtv.on && mtv.silent){
-    mtv.silent = false; mtvV.muted = false; if (mtvV.volume === 0) mtvV.volume = 0.5;
-    const x = (mtv.list || [])[mtv.i]; if (x) $('mtvname').textContent = (mtv.label || '🎵 ') + x.name;
-  }
-};
-addEventListener('pointerdown', mtvUnmute, {capture: true, once: true});
-addEventListener('keydown', mtvUnmute, {capture: true, once: true});
+// 접속하면 소리 없이 자동으로 켜짐. 다른 방송과 소리가 겹치지 않도록 화면을 눌러도 소리는 켜지지 않고, 🔊 버튼을 눌러야 켜집니다.
 // 끊기지 않게: 10초마다 화면이 멈췄는지 확인 → 같은 채널 재접속 → 안 되면 다음 채널
 setInterval(() => {
   if (!mtv.on || document.hidden) return;
