@@ -149,10 +149,26 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 #roomview .drclose{display:none}
 @media (max-width:640px){main .chat.sp.dopen{right:0;width:100vw;z-index:58}}
 #rpopts{display:contents}#rpopts[hidden]{display:none}
-.mwctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px;padding:8px;background:#1a0f08;border-radius:6px}
+.mwctl{display:block;margin-top:8px;padding:8px 10px;background:#1a0f08;border:1px solid #b99a5b55;border-radius:6px}
 .mwctl[hidden]{display:none}
-.mwctl input{flex:1;min-width:160px;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 9px;font-size:13px}
-.mwctl .addhome{font-size:13px;padding:4px 9px}
+.mwctl input:not([type]){flex:1;min-width:160px;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 9px;font-size:13px}
+.mwctl .addhome{font-size:13px;padding:4px 9px;margin:0}
+/* 방장 도구 막대: 조작(항상 보임) / 틀기 / 설정 — 탭을 누르면 아래에 패널이 하나씩 열림 */
+.hbrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hbrow+.hbrow{margin-top:6px}
+.hbrow .tb{flex:1;min-width:0;margin-top:0}
+.hbl{flex:0 0 34px;font-size:12px;color:var(--amber);opacity:.75}
+.mwctl .tp{background:#241610;border:1px solid #b99a5b33;margin-top:8px}
+.mwctl .danger{border-color:#c0552d;color:#ff9b7a;margin-left:auto}
+.sgrp{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.mixrow{display:flex;flex-direction:column;gap:8px;width:100%}
+.mixrow label{display:grid;grid-template-columns:minmax(110px,150px) minmax(0,1fr) 44px;align-items:center;gap:8px;font-size:13px}
+.mixrow input[type=range]{width:100%;min-width:0;accent-color:var(--brass)}
+.mixrow .mv{text-align:right;color:var(--amber)}
+.mixrow small{opacity:.7}
+.mwsize[hidden]{display:none}
+#roomview.mini .hbfull,#roomview.mini .hbl{display:none!important}
+#roomview.mini .mwctl{margin-top:6px;padding:6px}
 .mwsearch{display:flex;gap:6px;flex-basis:100%;flex-wrap:wrap;align-items:center}
 .mwsearch select{background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px}
 .vres{flex-basis:100%;max-height:210px;overflow:auto;background:#241610;border:1px solid #b99a5b55;border-radius:6px}
@@ -523,30 +539,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <div class="chatnote" id="bccount"></div>
         <div class="chatnote" id="rstat"></div>
         <div class="chatnote" id="bcstat2"></div>
-        <div id="hostctl" hidden>
-          <div class="tb">
-            <button class="tbtn" data-p="p-music" type="button" aria-expanded="false">🎵 음악 ▾</button>
-            <button class="tbtn" data-p="p-pw" type="button" aria-expanded="false">🔒 비밀번호 ▾</button>
-            <button class="tbtn" data-p="p-inv" type="button" aria-expanded="false">💌 초대 ▾</button>
-          </div>
-          <div class="tp" id="p-music" hidden>
-            <label class="addhome" style="margin:0;cursor:pointer">음악 파일<input id="bcfile" type="file" accept="audio/*" multiple hidden></label>
-            <button class="addhome" style="margin:0" type="button" id="bcmic">🎤 마이크</button>
-            <button class="addhome" style="margin:0" type="button" id="bcscr">🖥 PC 소리</button>
-          </div>
-          <div class="tp" id="p-pw" hidden>
-            <input id="bcpw2" maxlength="12" placeholder="비밀번호 설정/변경" aria-label="방 비밀번호 설정 또는 변경" style="width:150px">
-            <button class="addhome" style="margin:0" type="button" id="pwset">설정</button>
-            <button class="addhome" style="margin:0" type="button" id="pwclear">해제</button>
-          </div>
-          <div class="tp" id="p-inv" hidden>
-            <select id="invpeer" aria-label="초대할 접속자"><option value="">접속자 선택…</option></select>
-            <label class="chatnote" style="margin:0"><input type="checkbox" id="invpw"> 비밀번호도</label>
-            <button id="invsend" class="addhome" style="margin:0" type="button">보내기</button>
-            <button class="addhome" style="margin:0" type="button" id="bcinvite">🔗 링크 복사</button>
-          </div>
-          <button class="addhome" style="margin:8px 0 0;border-color:#c0552d" type="button" id="bcstop">💣 방 폭파</button>
-        </div>
+        <div id="hostctl" hidden></div>
         <div class="chatform"><button class="addhome" style="margin:0" type="button" id="leavebtn" hidden>방 나가기</button></div>
       </div>
       <div id="members" style="min-width:150px;max-width:230px;background:#1a0f08;border-radius:6px;padding:8px 10px;font-size:14px;line-height:1.7"></div>
@@ -742,6 +735,79 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <div id="guestTile" hidden title="누르면 크게 (크기 조절·이동 가능)"><video id="guestVid" muted autoplay playsinline></video><small id="guestLbl"></small></div>
     </div>
     <audio id="bcAudio" controls hidden style="width:100%;margin-top:8px"></audio>
+    <div class="mwctl" id="mwctl" hidden>
+      <div class="hbrow hbq">
+        <span class="hbl">조작</span>
+        <button class="addhome" style="margin:0" type="button" id="vplay">⏯ 재생/멈춤</button>
+        <button class="addhome" style="margin:0" type="button" id="vstop">■ 끄기</button>
+      </div>
+      <div class="hbrow hbfull">
+        <span class="hbl">틀기</span>
+        <div class="tb">
+          <button class="tbtn" data-p="p-music" type="button" aria-expanded="false">🎵 음악 ▾</button>
+          <button class="tbtn" data-p="p-vplay" type="button" aria-expanded="false">🎬 영상 ▾</button>
+          <button class="tbtn" data-p="p-vfind" type="button" aria-expanded="false">🔎 영상 찾기 ▾</button>
+          <button class="tbtn" data-p="p-vshare" type="button" aria-expanded="false">🖥 화면·강의 ▾</button>
+        </div>
+      </div>
+      <div class="hbrow hbfull">
+        <span class="hbl">설정</span>
+        <div class="tb">
+          <button class="tbtn" data-p="p-vmix" type="button" aria-expanded="false">🎚 음량 ▾</button>
+          <button class="tbtn" data-p="p-pw" type="button" aria-expanded="false">🔒 비밀번호 ▾</button>
+          <button class="tbtn" data-p="p-inv" type="button" aria-expanded="false">💌 초대 ▾</button>
+          <button class="addhome danger" type="button" id="bcstop" title="방을 완전히 없앱니다">💣 방 폭파</button>
+        </div>
+      </div>
+                <div class="tp" id="p-music" hidden>
+            <label class="addhome" style="margin:0;cursor:pointer">음악 파일<input id="bcfile" type="file" accept="audio/*" multiple hidden></label>
+            <button class="addhome" style="margin:0" type="button" id="bcmic">🎤 마이크</button>
+            <button class="addhome" style="margin:0" type="button" id="bcscr">🖥 PC 소리</button>
+          </div>
+      <div class="tp" id="p-vplay" hidden>
+        <label class="addhome" style="margin:0;cursor:pointer">📂 영상 파일<input id="bcvfile" type="file" accept="video/*" hidden></label>
+        <input id="vurl" placeholder="영상 링크 붙여넣기 (유튜브 · mp4 · m3u8)" aria-label="영상 링크">
+        <button class="addhome" style="margin:0" type="button" id="vgo">▶ 링크 재생</button>
+      </div>
+      <div class="tp" id="p-vfind" hidden>
+              <div class="mwsearch">
+        <input id="vq" placeholder="영상 검색 (예: 안전 교육, science, 지게차)" aria-label="영상 검색">
+        <select id="vsrc" aria-label="검색할 곳"><option value="all">전체 (해외 사이트 한꺼번에)</option><option value="ia">Internet Archive</option><option value="pre">Prelinger (옛 교육·산업 영화)</option><option value="nasa">NASA</option><option value="wm">Wikimedia Commons</option><option value="pt">PeerTube (세계 각국 영상)</option><option value="tv">📺 TV·위성 방송 (나라별 · 무료)</option><option value="yt">유튜브 (무료 키 필요)</option><option value="px">Pexels (무료 키 필요)</option><option value="pb">Pixabay (무료 키 필요)</option></select>
+        <select id="vtvc" aria-label="TV 나라" hidden><option value="extra">⭐ 기타 방송 (관리자 추가)</option><option value="sam-kr">📡 삼성 TV Plus · 한국</option><option value="sam-us">📡 삼성 TV Plus · 미국</option><option value="sam-gb">📡 삼성 TV Plus · 영국</option><option value="sam-de">📡 삼성 TV Plus · 독일</option><option value="sam-fr">📡 삼성 TV Plus · 프랑스</option><option value="sam-it">📡 삼성 TV Plus · 이탈리아</option><option value="sam-es">📡 삼성 TV Plus · 스페인</option><option value="sam-ca">📡 삼성 TV Plus · 캐나다</option><option value="sam-ch">📡 삼성 TV Plus · 스위스</option><option value="sam-at">📡 삼성 TV Plus · 오스트리아</option><option value="sam-in">📡 삼성 TV Plus · 인도</option><option value="kr">한국</option><option value="kp">북한</option><option value="jp">일본</option><option value="cn">중국</option><option value="tw">대만</option><option value="hk">홍콩</option><option value="us">미국</option><option value="ca">캐나다</option><option value="gb">영국</option><option value="ie">아일랜드</option><option value="au">호주</option><option value="nz">뉴질랜드</option><option value="de">독일</option><option value="fr">프랑스</option><option value="es">스페인</option><option value="it">이탈리아</option><option value="pt">포르투갈</option><option value="nl">네덜란드</option><option value="be">벨기에</option><option value="ch">스위스</option><option value="at">오스트리아</option><option value="se">스웨덴</option><option value="no">노르웨이</option><option value="dk">덴마크</option><option value="fi">핀란드</option><option value="pl">폴란드</option><option value="cz">체코</option><option value="gr">그리스</option><option value="tr">튀르키예</option><option value="ru">러시아</option><option value="ua">우크라이나</option><option value="sg">싱가포르</option><option value="my">말레이시아</option><option value="th">태국</option><option value="vn">베트남</option><option value="id">인도네시아</option><option value="ph">필리핀</option><option value="in">인도</option><option value="pk">파키스탄</option><option value="bd">방글라데시</option><option value="lk">스리랑카</option><option value="np">네팔</option><option value="mn">몽골</option><option value="kz">카자흐스탄</option><option value="uz">우즈베키스탄</option><option value="ir">이란</option><option value="iq">이라크</option><option value="il">이스라엘</option><option value="sa">사우디</option><option value="ae">아랍에미리트</option><option value="qa">카타르</option><option value="kw">쿠웨이트</option><option value="eg">이집트</option><option value="ma">모로코</option><option value="dz">알제리</option><option value="tn">튀니지</option><option value="ng">나이지리아</option><option value="za">남아공</option><option value="ke">케냐</option><option value="et">에티오피아</option><option value="gh">가나</option><option value="br">브라질</option><option value="ar">아르헨티나</option><option value="cl">칠레</option><option value="co">콜롬비아</option><option value="mx">멕시코</option><option value="pe">페루</option><option value="ve">베네수엘라</option><option value="cu">쿠바</option><option value="ro">루마니아</option><option value="hu">헝가리</option><option value="bg">불가리아</option><option value="rs">세르비아</option><option value="hr">크로아티아</option><option value="sk">슬로바키아</option><option value="si">슬로베니아</option><option value="ba">보스니아</option><option value="al">알바니아</option><option value="mk">북마케도니아</option><option value="me">몬테네그로</option><option value="lt">리투아니아</option><option value="lv">라트비아</option><option value="ee">에스토니아</option><option value="by">벨라루스</option><option value="md">몰도바</option><option value="ge">조지아</option><option value="am">아르메니아</option><option value="az">아제르바이잔</option><option value="is">아이슬란드</option><option value="lu">룩셈부르크</option><option value="mt">몰타</option><option value="cy">키프로스</option><option value="lb">레바논</option><option value="jo">요르단</option><option value="sy">시리아</option><option value="ye">예멘</option><option value="om">오만</option><option value="bh">바레인</option><option value="af">아프가니스탄</option><option value="ly">리비아</option><option value="sd">수단</option><option value="sn">세네갈</option><option value="ci">코트디부아르</option><option value="cm">카메룬</option><option value="tz">탄자니아</option><option value="ug">우간다</option><option value="zw">짐바브웨</option><option value="ao">앙골라</option><option value="mz">모잠비크</option><option value="mg">마다가스카르</option><option value="ec">에콰도르</option><option value="uy">우루과이</option><option value="py">파라과이</option><option value="bo">볼리비아</option><option value="cr">코스타리카</option><option value="pa">파나마</option><option value="gt">과테말라</option><option value="hn">온두라스</option><option value="sv">엘살바도르</option><option value="ni">니카라과</option><option value="do">도미니카공화국</option><option value="pr">푸에르토리코</option><option value="jm">자메이카</option><option value="tt">트리니다드토바고</option><option value="ht">아이티</option><option value="kh">캄보디아</option><option value="la">라오스</option><option value="mm">미얀마</option><option value="bn">브루나이</option><option value="mo">마카오</option><option value="kg">키르기스스탄</option><option value="tj">타지키스탄</option><option value="tm">투르크메니스탄</option><option value="bt">부탄</option><option value="mv">몰디브</option><option value="int">국제·위성 방송</option></select>
+        <button class="addhome" style="margin:0" type="button" id="vtv">📺 TV 채널 목록</button>
+        <button class="addhome" style="margin:0" type="button" id="vfind">🔍 검색</button>
+      </div>
+        <div class="vres" id="vres" hidden></div>
+      </div>
+      <div class="tp" id="p-vshare" hidden>
+        <div class="sgrp">
+          <button class="addhome" style="margin:0" type="button" id="bcshare" title="내 PC 화면(창·탭·전체)을 방 사람들에게 영상으로 보냅니다">🖥 내 화면 공유</button>
+          <button class="addhome" style="margin:0" type="button" id="bcshare2" title="내 PC 화면을 보내면서 오른쪽 아래에 내 얼굴(카메라)을 동그랗게 함께 넣습니다">🖥📷 화면+내 얼굴</button>
+        </div>
+        <div class="sgrp">
+          <button class="addhome" style="margin:0;border-color:var(--amber);color:var(--amber);font-weight:700" type="button" id="bclec" title="화면 + PC 소리 + 내 마이크 목소리를 한꺼번에 보냅니다 (강의용)">🎓 강의 시작 (화면+PC소리+마이크)</button>
+          <label class="chatnote" style="margin:0;display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="lecface"> 얼굴도 넣기</label>
+        </div>
+        <div class="chatnote" style="flex-basis:100%;margin:0">🎓 강의 시작 = 화면 + PC 소리 + 내 마이크를 한꺼번에 보냅니다.</div>
+      </div>
+      <div class="tp" id="p-vmix" hidden>
+        <div class="mixrow" id="mixrow">
+          <label title="내가 틀어 주는 음악·반주·영상 소리와 내 마이크의 크기"><span>🎚 방장 소리 <small>(음악·반주)</small></span><input id="mixhost" type="range" min="0" max="2" step="0.05" value="1"><span id="mixhostv" class="mv">100%</span></label>
+          <label title="마이크를 켠 손님 모두의 목소리 크기 (손님 한 명씩은 아래 요청 목록에서 조절)"><span>🎤 손님 마이크 전체</span><input id="mixguest" type="range" min="0" max="2" step="0.05" value="1"><span id="mixguestv" class="mv">100%</span></label>
+        </div>
+      </div>
+                <div class="tp" id="p-pw" hidden>
+            <input id="bcpw2" maxlength="12" placeholder="비밀번호 설정/변경" aria-label="방 비밀번호 설정 또는 변경" style="width:150px">
+            <button class="addhome" style="margin:0" type="button" id="pwset">설정</button>
+            <button class="addhome" style="margin:0" type="button" id="pwclear">해제</button>
+          </div>
+                <div class="tp" id="p-inv" hidden>
+            <select id="invpeer" aria-label="초대할 접속자"><option value="">접속자 선택…</option></select>
+            <label class="chatnote" style="margin:0"><input type="checkbox" id="invpw"> 비밀번호도</label>
+            <button id="invsend" class="addhome" style="margin:0" type="button">보내기</button>
+            <button class="addhome" style="margin:0" type="button" id="bcinvite">🔗 링크 복사</button>
+          </div>
+    </div>
     <div class="rdbar" id="rdbar">
       <div class="rdrow"><strong>📻 라디오</strong><span id="rdnow">방송국을 고르세요</span>
         <button class="addhome" type="button" id="rdprev" title="이전 방송국" aria-label="이전 방송국">⏮</button>
@@ -756,26 +822,6 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <div class="list" id="rdlist" role="list"></div>
         <div class="chatnote" style="margin-top:6px">방장은 「📻 방에 송출」 버튼으로 라디오를 방 사람들에게도 들려줄 수 있습니다. (일부 방송국은 막혀 있어 안 될 수 있으며, 그때는 🖥 PC 소리로 이 탭의 소리를 공유하세요.)</div>
       </div>
-    </div>
-    <div class="mwctl" id="mwctl" hidden>
-      <label class="addhome" style="margin:0;cursor:pointer">📂 영상 파일<input id="bcvfile" type="file" accept="video/*" hidden></label>
-      <input id="vurl" placeholder="영상 링크 붙여넣기 (유튜브 · mp4 · m3u8)" aria-label="영상 링크">
-      <button class="addhome" style="margin:0" type="button" id="vgo">▶ 링크 재생</button>
-      <button class="addhome" style="margin:0" type="button" id="vplay">⏯ 재생/멈춤</button>
-      <button class="addhome" style="margin:0" type="button" id="vstop">■ 끄기</button>
-      <button class="addhome" style="margin:0" type="button" id="bcshare" title="내 PC 화면(창·탭·전체)을 방 사람들에게 영상으로 보냅니다">🖥 내 화면 공유</button>
-      <button class="addhome" style="margin:0" type="button" id="bcshare2" title="내 PC 화면을 보내면서 오른쪽 아래에 내 얼굴(카메라)을 동그랗게 함께 넣습니다">🖥📷 화면+내 얼굴</button>
-      <button class="addhome" style="margin:0;border-color:var(--amber);color:var(--amber);font-weight:700" type="button" id="bclec" title="화면 + PC 소리 + 내 마이크 목소리를 한꺼번에 보냅니다 (강의용)">🎓 강의 시작 (화면+PC소리+마이크)</button>
-      <div id="mixrow" style="flex-basis:100%;display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:13px;margin-top:4px"><label style="display:flex;gap:6px;align-items:center" title="내가 틀어 주는 음악·반주·영상 소리와 내 마이크의 크기">🎚 방장 소리(음악·반주) <input id="mixhost" type="range" min="0" max="2" step="0.05" value="1" style="width:120px"><span id="mixhostv" style="min-width:38px">100%</span></label><label style="display:flex;gap:6px;align-items:center" title="마이크를 켠 손님 모두의 목소리 크기 (손님 한 명씩은 아래 요청 목록에서 조절)">🎤 손님 마이크 전체 <input id="mixguest" type="range" min="0" max="2" step="0.05" value="1" style="width:120px"><span id="mixguestv" style="min-width:38px">100%</span></label></div>
-      <label class="chatnote" style="margin:0;display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="lecface"> 얼굴도 넣기</label>
-      <div class="mwsearch">
-        <input id="vq" placeholder="영상 검색 (예: 안전 교육, science, 지게차)" aria-label="영상 검색">
-        <select id="vsrc" aria-label="검색할 곳"><option value="all">전체 (해외 사이트 한꺼번에)</option><option value="ia">Internet Archive</option><option value="pre">Prelinger (옛 교육·산업 영화)</option><option value="nasa">NASA</option><option value="wm">Wikimedia Commons</option><option value="pt">PeerTube (세계 각국 영상)</option><option value="tv">📺 TV·위성 방송 (나라별 · 무료)</option><option value="yt">유튜브 (무료 키 필요)</option><option value="px">Pexels (무료 키 필요)</option><option value="pb">Pixabay (무료 키 필요)</option></select>
-        <select id="vtvc" aria-label="TV 나라" hidden><option value="extra">⭐ 기타 방송 (관리자 추가)</option><option value="sam-kr">📡 삼성 TV Plus · 한국</option><option value="sam-us">📡 삼성 TV Plus · 미국</option><option value="sam-gb">📡 삼성 TV Plus · 영국</option><option value="sam-de">📡 삼성 TV Plus · 독일</option><option value="sam-fr">📡 삼성 TV Plus · 프랑스</option><option value="sam-it">📡 삼성 TV Plus · 이탈리아</option><option value="sam-es">📡 삼성 TV Plus · 스페인</option><option value="sam-ca">📡 삼성 TV Plus · 캐나다</option><option value="sam-ch">📡 삼성 TV Plus · 스위스</option><option value="sam-at">📡 삼성 TV Plus · 오스트리아</option><option value="sam-in">📡 삼성 TV Plus · 인도</option><option value="kr">한국</option><option value="kp">북한</option><option value="jp">일본</option><option value="cn">중국</option><option value="tw">대만</option><option value="hk">홍콩</option><option value="us">미국</option><option value="ca">캐나다</option><option value="gb">영국</option><option value="ie">아일랜드</option><option value="au">호주</option><option value="nz">뉴질랜드</option><option value="de">독일</option><option value="fr">프랑스</option><option value="es">스페인</option><option value="it">이탈리아</option><option value="pt">포르투갈</option><option value="nl">네덜란드</option><option value="be">벨기에</option><option value="ch">스위스</option><option value="at">오스트리아</option><option value="se">스웨덴</option><option value="no">노르웨이</option><option value="dk">덴마크</option><option value="fi">핀란드</option><option value="pl">폴란드</option><option value="cz">체코</option><option value="gr">그리스</option><option value="tr">튀르키예</option><option value="ru">러시아</option><option value="ua">우크라이나</option><option value="sg">싱가포르</option><option value="my">말레이시아</option><option value="th">태국</option><option value="vn">베트남</option><option value="id">인도네시아</option><option value="ph">필리핀</option><option value="in">인도</option><option value="pk">파키스탄</option><option value="bd">방글라데시</option><option value="lk">스리랑카</option><option value="np">네팔</option><option value="mn">몽골</option><option value="kz">카자흐스탄</option><option value="uz">우즈베키스탄</option><option value="ir">이란</option><option value="iq">이라크</option><option value="il">이스라엘</option><option value="sa">사우디</option><option value="ae">아랍에미리트</option><option value="qa">카타르</option><option value="kw">쿠웨이트</option><option value="eg">이집트</option><option value="ma">모로코</option><option value="dz">알제리</option><option value="tn">튀니지</option><option value="ng">나이지리아</option><option value="za">남아공</option><option value="ke">케냐</option><option value="et">에티오피아</option><option value="gh">가나</option><option value="br">브라질</option><option value="ar">아르헨티나</option><option value="cl">칠레</option><option value="co">콜롬비아</option><option value="mx">멕시코</option><option value="pe">페루</option><option value="ve">베네수엘라</option><option value="cu">쿠바</option><option value="ro">루마니아</option><option value="hu">헝가리</option><option value="bg">불가리아</option><option value="rs">세르비아</option><option value="hr">크로아티아</option><option value="sk">슬로바키아</option><option value="si">슬로베니아</option><option value="ba">보스니아</option><option value="al">알바니아</option><option value="mk">북마케도니아</option><option value="me">몬테네그로</option><option value="lt">리투아니아</option><option value="lv">라트비아</option><option value="ee">에스토니아</option><option value="by">벨라루스</option><option value="md">몰도바</option><option value="ge">조지아</option><option value="am">아르메니아</option><option value="az">아제르바이잔</option><option value="is">아이슬란드</option><option value="lu">룩셈부르크</option><option value="mt">몰타</option><option value="cy">키프로스</option><option value="lb">레바논</option><option value="jo">요르단</option><option value="sy">시리아</option><option value="ye">예멘</option><option value="om">오만</option><option value="bh">바레인</option><option value="af">아프가니스탄</option><option value="ly">리비아</option><option value="sd">수단</option><option value="sn">세네갈</option><option value="ci">코트디부아르</option><option value="cm">카메룬</option><option value="tz">탄자니아</option><option value="ug">우간다</option><option value="zw">짐바브웨</option><option value="ao">앙골라</option><option value="mz">모잠비크</option><option value="mg">마다가스카르</option><option value="ec">에콰도르</option><option value="uy">우루과이</option><option value="py">파라과이</option><option value="bo">볼리비아</option><option value="cr">코스타리카</option><option value="pa">파나마</option><option value="gt">과테말라</option><option value="hn">온두라스</option><option value="sv">엘살바도르</option><option value="ni">니카라과</option><option value="do">도미니카공화국</option><option value="pr">푸에르토리코</option><option value="jm">자메이카</option><option value="tt">트리니다드토바고</option><option value="ht">아이티</option><option value="kh">캄보디아</option><option value="la">라오스</option><option value="mm">미얀마</option><option value="bn">브루나이</option><option value="mo">마카오</option><option value="kg">키르기스스탄</option><option value="tj">타지키스탄</option><option value="tm">투르크메니스탄</option><option value="bt">부탄</option><option value="mv">몰디브</option><option value="int">국제·위성 방송</option></select>
-        <button class="addhome" style="margin:0" type="button" id="vtv">📺 TV 채널 목록</button>
-        <button class="addhome" style="margin:0" type="button" id="vfind">🔍 검색</button>
-      </div>
-      <div class="vres" id="vres" hidden></div>
     </div>
   </section>
   <div id="rvbody"></div>
