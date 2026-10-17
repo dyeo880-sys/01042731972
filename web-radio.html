@@ -2675,8 +2675,9 @@ async function tvLoad(cc){
   if (cc === 'extra') return tvExtra();
   if (cc.startsWith('sam-')) return tvSam(cc.slice(4));
   if (!tvCache[cc]){
-    const r = await fetch(cc.startsWith('sam-') ? 'https://i.mjh.nz/SamsungTVPlus/' + cc.slice(4) + '.m3u8' : 'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/' + cc + '.m3u');
-    if (!r.ok) throw new Error(String(r.status));
+    let r;
+    try { r = await fetch('https://raw.githubusercontent.com/iptv-org/iptv/master/streams/' + cc + '.m3u'); if (!r.ok) throw new Error(String(r.status)); }
+    catch(e){ r = await fetch('https://iptv-org.github.io/iptv/countries/' + cc + '.m3u'); if (!r.ok) throw new Error(String(r.status)); }
     const lines = (await r.text()).split(/\r?\n/), out = [], seen = new Set();
     let name = '';
     for (const ln of lines){
@@ -3026,6 +3027,15 @@ async function mtvCctv(){
   }));
   return mtvShuffle(out).slice(0, 25);
 }
+// 목록을 못 받았거나 http 주소라 막혔을 때를 위한 예비 (https 라이브 뉴스·방송)
+const MTV_BACKUP = [
+  {name: '📺 Arirang TV', u: 'https://amdlive-ch01-ctnd-com.akamaized.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8', hls: true},
+  {name: '📺 KBS World', u: 'https://kbsworld-ott.akamaized.net/hls/live/2002113/kbsworld/master.m3u8', hls: true},
+  {name: '📺 NHK World', u: 'https://masterpl.hls.nhkworld.jp/hls/w/live/master.m3u8', hls: true},
+  {name: '📺 DW News', u: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8', hls: true},
+  {name: '📺 France 24', u: 'https://static.france24.com/live/F24_EN_HI_HLS/live_web.m3u8', hls: true},
+  {name: '📺 Al Jazeera', u: 'https://live-hls-web-aje.getaj.net/AJE/index.m3u8', hls: true}
+];
 async function mtvList(){
   if (mtv.list && mtv.list.length && (mtv.single || !mtv.listTs || Date.now() - mtv.listTs < 240000)) return mtv.list;
   const regs = ['sam-kr', 'kr', 'sam-us', 'sam-gb', 'us', 'gb', 'jp'];
@@ -3043,7 +3053,8 @@ async function mtvList(){
   });
   // 처음에는 교통 CCTV·교통/뉴스 방송이 무작위로, 뮤직 채널은 뒤쪽 예비로
   mtv.listTs = Date.now();
-  return (mtv.list = mtvShuffle(cctv.concat(amb)).concat(mtvShuffle(music)));
+  const bk = MTV_BACKUP.filter(x => !seen.has(x.u));
+  return (mtv.list = mtvShuffle(cctv.concat(amb)).concat(mtvShuffle(bk)).concat(mtvShuffle(music)));
 }
 function mtvOff(msg){
   clearTimeout(mtv.timer); mtv.on = false;
@@ -3055,7 +3066,7 @@ function mtvOff(msg){
 }
 function mtvFail(){
   if (!mtv.on) return;
-  if (++mtv.tries > Math.min(8, (mtv.list || []).length)){ mtvOff('연결할 수 있는 채널이 없습니다. 잠시 후 다시 눌러 보세요.'); return; }
+  if (++mtv.tries > Math.min(14, (mtv.list || []).length)){ mtvOff('연결할 수 있는 채널이 없습니다. 잠시 후 다시 눌러 보세요.'); return; }
   mtvPlay(mtv.i + 1);
 }
 async function mtvPlay(i){
