@@ -628,11 +628,12 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <button class="addhome" type="button" id="rdnext" title="다음 방송국" aria-label="다음 방송국">⏭</button>
         <label>볼륨 <input type="range" id="rdvol" min="0" max="1" step="0.01" value="0.8" aria-label="라디오 볼륨"></label>
         <button class="addhome" type="button" id="rdtoggle" aria-expanded="false">📻 방송국 고르기 ▾</button>
+        <button class="addhome" type="button" id="rdcast" hidden title="내가 듣는 라디오를 방 사람들에게도 들려줍니다 (방장 전용)">📻 방에 송출</button>
       </div>
       <div id="rdpick" hidden>
         <div class="rdf"><select id="rdcountry" aria-label="국가"></select><input id="rdq" type="search" placeholder="방송국 이름 검색 (예: KBS, 클래식, jazz)" aria-label="방송국 검색"></div>
         <div class="list" id="rdlist" role="list"></div>
-        <div class="chatnote" style="margin-top:6px">라디오는 내 기기에서만 들립니다. 방 사람들에게도 들려주려면 방장이 🖥 PC 소리로 이 탭의 소리를 공유하세요.</div>
+        <div class="chatnote" style="margin-top:6px">방장은 「📻 방에 송출」 버튼으로 라디오를 방 사람들에게도 들려줄 수 있습니다. (일부 방송국은 막혀 있어 안 될 수 있으며, 그때는 🖥 PC 소리로 이 탭의 소리를 공유하세요.)</div>
       </div>
     </div>
     <div class="mwctl" id="mwctl" hidden>
@@ -3550,6 +3551,63 @@ $('vol').addEventListener('input', () => { $('rdvol').value = $('vol').value; })
 ['playing', 'pause', 'waiting', 'error'].forEach(ev => audio.addEventListener(ev, rdSync));
 new MutationObserver(rdSync).observe($('now'), {childList: true, characterData: true, subtree: true});
 rdSync();
+
+// ===== 📻 방장: 라디오를 음악 방 사람들에게도 송출 =====
+let rdCast = false, rdCastStream = null, rdCastTrk = null, rdCastSrc = '';
+function rdCastUi(){
+  const b = $('rdcast'); if (!b) return;
+  b.textContent = rdCast ? '📻 송출 중지' : '📻 방에 송출';
+  b.style.borderColor = rdCast ? 'var(--amber)' : ''; b.style.color = rdCast ? 'var(--amber)' : '';
+}
+function rdCastReload(){ // 같은 방송국을 다시 불러와 crossOrigin 설정을 반영
+  if (hls || !audio.src) return;
+  const u = audio.src; audio.src = u; audio.play().catch(() => {});
+}
+function rdCastCapture(){
+  try {
+    const cs = audio.captureStream ? audio.captureStream() : (audio.mozCaptureStream ? audio.mozCaptureStream() : null);
+    const t = cs && cs.getAudioTracks()[0];
+    if (!t) return false;
+    rdCastStream = cs; rdCastTrk = t; rdCastSrc = audio.currentSrc;
+    swapSource(cs); setBc('📻 라디오를 방 사람들에게 송출 중입니다.');
+    return true;
+  } catch(e){ return false; }
+}
+function rdCastOff(msg){
+  const was = rdCast; rdCast = false;
+  if (rdCastStream && bc && bc.src === rdCastStream){ try { rdCastStream.getTracks().forEach(t => t.stop()); } catch(e){} }
+  rdCastStream = null; rdCastTrk = null; rdCastSrc = '';
+  if (audio.hasAttribute('crossorigin')){ audio.removeAttribute('crossorigin'); if (was) rdCastReload(); } // 내 기기 재생은 계속 유지
+  rdCastUi(); if (msg) setBc(msg);
+}
+function rdCastSync(){
+  const b = $('rdcast'); if (b) b.hidden = !isHost();
+  if (!rdCast) return;
+  if (!isHost()){ rdCastOff(); return; }
+  if (rdCastStream && bc.src !== rdCastStream){ // 방장이 마이크·파일 등 다른 소리로 바꿈
+    rdCast = false; rdCastStream = null; rdCastTrk = null; rdCastSrc = '';
+    if (audio.hasAttribute('crossorigin')) audio.removeAttribute('crossorigin');
+    rdCastUi(); return;
+  }
+  if (audio.paused || audio.readyState < 2) return;
+  if (rdCastStream && rdCastTrk && rdCastTrk.readyState === 'live' && rdCastSrc === audio.currentSrc) return;
+  if (!rdCastCapture()) rdCastOff('이 방송국은 송출할 수 없습니다. 🖥 PC 소리로 이 탭의 소리를 공유해 주세요.');
+}
+$('rdcast').onclick = () => {
+  if (!isHost()){ setBc('방장만 라디오를 송출할 수 있습니다.'); return; }
+  if (rdCast){ rdCastOff('📻 라디오 송출을 멈췄습니다.'); return; }
+  if (!hls && !audio.src){ setBc('먼저 방송국을 골라 라디오를 재생하세요.'); return; }
+  rdCast = true; rdCastUi(); setBc('라디오 송출을 준비하는 중…');
+  if (!hls && audio.getAttribute('crossorigin') !== 'anonymous'){ audio.crossOrigin = 'anonymous'; rdCastReload(); }
+  else if (audio.paused) audio.play().catch(() => {});
+  rdCastSync();
+};
+audio.addEventListener('playing', rdCastSync);
+audio.addEventListener('error', () => {
+  if (rdCast && !hls && audio.getAttribute('crossorigin') === 'anonymous')
+    rdCastOff('이 방송국은 서버가 외부 송출을 허용하지 않아 송출할 수 없습니다. 🖥 PC 소리로 이 탭의 소리를 공유해 주세요. (내 기기에서는 계속 들립니다)');
+});
+setInterval(rdCastSync, 1500);
 
 // ===== 🏠 마이홈: 즐겨찾기한 음악 방 + 방마다 내 이름·비밀번호 =====
 let mhLive = {}, mh = [];
