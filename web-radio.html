@@ -2778,21 +2778,36 @@ function lisFs(){
   b.style.cssText = 'position:absolute;right:10px;top:10px;z-index:5;margin:0;background:#000c';
   b.onclick = lisFs; scr.append(b);
   // 방 소리 크기 (방장이 보내는 소리 전용 · 라디오 볼륨과 별개)
+  // 평소에는 영상 바로 위 줄에 항상 보이고, 전체화면일 때는 영상 아래쪽에 겹쳐서 보임
   let lv = 1; try { const q = localStorage.getItem('radio_room_vol'); if (q !== null && q !== '') lv = Math.max(0, Math.min(1, +q || 0)); } catch(e){}
   liveAudio.volume = lv;
-  const ctl = document.createElement('div'); ctl.id = 'lisctl'; ctl.style.display = 'none';
-  ctl.style.cssText = 'display:none;position:absolute;left:10px;bottom:10px;z-index:5;align-items:center;gap:6px;background:#000c;border:1px solid #b99a5b88;border-radius:8px;padding:4px 8px';
-  const mu = document.createElement('button'); mu.type = 'button'; mu.className = 'addhome'; mu.style.cssText = 'margin:0;padding:4px 8px'; mu.setAttribute('aria-label', '방 소리 음소거');
-  const rg = document.createElement('input'); rg.type = 'range'; rg.min = '0'; rg.max = '1'; rg.step = '0.01'; rg.value = String(lv); rg.style.width = '110px'; rg.setAttribute('aria-label', '방 소리 크기');
-  const upd = () => { mu.textContent = (liveAudio.muted || liveAudio.volume === 0) ? '🔇' : (liveAudio.volume < 0.5 ? '🔉' : '🔊'); };
-  mu.onclick = () => { liveAudio.muted = !liveAudio.muted; if (!liveAudio.muted && liveAudio.volume === 0){ liveAudio.volume = 0.5; rg.value = '0.5'; } upd(); };
-  rg.oninput = () => { liveAudio.volume = +rg.value; liveAudio.muted = +rg.value === 0; try { localStorage.setItem('radio_room_vol', rg.value); } catch(e){} upd(); };
-  ctl.append(mu, rg); scr.append(ctl); upd();
+  const sets = [];
+  const updAll = () => sets.forEach(x => {
+    x.mu.textContent = (liveAudio.muted || liveAudio.volume === 0) ? '🔇' : (liveAudio.volume < 0.5 ? '🔉' : '🔊');
+    x.rg.value = String(liveAudio.muted ? 0 : liveAudio.volume);
+  });
+  const mkCtl = style => {
+    const box = document.createElement('div'); box.style.cssText = style;
+    const mu = document.createElement('button'); mu.type = 'button'; mu.className = 'addhome'; mu.style.cssText = 'margin:0;padding:4px 8px'; mu.setAttribute('aria-label', '방 소리 음소거');
+    const lb = document.createElement('span'); lb.textContent = '방 소리'; lb.style.cssText = 'font-size:13px;opacity:.9';
+    const rg = document.createElement('input'); rg.type = 'range'; rg.min = '0'; rg.max = '1'; rg.step = '0.01'; rg.style.cssText = 'flex:1;min-width:80px;max-width:220px'; rg.setAttribute('aria-label', '방 소리 크기');
+    mu.onclick = () => { liveAudio.muted = !liveAudio.muted; if (!liveAudio.muted && liveAudio.volume === 0) liveAudio.volume = 0.5; updAll(); };
+    rg.oninput = () => { liveAudio.volume = +rg.value; liveAudio.muted = +rg.value === 0; try { localStorage.setItem('radio_room_vol', String(liveAudio.volume)); } catch(e){} updAll(); };
+    box.append(mu, lb, rg); sets.push({mu, rg}); return box;
+  };
+  const bar = mkCtl('display:none;align-items:center;gap:8px;margin:0 0 8px;padding:4px 8px;border:1px solid #b99a5b88;border-radius:8px;background:#1a0f08');
+  bar.id = 'lisbar'; scr.parentNode.insertBefore(bar, scr);
+  const ov = mkCtl('display:none;position:absolute;left:10px;bottom:10px;z-index:5;align-items:center;gap:8px;background:#000c;border:1px solid #b99a5b88;border-radius:8px;padding:4px 8px');
+  ov.id = 'lisctl'; scr.append(ov); updAll();
   const sync = () => {
     b.hidden = !(liveAudio.style.display === 'block' && liveAudio.srcObject && liveAudio.videoWidth > 0);
-    ctl.style.display = (typeof lis !== 'undefined' && lis && liveAudio.srcObject) ? 'flex' : 'none';
+    const listening = !!(typeof lis !== 'undefined' && lis && liveAudio.srcObject);
+    const full = document.fullscreenElement === scr || document.webkitFullscreenElement === scr;
+    bar.style.display = (listening && !full) ? 'flex' : 'none';
+    ov.style.display = (listening && full) ? 'flex' : 'none';
   };
   liveAudio.addEventListener('loadedmetadata', sync); liveAudio.addEventListener('resize', sync);
+  document.addEventListener('fullscreenchange', sync); document.addEventListener('webkitfullscreenchange', sync);
   setInterval(sync, 1000); sync();
 })();
 
