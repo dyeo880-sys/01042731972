@@ -1438,6 +1438,40 @@ function iceDone(pc){
 }
 // ---- 방 참가자 목록 ----
 let memList = [], openMem = '';
+let memSeen = null; // 입장/퇴장 알림용: 직전에 본 참가자 {rid, ks:{id:이름}, miss:{id:횟수}}
+function memToast(txt, out){
+  let box = document.getElementById('memtoast');
+  if (!box){
+    box = document.createElement('div'); box.id = 'memtoast'; box.setAttribute('aria-live', 'polite');
+    box.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top,0px));z-index:95;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;max-width:92vw';
+    document.body.append(box);
+  }
+  const d = document.createElement('div');
+  d.textContent = txt;
+  d.style.cssText = 'background:#1a0f08ee;color:' + (out ? '#ffb3a0' : '#bff0b0') + ';border:1px solid ' + (out ? '#c0552d' : '#6fbf5a') + ';border-radius:20px;padding:7px 16px;font-size:14px;font-weight:700;box-shadow:0 4px 14px #000a;opacity:0;transition:opacity .25s';
+  box.append(d);
+  while (box.children.length > 4) box.firstChild.remove();
+  requestAnimationFrame(() => { d.style.opacity = '1'; });
+  setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 300); }, 3500);
+}
+function memNotify(rid, list){
+  const cur = {}; list.forEach(m => { cur[m.k] = String(m.n).slice(0, 12); });
+  if (!memSeen || memSeen.rid !== rid){ memSeen = {rid, ks: cur, miss: {}}; return; } // 처음 들어왔을 때는 기준만 저장
+  const old = memSeen.ks, miss = memSeen.miss;
+  Object.keys(cur).forEach(k => {
+    delete miss[k];
+    if (k !== myId && !(k in old)) memToast('🟢 ' + cur[k] + '님이 입장했습니다');
+    old[k] = cur[k];
+  });
+  Object.keys(old).forEach(k => {
+    if (k in cur) return;
+    miss[k] = (miss[k] || 0) + 1;
+    if (miss[k] >= 2){ // 두 번 연속 안 보여야 나간 것으로 처리(일시적 끊김 방지)
+      if (k !== myId) memToast('🔴 ' + old[k] + '님이 나갔습니다', true);
+      delete old[k]; delete miss[k];
+    }
+  });
+}
 // 참가자를 누르면 ✉ 귓속말 / 💬 채팅(이름 호출) 선택
 function memWhisper(k, n){
   if (peers[k] && peers[k].k && BLK[peers[k].k]){ $('chatnote').textContent = '차단한 사용자입니다. 「차단 목록」에서 해제하면 귓속말할 수 있어요.'; return; }
@@ -1499,6 +1533,7 @@ async function memBeat(){
     if (!liveRoom || liveRoom.id !== id) return;
     const list = Object.keys(d).map(k => Object.assign({k}, d[k])).filter(m => m && m.n && now - m.ts < 45000)
       .sort((a, b) => (b.h || 0) - (a.h || 0) || String(a.n).localeCompare(String(b.n)));
+    memNotify(id, list);
     memList = list; if (openMem && !list.some(m => m.k === openMem)) openMem = '';
     renderMembers(); try { rxApply(); } catch(e){}
   } catch(e){}
@@ -1927,10 +1962,10 @@ function enterRoom(id, name){
   stopOtherMedia();
   liveRoom = {id, name, host: !!(bc && bc.rid === id)}; renderRooms('b:' + id); $('room').onchange();
   $('roomwrap').hidden = false; $('hostctl').hidden = !liveRoom.host; $('leavebtn').hidden = true; showRoomView(); mwOpen(liveRoom.host);
-  roomHead(); clearInterval(memTimer); memBeat(); memTimer = setInterval(memBeat, 8000);
+  memSeen = null; roomHead(); clearInterval(memTimer); memBeat(); memTimer = setInterval(memBeat, 8000);
 }
 function leaveRoom(){
-  const was = liveRoom; liveRoom = null; clearInterval(memTimer); try { rxApply(); } catch(e){}
+  const was = liveRoom; liveRoom = null; memSeen = null; clearInterval(memTimer); try { rxApply(); } catch(e){}
   if (was && DB) lj('roommem_' + was.id + '/' + myId, 'DELETE').catch(() => {});
   mwClose(); $('roomwrap').hidden = true; $('members').innerHTML = ''; $('bccount').textContent = ''; hideRoomView();
   if (was && $('room').value === 'b:' + was.id){ renderRooms('lobby'); $('room').onchange(); } else renderRooms();
@@ -2415,6 +2450,7 @@ async function rxPoll(){ // 반응이 빨리 보이도록 참가자 기록만 3�
     const list = Object.keys(d).map(k => Object.assign({k}, d[k])).filter(m => m && m.n && now - m.ts < 45000)
       .sort((a, b) => (b.h || 0) - (a.h || 0) || String(a.n).localeCompare(String(b.n)));
     const sg = x => x.map(m => m.k + '|' + m.n + '|' + (m.h || 0)).join(',');
+    memNotify(id, list);
     const changed = sg(list) !== sg(memList);
     memList = list; if (openMem && !list.some(m => m.k === openMem)) openMem = '';
     if (changed) renderMembers();
