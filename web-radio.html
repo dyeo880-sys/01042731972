@@ -90,6 +90,10 @@ body.hidebad .vr.bad{display:none}
 #liveAudio.scr{width:100%;max-width:100%;max-height:calc(70vh * var(--mws));background:#000;object-fit:contain}
 #liveAudio:fullscreen{max-width:none!important;max-height:none!important;width:100%!important;height:100%!important;object-fit:contain;background:#000}
 #liveAudio:-webkit-full-screen{max-width:none!important;max-height:none!important;width:100%!important;height:100%!important;object-fit:contain;background:#000}
+#mwscreen:fullscreen{max-height:none!important;height:100%;background:#000;overflow:hidden}
+#mwscreen:-webkit-full-screen{max-height:none!important;height:100%;background:#000;overflow:hidden}
+#mwscreen:fullscreen #liveAudio{max-width:100%!important;max-height:100%!important;width:100%;height:100%;object-fit:contain}
+#mwscreen:-webkit-full-screen #liveAudio{max-width:100%!important;max-height:100%!important;width:100%;height:100%;object-fit:contain}
 #mwyt{width:100%;max-width:calc(640px * var(--mws));aspect-ratio:16/9}
 .rdbar{margin-top:8px;padding:8px 10px;background:#1a0f08;border:1px solid #b99a5b55;border-radius:6px}
 .rdrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -2755,15 +2759,15 @@ function fsOn(v, box){
   }, 60));
 }
 fsOn($('tvvid')); fsOn($('mwvid'));
-// 듣는 사람용: 강의·공유 영상 전체화면 (더블클릭 또는 「⛶ 전체화면」 버튼 · iPhone 포함)
-fsOn(liveAudio);
+// 듣는 사람용: 강의·공유 영상 전체화면 + 방 소리 크기 조절 (전체화면에서도 버튼·볼륨이 보이도록 영상 영역 전체를 전체화면으로 씀)
+fsOn(liveAudio, $('mwscreen'));
 function lisFs(){
-  const v = liveAudio;
+  const box = $('mwscreen'), v = liveAudio;
   try {
     if (document.fullscreenElement || document.webkitFullscreenElement){ (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
-    if (v.requestFullscreen) v.requestFullscreen();
-    else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen();
-    else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+    if (box.requestFullscreen) box.requestFullscreen();
+    else if (box.webkitRequestFullscreen) box.webkitRequestFullscreen();
+    else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen(); // iPhone: 기기 기본 플레이어
   } catch(e){}
 }
 (function(){
@@ -2773,7 +2777,21 @@ function lisFs(){
   b.setAttribute('aria-label', '영상 전체화면');
   b.style.cssText = 'position:absolute;right:10px;top:10px;z-index:5;margin:0;background:#000c';
   b.onclick = lisFs; scr.append(b);
-  const sync = () => { b.hidden = !(liveAudio.style.display === 'block' && liveAudio.srcObject && liveAudio.videoWidth > 0); };
+  // 방 소리 크기 (방장이 보내는 소리 전용 · 라디오 볼륨과 별개)
+  let lv = 1; try { const q = localStorage.getItem('radio_room_vol'); if (q !== null && q !== '') lv = Math.max(0, Math.min(1, +q || 0)); } catch(e){}
+  liveAudio.volume = lv;
+  const ctl = document.createElement('div'); ctl.id = 'lisctl'; ctl.style.display = 'none';
+  ctl.style.cssText = 'display:none;position:absolute;left:10px;bottom:10px;z-index:5;align-items:center;gap:6px;background:#000c;border:1px solid #b99a5b88;border-radius:8px;padding:4px 8px';
+  const mu = document.createElement('button'); mu.type = 'button'; mu.className = 'addhome'; mu.style.cssText = 'margin:0;padding:4px 8px'; mu.setAttribute('aria-label', '방 소리 음소거');
+  const rg = document.createElement('input'); rg.type = 'range'; rg.min = '0'; rg.max = '1'; rg.step = '0.01'; rg.value = String(lv); rg.style.width = '110px'; rg.setAttribute('aria-label', '방 소리 크기');
+  const upd = () => { mu.textContent = (liveAudio.muted || liveAudio.volume === 0) ? '🔇' : (liveAudio.volume < 0.5 ? '🔉' : '🔊'); };
+  mu.onclick = () => { liveAudio.muted = !liveAudio.muted; if (!liveAudio.muted && liveAudio.volume === 0){ liveAudio.volume = 0.5; rg.value = '0.5'; } upd(); };
+  rg.oninput = () => { liveAudio.volume = +rg.value; liveAudio.muted = +rg.value === 0; try { localStorage.setItem('radio_room_vol', rg.value); } catch(e){} upd(); };
+  ctl.append(mu, rg); scr.append(ctl); upd();
+  const sync = () => {
+    b.hidden = !(liveAudio.style.display === 'block' && liveAudio.srcObject && liveAudio.videoWidth > 0);
+    ctl.style.display = (typeof lis !== 'undefined' && lis && liveAudio.srcObject) ? 'flex' : 'none';
+  };
   liveAudio.addEventListener('loadedmetadata', sync); liveAudio.addEventListener('resize', sync);
   setInterval(sync, 1000); sync();
 })();
