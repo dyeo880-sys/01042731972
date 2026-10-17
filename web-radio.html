@@ -3089,7 +3089,7 @@ async function startLecture(withFace){
   const micA = mic ? add(mic, 1.0) : null;
   const dt = dest.stream.getAudioTracks()[0];
   const tracks = [dt].concat(sys, mic ? mic.getAudioTracks() : []);
-  MV.lec = {tracks, nodes, timer: 0, keep: 0};
+  MV.lec = {tracks, nodes, dest, timer: 0, keep: 0};
   const keepAc = () => { try { if (me.ac.state !== 'running') me.ac.resume().catch(() => {}); } catch(e){} }; // 소리 엔진이 멈추면 강의 소리가 통째로 사라짐
   me.ac.onstatechange = keepAc; MV.lec.keep = setInterval(keepAc, 1000); keepAc();
   // 보내는 소리 레벨 표시 (PC 소리·마이크가 실제로 잡히는지 확인용)
@@ -3114,7 +3114,7 @@ async function startLecture(withFace){
   setBc('🎓 강의를 방에 보내는 중입니다 (' + what + ').' +
     (sys.length ? '' : ' PC 소리도 보내려면 ■ 끄기 후 다시 시작하고, 공유 창에서 "전체 화면"을 고른 뒤 "시스템 오디오 공유"를 체크하세요.') +
     (mic ? '' : ' 마이크를 쓸 수 없어 PC 소리만 나갑니다. 권한을 확인하세요.') +
-    ' 끝내려면 "■ 끄기"를 누르세요.');
+    ' 라디오도 들려주려면 "📻 방에 송출"을 누르세요. 끝내려면 "■ 끄기"를 누르세요.');
 }
 $('bclec').onclick = () => startLecture($('lecface').checked);
 $('bcshare').onclick = () => startScreen(false);
@@ -3552,8 +3552,8 @@ $('vol').addEventListener('input', () => { $('rdvol').value = $('vol').value; })
 new MutationObserver(rdSync).observe($('now'), {childList: true, characterData: true, subtree: true});
 rdSync();
 
-// ===== 📻 방장: 라디오를 음악 방 사람들에게도 송출 =====
-let rdCast = false, rdCastStream = null, rdCastTrk = null, rdCastSrc = '';
+// ===== 📻 방장: 라디오를 음악 방 사람들에게도 송출 (강의 중에는 강의 소리에 섞어서 송출) =====
+let rdCast = false, rdCastStream = null, rdCastTrk = null, rdCastSrc = '', rdCastNodes = null, rdCastDest = null;
 function rdCastUi(){
   const b = $('rdcast'); if (!b) return;
   b.textContent = rdCast ? '📻 송출 중지' : '📻 방에 송출';
@@ -3563,20 +3563,30 @@ function rdCastReload(){ // 같은 방송국을 다시 불러와 crossOrigin 설
   if (hls || !audio.src) return;
   const u = audio.src; audio.src = u; audio.play().catch(() => {});
 }
+function rdCastDisc(){ if (rdCastNodes){ rdCastNodes.forEach(n => { try { n.disconnect(); } catch(e){} }); rdCastNodes = null; } }
 function rdCastCapture(){
   try {
     const cs = audio.captureStream ? audio.captureStream() : (audio.mozCaptureStream ? audio.mozCaptureStream() : null);
     const t = cs && cs.getAudioTracks()[0];
     if (!t) return false;
-    rdCastStream = cs; rdCastTrk = t; rdCastSrc = audio.currentSrc;
+    rdCastDisc();
+    if (bc && MV.lec && MV.lec.dest){ // 강의 중: 마이크·PC 소리와 같은 믹서에 라디오를 추가
+      const n = bc.ac.createMediaStreamSource(new MediaStream([t])), g = bc.ac.createGain(); g.gain.value = 0.8;
+      n.connect(g); g.connect(MV.lec.dest); rdCastNodes = [n, g]; rdCastDest = MV.lec.dest;
+      rdCastStream = cs; rdCastTrk = t; rdCastSrc = audio.currentSrc;
+      setBc('📻 라디오를 강의 소리에 섞어 방 사람들에게 송출 중입니다.');
+      return true;
+    }
+    rdCastDest = null; rdCastStream = cs; rdCastTrk = t; rdCastSrc = audio.currentSrc;
     swapSource(cs); setBc('📻 라디오를 방 사람들에게 송출 중입니다.');
     return true;
   } catch(e){ return false; }
 }
 function rdCastOff(msg){
   const was = rdCast; rdCast = false;
-  if (rdCastStream && bc && bc.src === rdCastStream){ try { rdCastStream.getTracks().forEach(t => t.stop()); } catch(e){} }
-  rdCastStream = null; rdCastTrk = null; rdCastSrc = '';
+  rdCastDisc();
+  if (rdCastStream && (rdCastDest || (bc && bc.src === rdCastStream))){ try { rdCastStream.getTracks().forEach(t => t.stop()); } catch(e){} }
+  rdCastStream = null; rdCastTrk = null; rdCastSrc = ''; rdCastDest = null;
   if (audio.hasAttribute('crossorigin')){ audio.removeAttribute('crossorigin'); if (was) rdCastReload(); } // 내 기기 재생은 계속 유지
   rdCastUi(); if (msg) setBc(msg);
 }
@@ -3584,7 +3594,10 @@ function rdCastSync(){
   const b = $('rdcast'); if (b) b.hidden = !isHost();
   if (!rdCast) return;
   if (!isHost()){ rdCastOff(); return; }
-  if (rdCastStream && bc.src !== rdCastStream){ // 방장이 마이크·파일 등 다른 소리로 바꿈
+  const mixNow = !!(MV.lec && MV.lec.dest);
+  if (rdCastDest && (!mixNow || MV.lec.dest !== rdCastDest)){ rdCastOff('강의가 끝나 라디오 송출도 멈췄습니다.'); return; }
+  if (!rdCastDest && rdCastStream && mixNow){ rdCastStream = null; rdCastTrk = null; rdCastSrc = ''; } // 송출 중 강의를 시작 → 강의 믹서로 옮김
+  else if (!rdCastDest && rdCastStream && bc.src !== rdCastStream){ // 방장이 마이크·파일 등 다른 소리로 바꿈
     rdCast = false; rdCastStream = null; rdCastTrk = null; rdCastSrc = '';
     if (audio.hasAttribute('crossorigin')) audio.removeAttribute('crossorigin');
     rdCastUi(); return;
