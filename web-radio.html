@@ -59,6 +59,13 @@ button,select,input{font:inherit}
 .chatlog .m b{color:var(--amber);margin-right:6px}
 .chatlog .m small{opacity:.5;margin-left:6px}
 .chatlog .empty{opacity:.6;text-align:center;margin-top:60px}
+.chatlog .m b.nm{cursor:pointer}
+.chatlog .m b.nm:hover{text-decoration:underline}
+#nmenu{position:fixed;z-index:200;background:var(--panel);border:1px solid var(--brass);border-radius:8px;padding:6px;box-shadow:0 6px 20px #000b;min-width:160px}
+#nmenu .t{font-size:12px;opacity:.7;padding:4px 10px}
+#nmenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink);padding:9px 10px;border-radius:6px;cursor:pointer;font-size:14px}
+#nmenu button:hover,#nmenu button:focus-visible{background:#ffffff1c;outline:none}
+#blkpanel .brow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0}
 .chatform{display:flex;gap:8px;margin-top:8px}
 .chatform input{flex:1;min-width:0}
 .chat input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
@@ -551,6 +558,8 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <button id="chatsend" class="addhome" style="margin:0">보내기</button>
     </div>
     <div class="chatnote" id="chatnote"></div>
+    <div class="chatnote" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="blkbtn" class="addhome" style="margin:0;padding:6px 10px" type="button">🚫 차단 목록 (0)</button><span>채팅의 이름을 누르면 귓속말·차단 메뉴가 열립니다.</span></div>
+    <div class="gate" id="blkpanel" hidden></div>
   </section>
   <section class="chat" id="boardsec" aria-label="맛집 게시판">
     <div class="chathead"><strong>🍚 지역별 맛집 자유게시판</strong></div>
@@ -583,7 +592,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <div class="full"><label class="l" for="bd_ft">제목 * (최대 40자)</label><input id="bd_ft" maxlength="40" style="width:100%"></div>
       <div class="full"><label class="l" for="bd_fb">내용 * (최대 500자)</label><textarea id="bd_fb" maxlength="500"></textarea></div>
       <div class="full"><label class="l" for="bd_fa">상세 주소 * (위에서 고른 시·군·구·동 뒤에 이어서, 최대 80자)</label><input id="bd_fa" maxlength="80" style="width:100%" placeholder="상세 주소 (번지·건물명) 예: 왜관로 123"></div>
-      <div class="full"><label class="l" for="bd_fm">다른 지도 링크 (선택)</label><input id="bd_fm" maxlength="300" style="width:100%" placeholder="특정 지도의 공유 링크가 있으면 붙여넣으세요 (https://…)"></div>
+      <div class="full"><label class="l" for="bd_fm">지도 주소 링크 (선택 · 카카오맵·네이버지도·구글지도 주소만)</label><input id="bd_fm" maxlength="300" style="width:100%" placeholder="지도 앱의 공유 주소를 붙여넣으세요 (https://…)"></div>
     </div>
     <div class="note">글에서 주소를 누르면 다음지도(카카오맵)가 새 창으로 열리고, 네이버·구글 지도 버튼도 함께 나옵니다. 위 칸에 지도 링크를 넣으면 주소를 눌렀을 때 그 링크로 열립니다.</div>
     <div class="acts"><button class="btn pri" id="bd_fok" type="button">등록</button><button class="btn" id="bd_fcancel" type="button">취소</button></div>
@@ -614,9 +623,11 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <button class="btn" id="pr_adm" type="button">🔒 관리자</button>
       <button class="btn" id="pr_dmbtn" type="button">📬 쪽지함</button>
       <button class="btn" id="pr_banbtn" type="button" hidden>🚫 차단 목록</button>
+      <button class="btn" id="pr_wbbtn" type="button" hidden>🔤 금지어 관리</button>
     </div>
     <section class="box" id="pr_dmbox" hidden aria-label="쪽지함"></section>
     <section class="box" id="pr_banbox" hidden aria-label="차단 목록"></section>
+    <section class="box" id="pr_wbbox" hidden aria-label="금지어 관리"></section>
 
     <section class="box" id="pr_form" hidden aria-label="홍보 글쓰기">
       <div class="grid">
@@ -630,9 +641,9 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <div class="full"><label class="l" for="pr_fb">내용 * (최대 500자)</label><textarea id="pr_fb" maxlength="500" placeholder="언제·어디서·무엇을 하는지 적어 주세요"></textarea></div>
         <div><label class="l" for="pr_fp">가게·단체 전화번호 (선택)</label><input id="pr_fp" maxlength="16" inputmode="tel" style="width:100%" placeholder="예: 054-123-4567"></div>
         <div><label class="l" for="pr_fa">장소·상세 주소 (선택, 80자)</label><input id="pr_fa" maxlength="80" style="width:100%" placeholder="예: 왜관로 123"></div>
-        <div class="full"><label class="l" for="pr_fm">안내 링크 (선택)</label><input id="pr_fm" maxlength="300" style="width:100%" placeholder="블로그·카페·지도 주소 (https://…)"></div>
+        <div class="full"><label class="l" for="pr_fm">지도 주소 링크 (선택 · 카카오맵·네이버지도·구글지도 주소만)</label><input id="pr_fm" maxlength="300" style="width:100%" placeholder="지도 앱의 공유 주소를 붙여넣으세요 (https://…)"></div>
       </div>
-      <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.5;margin:4px 0 8px"><input type="checkbox" id="pr_fok2" style="margin-top:3px"><span>내가 직접 운영하거나 허락을 받은 내용만 올립니다. 개인 휴대전화 번호·주민 정보는 적지 않습니다.</span></label>
+      <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.5;margin:4px 0 8px"><input type="checkbox" id="pr_fok2" style="margin-top:3px"><span>내가 직접 운영하거나 허락을 받은 내용만 올립니다. 개인 휴대전화 번호·주민 정보는 적지 않습니다. 홍보·유도성 링크(블로그·카페·오픈채팅·쇼핑몰 등)는 쓸 수 없고, 지도 주소 칸에만 지도 링크를 넣을 수 있습니다.</span></label>
       <div class="acts"><button class="btn pri" id="pr_fok" type="button">등록</button><button class="btn" id="pr_fcancel" type="button">취소</button></div>
       <div class="bmsg" id="pr_fmsg" role="status"></div>
     </section>
@@ -663,7 +674,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
           <div id="dl_menus"></div>
           <button class="btn" id="dl_madd" type="button" style="margin-top:6px">➕ 메뉴 줄 추가</button></div>
         <div class="full"><label class="l" for="dl_fb">가게 소개·메모 (선택, 300자)</label><textarea id="dl_fb" maxlength="300" placeholder="예: 포장 할인, 배달팁 안내, 원산지 등"></textarea></div>
-        <div class="full"><label class="l" for="dl_fm">주문·가게 안내 링크 (선택)</label><input id="dl_fm" maxlength="300" style="width:100%" placeholder="배달앱·블로그·지도 주소 (https://...)"></div>
+        <div class="full"><label class="l" for="dl_fm">가게 지도 주소 링크 (선택 · 카카오맵·네이버지도·구글지도 주소만)</label><input id="dl_fm" maxlength="300" style="width:100%" placeholder="지도 앱의 공유 주소 (https://...)"></div>
       </div>
       <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.5;margin:4px 0 8px"><input type="checkbox" id="dl_fok2" style="margin-top:3px"><span>가게 사장님이거나 가게의 허락을 받아 등록합니다. 개인 휴대전화 번호는 등록하지 않습니다.</span></label>
       <div class="acts"><button class="btn pri" id="dl_fok" type="button">등록</button><button class="btn" id="dl_fcancel" type="button">취소</button></div>
@@ -1030,6 +1041,15 @@ $('country').onchange = () => { curView = -1; loadStations(); };
 const FIREBASE_URL = 'https://project-4230942543796585572-default-rtdb.firebaseio.com';
 
 let chat = [], lastSig = '';
+// 이 기기에서 쓰는 고정 ID(차단용). 새로고침해도 같은 사람으로 알아볼 수 있게 저장합니다.
+let UID;
+try { UID = localStorage.getItem('radio_uid'); if (!UID){ UID = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem('radio_uid', UID); } }
+catch(e){ UID = Math.random().toString(36).slice(2, 12); }
+// 차단 목록: {고정ID: {n: 이름, ts}} — 내 기기에만 저장되고, 차단된 사람은 알 수 없습니다.
+let BLK = {};
+try { BLK = JSON.parse(localStorage.getItem('radio_blocked') || '{}') || {}; } catch(e){ BLK = {}; }
+const saveBlk = () => { try { localStorage.setItem('radio_blocked', JSON.stringify(BLK)); } catch(e){} };
+const isBlockedMsg = c => !!(c && c.k && BLK[c.k]);
 const DB = FIREBASE_URL.replace(/\/+$/, '');
 let chatAllowed = !DB;
 const NICK_ADJ = ['졸린','용감한','수줍은','느긋한','엉뚱한','씩씩한','반짝이는','조용한','신나는','포근한'];
@@ -1074,12 +1094,13 @@ function renderChat(forceBottom){
   const log = $('chatlog');
   const near = forceBottom === true || log.scrollHeight - log.scrollTop - log.clientHeight < 40;
   log.innerHTML = '';
-  const all = chat.concat(pending);
+  const all = chat.concat(pending).filter(c => !isBlockedMsg(c));
   if (!all.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
   all.forEach(c => {
     const d = document.createElement('div'); d.className = 'm';
     const b = document.createElement('b'); b.textContent = (c.h ? '👑 ' : '') + c.n;
-    if (c.n === $('nick').value.trim()){ b.style.cursor = 'pointer'; b.title = '이름 바꾸기'; b.onclick = renameMe; }
+    if (c.k === UID || c.n === $('nick').value.trim()){ b.style.cursor = 'pointer'; b.title = '이름 바꾸기'; b.onclick = renameMe; }
+    else { b.className = 'nm'; b.title = '눌러서 귓속말 · 차단'; b.onclick = ev => nameMenu(ev, c); }
     const t = document.createElement('span'); t.textContent = c.t;
     const s = document.createElement('small'); s.textContent = hhmm(c.ts);
     d.append(b, t, s); log.append(d);
@@ -1152,8 +1173,9 @@ async function fetchChat(force){
 async function sendChat(){
   const inp = $('chatin'), text = inp.value.trim();
   if (!text) return;
+  { const bm = badMsg([text, $('nick').value]); if (bm){ alert(bm); return; } }
   if (!$('nick').value.trim()) $('nick').value = fakeNick();
-  const msg = {n: $('nick').value.trim(), t: text, ts: Date.now()};
+  const msg = {n: $('nick').value.trim(), t: text, ts: Date.now(), u: myId, k: UID};
   if (isHost() && $('room').value === 'b:' + liveRoom.id) msg.h = 1;
   try { localStorage.setItem('radio_nick', msg.n); } catch(e){}
   inp.value = '';
@@ -1197,6 +1219,7 @@ function renderRooms(keep){
   });
   if (liveRoom){ const o = document.createElement('option'); o.value = 'b:' + liveRoom.id; o.textContent = '🎵 ' + liveRoom.name + ' (음악 방 채팅)'; sel.append(o); }
   Object.keys(peers).forEach(id => {
+    if (peers[id].k && BLK[peers[id].k] && val !== 'u:' + id) return;
     const o = document.createElement('option');
     o.value = 'u:' + id;
     o.textContent = '✉ ' + peers[id].n + ' (귓속말)' + (peers[id].on ? '' : ' - 나감') + (unread[id] ? ' ●' : '');
@@ -1272,7 +1295,7 @@ const presUrl = id => `${DB}/presence/${id}.json`;
 
 async function presenceTouch(){
   const sv = {'.sv': 'timestamp'};
-  const w = await fetch(presUrl(myId), {method: 'PUT', body: JSON.stringify({ts: sv, j: joinTs || sv, a: isAdmin, n: ($('nick').value || '').trim().slice(0, 12)})});
+  const w = await fetch(presUrl(myId), {method: 'PUT', body: JSON.stringify({ts: sv, j: joinTs || sv, a: isAdmin, n: ($('nick').value || '').trim().slice(0, 12), k: UID})});
   if (!w.ok) throw new Error(w.status);
   const r = await fetch(`${DB}/presence.json`);
   if (!r.ok) throw new Error(r.status);
@@ -1350,7 +1373,7 @@ addEventListener('pagehide', () => { if (DB && chatAllowed) leave(); });
 // ===== 접속자 귓속말 =====
 function onlineUpdate(list){
   const ids = {};
-  list.forEach(p => { if (p.id === myId) return; ids[p.id] = 1; peers[p.id] = {n: String(p.n || '손님').slice(0, 12), on: true}; });
+  list.forEach(p => { if (p.id === myId) return; ids[p.id] = 1; peers[p.id] = {n: String(p.n || '손님').slice(0, 12), on: true, k: p.k}; });
   Object.keys(peers).forEach(id => {
     if (ids[id]) return;
     if ($('room').value === 'u:' + id || unread[id]) peers[id].on = false; else delete peers[id];
@@ -1370,9 +1393,10 @@ async function checkInbox(){
       if (inboxSeen[k]) return;
       inboxSeen[k] = 1;
       const m = d[k];
+      if (m && m.k && BLK[m.k]) return;   // 차단한 사람의 귓속말·초대는 조용히 무시
       if (m && m.inv){ showInvite(m); return; }
       if (!m || !m.from || $('room').value === 'u:' + m.from) return;
-      if (!peers[m.from]) peers[m.from] = {n: String(m.n || '손님').slice(0, 12), on: true};
+      if (!peers[m.from]) peers[m.from] = {n: String(m.n || '손님').slice(0, 12), on: true, k: m.k};
       unread[m.from] = true; who = peers[m.from].n;
     });
     if (who){
@@ -1385,7 +1409,7 @@ function notifyPeer(id){
   const now = Date.now();
   if (now - (lastNotify[id] || 0) < 15000) return;
   lastNotify[id] = now;
-  fetch(`${DB}/chat/inbox_${id}.json`, {method: 'POST', body: JSON.stringify({from: myId, n: $('nick').value.trim(), ts: now})}).catch(() => {});
+  fetch(`${DB}/chat/inbox_${id}.json`, {method: 'POST', body: JSON.stringify({from: myId, n: $('nick').value.trim(), ts: now, k: UID})}).catch(() => {});
 }
 
 // ===== 음악 방 (WebRTC, 방장 기기에서 직접 송출) =====
@@ -1410,6 +1434,7 @@ function iceDone(pc){
 let memList = [], openMem = '';
 // 참가자를 누르면 ✉ 귓속말 / 💬 채팅(이름 호출) 선택
 function memWhisper(k, n){
+  if (peers[k] && peers[k].k && BLK[peers[k].k]){ $('chatnote').textContent = '차단한 사용자입니다. 「차단 목록」에서 해제하면 귓속말할 수 있어요.'; return; }
   if (!peers[k]) peers[k] = {n: String(n).slice(0, 12), on: true};
   peerSig = ''; renderRooms('u:' + k); $('room').onchange();
   const cs = $('chatsec'); if (cs) cs.scrollIntoView({behavior: 'smooth', block: 'center'});
@@ -1472,6 +1497,64 @@ async function memBeat(){
     renderMembers(); try { rxApply(); } catch(e){}
   } catch(e){}
 }
+// ===== 이름 클릭 메뉴(귓속말 · 차단) / 차단 목록 =====
+function closeNameMenu(){ const m = $('nmenu'); if (m) m.remove(); }
+document.addEventListener('click', e => { if (!e.target.closest('#nmenu') && !e.target.closest('.nm')) closeNameMenu(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNameMenu(); });
+function nameMenu(ev, c){
+  ev.stopPropagation(); closeNameMenu();
+  const m = document.createElement('div'); m.id = 'nmenu'; m.setAttribute('role', 'menu');
+  const t = document.createElement('div'); t.className = 't'; t.textContent = String(c.n).slice(0, 12); m.append(t);
+  const add = (label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = () => { closeNameMenu(); fn(); }; m.append(b); };
+  add('✉ 귓속말 보내기', () => whisperTo(c));
+  if (c.k) add('🚫 이 사람 차단', () => toggleBlock(c));
+  add('닫기', () => {});
+  document.body.append(m);
+  const r = m.getBoundingClientRect();
+  m.style.left = Math.max(8, Math.min(ev.clientX, innerWidth - r.width - 8)) + 'px';
+  m.style.top = Math.max(8, Math.min(ev.clientY + 8, innerHeight - r.height - 8)) + 'px';
+  const f = m.querySelector('button'); if (f) f.focus();
+}
+function whisperTo(c){
+  const note = t => { $('chatnote').textContent = t; };
+  if (!DB){ note('지금은 내 기기에서만 보이는 채팅이라 귓속말을 보낼 수 없습니다.'); return; }
+  let id = c.u;
+  if (!id) id = Object.keys(peers).find(i => peers[i].on && peers[i].n === c.n);
+  if (!id || id === myId){ note('귓속말 대상을 찾을 수 없습니다. (이미 나갔거나 예전 메시지입니다)'); return; }
+  if (!peers[id]) peers[id] = {n: String(c.n).slice(0, 12), on: false, k: c.k};
+  peerSig = ''; renderRooms('u:' + id); $('room').onchange();
+  const cs = $('chatsec'); if (cs) cs.scrollIntoView({behavior: 'smooth', block: 'center'});
+  $('chatin').focus();
+}
+function toggleBlock(c){
+  if (!c.k) return;
+  BLK[c.k] = {n: String(c.n).slice(0, 12), ts: Date.now()};
+  saveBlk();
+  Object.keys(peers).forEach(id => { if (peers[id].k === c.k){ delete unread[id]; if ($('room').value === 'u:' + id){ $('room').value = 'lobby'; } } });
+  peerSig = ''; renderRooms(); $('room').onchange();
+  $('chatnote').textContent = '🚫 ' + c.n + '님을 차단했습니다. 이 사람의 채팅·귓속말·초대가 보이지 않습니다. (상대는 알 수 없습니다)';
+  renderBlk();
+}
+function unblock(k){
+  const n = BLK[k] ? BLK[k].n : '';
+  delete BLK[k]; saveBlk(); renderBlk(); peerSig = ''; renderRooms(); renderChat();
+  $('chatnote').textContent = '✅ ' + n + '님 차단을 풀었습니다.';
+}
+function renderBlk(){
+  const ks = Object.keys(BLK), pn = $('blkpanel');
+  $('blkbtn').textContent = '🚫 차단 목록 (' + ks.length + ')';
+  pn.innerHTML = '';
+  if (!ks.length){ const p = document.createElement('p'); p.textContent = '차단한 사람이 없습니다.'; pn.append(p); return; }
+  ks.forEach(k => {
+    const r = document.createElement('div'); r.className = 'brow';
+    const s = document.createElement('span'); s.textContent = BLK[k].n || '이름 없음';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:4px 10px'; b.textContent = '차단 해제';
+    b.onclick = () => unblock(k);
+    r.append(s, b); pn.append(r);
+  });
+}
+$('blkbtn').onclick = () => { renderBlk(); $('blkpanel').hidden = !$('blkpanel').hidden; };
+renderBlk();
 function renameMe(){
   let v = prompt('새 이름을 입력하세요 (최대 12자)', $('nick').value.trim());
   if (v === null) return;
@@ -2372,7 +2455,7 @@ $('invsend').onclick = async () => {
   const inv = {id: bc.rid, t: bc.title, p: bc.pw ? 1 : 0};
   if (bc.pw && $('invpw').checked) inv.k = bc.pw;
   try {
-    await lj('inbox_' + id, 'POST', {from: myId, n: myNick(), ts: Date.now(), inv});
+    await lj('inbox_' + id, 'POST', {from: myId, n: myNick(), ts: Date.now(), inv, k: UID});
     setBc('💌 ' + (peers[id] ? peers[id].n : '상대') + '님에게 초대장을 보냈습니다.'); closePanels();
   } catch(e){ setBc('초대장을 보내지 못했습니다.'); }
 };
@@ -3334,6 +3417,62 @@ $('addhome').onclick = () => {
   restoreLast();
 })();
 
+// ===== 🚫 링크 제한: 지도 주소 칸에는 지도 링크만, 그 밖의 모든 링크(홍보·유도성)는 작성 금지 =====
+const LINK_MSG = '홍보·유도성 링크는 쓸 수 없습니다. 지도 주소 칸에만 카카오맵·네이버지도·구글지도 주소를 넣을 수 있어요.';
+function isMapUrl(u){
+  try {
+    const x = new URL(String(u || '').trim());
+    if (!/^https?:$/.test(x.protocol) || x.username || x.password) return false;
+    const h = x.hostname.toLowerCase();
+    if (/^(map\.kakao\.com|place\.map\.kakao\.com|kko\.to|map\.naver\.com|m\.map\.naver\.com|m\.place\.naver\.com|naver\.me|maps\.google\.com|maps\.app\.goo\.gl)$/.test(h)) return true;
+    if ((h === 'www.google.com' || h === 'google.com' || h === 'goo.gl') && /^\/maps(\/|$)/.test(x.pathname)) return true;
+    return false;
+  } catch(e){ return false; }
+}
+const LINK_RE = /(https?:\/\/|ftp:\/\/|www\.|\b[a-z0-9][a-z0-9-]*\.(com|net|org|kr|io|me|co|link|ly|info|biz|xyz|shop|store|site|online|app|tv|cc|gl|to|be|us|top|vip|club|live|pw)\b|(점|닷)\s*(컴|넷|케이알)|dot\s*(com|net))/i;
+const hasLink = t => LINK_RE.test(String(t || ''));
+
+// ===== 🚫 금지어: 성매매·음란·욕설·만남 조건·도박·불법 광고 등 (건전한 사이트) =====
+const BAD_MSG = '건전한 사이트를 위해 성매매·음란·욕설·만남 조건·도박 등 부적절한 표현은 쓸 수 없습니다.';
+const BAD_TERMS = [
+  // 성매매·음란·만남 조건
+  '성매매','성매수','성관계','조건만남','만남조건','번개만남','즉석만남','원나잇','원나이트','애인구함','애인대행','섹스','섹파','섹트너','야동','야설','몸캠','채팅녀','성인방송','성인용품','안마방','키스방','유흥','룸살롱','룸싸롱','풀살롱','퇴폐','출장마사지','출장안마','출장샵','대딸','보도방','텐프로','쩜오','하이퍼블릭','호스트바','호빠','스폰남','스폰녀','불륜만남','벗방',
+  // 도박
+  '도박','불법도박','사행성','카지노','바카라','홀덤','사설토토','토토사이트','스포츠토토','먹튀검증','먹튀사이트','경마','슬롯머신','슬롯사이트','파워볼','고스톱','베팅사이트','배팅사이트','불법베팅',
+  // 욕설·비하
+  '씨발','씨팔','시팔','씨바','개새끼','개색기','병신','지랄','좆','존나','썅','씹새','씹창','씹할','미친놈','미친년','느금마','니미','니애미','엠창','창녀','갈보','후레자식','한남충','김치녀','맘충','틀딱','ㅅㅂ','ㅆㅂ','ㅂㅅ','ㅄ','ㅈㄹ','ㄱㅅㄲ','ㅅㅂㄹㅁ',
+  // 마약·불법 금융
+  '필로폰','히로뽕','대마초','무직자대출','작업대출','카드깡','통장매매','통장대여','리딩방'
+];
+const SEP = '[^\\p{L}\\p{N}]{0,2}';
+// 관리자가 화면에서 추가한 금지어(/badwords)를 합쳐 검사 규칙을 만듭니다
+let badCustom = {};
+const STRICT_RE = /^(도박|섹스|병신|좆|존나|썅|씨발|씨팔|씨바|시팔|ㅅㅂ|ㅆㅂ|ㅂㅅ|ㅈㄹ)$/;
+const escRe = c => c.replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&');
+const termPat = w => { const c = Array.from(w).map(escRe); return (c.length <= 2 && !STRICT_RE.test(w)) ? c.join('') : c.join(SEP); };
+let BAD_RE = /x^/u;
+function applyBad(){
+  const extra = Object.values(badCustom).filter(w => typeof w === 'string' && w.length <= 20 && Array.from(w).length >= 2);
+  const pats = BAD_TERMS.map(termPat).concat(extra.map(termPat), ['시' + SEP + '발(?!점|역|지|차|버스|노선|택시|터미널)']); // "시발점·시발역" 같은 정상 낱말은 통과
+  try { BAD_RE = new RegExp(pats.join('|'), 'iu'); } catch(e){ console.warn('금지어 규칙 오류', e); }
+}
+applyBad();
+async function loadBadWords(){
+  try {
+    const r = await fetch(`${DB}/badwords.json`); if (!r.ok) return;
+    const d = await r.json() || {}, mp = {};
+    Object.keys(d).slice(0, 300).forEach(k => { if (d[k] && typeof d[k].w === 'string') mp[k] = d[k].w; });
+    badCustom = mp; applyBad();
+  } catch(e){}
+}
+loadBadWords(); setInterval(() => { if (!document.hidden) loadBadWords(); }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) loadBadWords(); });
+const BAD_EN = /\b(sex|porn|fuck|fucking|shit|bitch|casino|baccarat|xxx)\b/i;
+const hasBad = t => { t = String(t || ''); return BAD_RE.test(t) || BAD_EN.test(t); };
+const badMsg = list => list.some(hasBad) ? BAD_MSG : '';
+// 링크 → 금지어 순서로 검사해서 안내 문구를 돌려줌 (문제 없으면 '')
+const textMsg = list => list.some(hasLink) ? LINK_MSG : badMsg(list);
+
 // ===== 📍 전국 시·도 → 시·군·구 → 읍·면·동 (행정안전부 행정표준코드 법정동 · wellsa-ai/admincode-kr, 공공누리 1유형) =====
 const KR_FILES = {'서울':['서울특별시'],'부산':['부산광역시'],'대구':['대구광역시'],'인천':['인천광역시'],'광주':['광주광역시'],'대전':['대전광역시'],'울산':['울산광역시'],'세종':['세종특별자치시'],'경기':['경기도'],'강원':['강원특별자치도','강원도'],'충북':['충청북도'],'충남':['충청남도'],'전북':['전북특별자치도','전라북도'],'전남':['전라남도'],'경북':['경상북도'],'경남':['경상남도'],'제주':['제주특별자치도']};
 const krMem = {};
@@ -3505,7 +3644,7 @@ function card(p){
   if (p.ph){ const ph = document.createElement('div'); ph.className = 'addr'; ph.style.marginBottom = '2px'; ph.textContent = '📞 ' + p.ph; d.append(ph); }
   if (p.mn){ const mb = document.createElement('div'); mb.style.cssText = 'margin:6px 0;border-top:1px dashed #b99a5b55'; p.mn.forEach(m => { const it = document.createElement('div'); it.style.cssText = 'display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dashed #b99a5b33;font-size:14px'; const a = document.createElement('span'); a.textContent = m[0]; const b = document.createElement('b'); b.style.color = 'var(--amber)'; b.textContent = m[1]; it.append(a, b); mb.append(it); }); d.append(mb); }
   const q = (p.g ? p.g + ' ' + (p.dn || '') + ' ' : '') + (p.a || ((p.r || '') + ' ' + p.s)), eq = encodeURIComponent(q);
-  const kakao = safeUrl(p.m) || `https://map.kakao.com/?q=${eq}`;
+  const kakao = (isMapUrl(p.m) ? p.m : '') || `https://map.kakao.com/?q=${eq}`;
   const link = (href, text, cls) => { const a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = text; if (cls) a.className = cls; return a; };
   if (p.a){
     const ad = document.createElement('div'); ad.className = 'addr';
@@ -3513,7 +3652,7 @@ function card(p){
     ad.append(al); d.append(ad);
   }
   const acts = document.createElement('div'); acts.className = 'acts';
-  const m = link(kakao, safeUrl(p.m) ? '🗺 지도 보기' : '🗺 다음지도', 'map');
+  const m = link(kakao, isMapUrl(p.m) ? '🗺 지도 보기' : '🗺 다음지도', 'map');
   const m2 = link(`https://map.naver.com/p/search/${eq}`, '네이버지도', 'map');
   const m3 = link(`https://www.google.com/maps/search/?api=1&query=${eq}`, '구글지도', 'map');
   m2.style.background = m3.style.background = '#3a3a3a';
@@ -3557,6 +3696,7 @@ function cmPanel(p){
 }
 async function addCm(p, nick, text){
   const t = text.trim().slice(0, 150); if (!t) return;
+  { const bm = textMsg([t, nick]); if (bm){ alert(bm); return; } }
   let last = 0; try { last = +(localStorage.getItem('board_cm_last') || 0); } catch(e){}
   if (Date.now() - last < 15000){ alert('도배 방지: ' + Math.ceil((15000 - (Date.now() - last)) / 1000) + '초 뒤에 다시 댓글을 쓸 수 있습니다.'); return; }
   if ((+p.cc || 0) >= 100){ alert('이 글의 댓글은 최대 100개까지 쓸 수 있습니다.'); return; }
@@ -3634,10 +3774,11 @@ async function submit(){
   if (!p.a){ msg('주소를 입력하세요.'); return; }
   if (!p.t){ msg('제목을 입력하세요.'); return; }
   if (!p.b){ msg('내용을 입력하세요.'); return; }
+  { const bm = textMsg([p.n, p.s, p.f, p.t, p.b, p.a]); if (bm){ msg(bm); return; } }
   const pw = $('fpw').value;
   if (pw.length < 4){ msg('삭제용 비밀번호를 4자 이상 입력하세요.'); return; }
   const m = $('fm').value.trim();
-  if (m && !safeUrl(m)){ msg('지도 링크는 http:// 또는 https:// 로 시작하는 주소여야 합니다.'); return; }
+  if (m && !isMapUrl(m)){ msg('지도 링크는 카카오맵·네이버지도·구글지도 주소만 넣을 수 있습니다.'); return; }
   p.m = m; p.pw = await sha(pw); p.ts = Date.now(); p.v = 0;
   if (!p.m) delete p.m;
   msg('등록 중…'); $('fok').disabled = true;
@@ -3748,6 +3889,7 @@ async function loadDm(){
 // 받는 사람 {u, pk, t(글 제목)}에게 쪽지 보내기
 async function sendDm(to, nick, text){
   const t = text.trim().slice(0, 200); if (!t) return false;
+  { const bm = textMsg([t, nick]); if (bm){ alert(bm); return false; } }
   await loadBans(); if (isBanned()){ alert(BANMSG); return false; }
   await keysReady; if (!myPriv || !myPubB64){ alert('이 주소에서는 쪽지를 쓸 수 없습니다. https:// 주소나 파일로 열어 주세요.'); return false; }
   if (!to.u || !to.pk){ alert('이 글의 작성자는 쪽지를 받을 수 없습니다 (이전 버전에서 쓴 글).'); return false; }
@@ -3804,7 +3946,7 @@ function dmPanel(markRead){
   });
   if (markRead){ const mx = inbox.reduce((a, m) => Math.max(a, m.ts), 0); try { localStorage.setItem('promo_dm_read', String(Math.max(mx, dmRead()))); } catch(e){} dmBadge(); }
 }
-$('dmbtn').onclick = async () => { $('dmbox').hidden = !$('dmbox').hidden; if (!$('dmbox').hidden){ $('banbox').hidden = true; await loadDm(); dmPanel(true); } };
+$('dmbtn').onclick = async () => { $('dmbox').hidden = !$('dmbox').hidden; if (!$('dmbox').hidden){ $('banbox').hidden = true; $('wbbox').hidden = true; await loadDm(); dmPanel(true); } };
 
 function fillSel(sel, first, arr){
   sel.innerHTML = '';
@@ -3900,7 +4042,7 @@ function card(p){
   const place = [p.g, p.dn, p.a].filter(Boolean).join(' ') || [p.r, p.t].join(' '), eq = encodeURIComponent((p.r && p.g ? p.r + ' ' : '') + place);
   if (p.a){ const ad = document.createElement('div'); ad.className = 'addr'; ad.textContent = '🏠 ' + [p.g, p.dn, p.a].filter(Boolean).join(' '); d.append(ad); }
   const acts = document.createElement('div'); acts.className = 'acts';
-  if (safeUrl(p.m)) acts.append(link(p.m, '🔗 안내 링크', 'map'));
+  if (isMapUrl(p.m)) acts.append(link(p.m, '🗺 지도 보기', 'map'));
   acts.append(link(`https://map.kakao.com/?q=${eq}`, '🗺 다음지도', 'map'));
   const m2 = link(`https://map.naver.com/p/search/${eq}`, '네이버지도', 'map'); m2.style.background = '#3a3a3a'; acts.append(m2);
   if (p.ph) acts.append(link('tel:' + p.ph.replace(/[^0-9+]/g, ''), '📞 전화하기', 'map'));
@@ -3947,6 +4089,7 @@ function cmPanel(p){
 }
 async function addCm(p, nick, text){
   const t = text.trim().slice(0, 150); if (!t) return;
+  { const bm = textMsg([t, nick]); if (bm){ alert(bm); return; } }
   await loadBans(); if (isBanned()){ alert(BANMSG); return; }
   let last = 0; try { last = +(localStorage.getItem('promo_cm_last') || 0); } catch(e){}
   if (Date.now() - last < 15000){ alert('도배 방지: ' + Math.ceil((15000 - (Date.now() - last)) / 1000) + '초 뒤에 다시 댓글을 쓸 수 있습니다.'); return; }
@@ -4016,13 +4159,14 @@ async function submit(){
   if (!p.dn){ msg('읍·면·동을 선택하세요.'); return; }
   if (!p.t){ msg('제목을 입력하세요.'); return; }
   if (!p.b){ msg('내용을 입력하세요.'); return; }
+  { const bm = textMsg([p.n, p.t, p.b, p.a, p.ph]); if (bm){ msg(bm); return; } }
   if (p.ph && !/^[0-9+\-\s()]{7,16}$/.test(p.ph)){ msg('전화번호는 숫자와 - 만 사용해 주세요.'); return; }
   if (/01[016789][-\s]?\d{3,4}[-\s]?\d{4}/.test(p.ph + ' ' + p.b)){ msg('개인 휴대전화 번호는 등록할 수 없습니다. 가게·단체 번호만 적어 주세요.'); return; }
   const pw = $('fpw').value;
   if (pw.length < 4){ msg('삭제용 비밀번호를 4자 이상 입력하세요.'); return; }
   if (!$('fok2').checked){ msg('안내 문구에 동의(체크)해 주세요.'); return; }
   const m = $('fm').value.trim();
-  if (m && !safeUrl(m)){ msg('안내 링크는 http:// 또는 https:// 로 시작하는 주소여야 합니다.'); return; }
+  if (m && !isMapUrl(m)){ msg('지도 링크는 카카오맵·네이버지도·구글지도 주소만 넣을 수 있습니다.'); return; }
   p.m = m; p.pw = await sha(pw); p.ts = Date.now(); p.v = 0; p.u = uid; await keysReady; if (myPubB64) p.pk = myPubB64;
   ['m','a','ph'].forEach(k => { if (!p[k]) delete p[k]; });
   msg('등록 중…'); $('fok').disabled = true;
@@ -4088,9 +4232,51 @@ function banPanel(){
     r.append(t, b); box.append(r);
   });
 }
-$('banbtn').onclick = async () => { $('dmbox').hidden = true; $('banbox').hidden = !$('banbox').hidden; if (!$('banbox').hidden){ await loadBans(); banPanel(); } };
+$('banbtn').onclick = async () => { $('dmbox').hidden = true; $('wbbox').hidden = true; $('banbox').hidden = !$('banbox').hidden; if (!$('banbox').hidden){ await loadBans(); banPanel(); } };
 
-function admLabel(){ $('adm').textContent = isAdm ? '🔓 관리자 중 (끝내기)' : '🔒 관리자'; $('banbtn').hidden = !isAdm; if (!isAdm) $('banbox').hidden = true; }
+async function wbAdd(text){
+  const ws = Array.from(new Set(String(text).split(/[,\n]+/).map(x => x.toLowerCase().replace(/\s+/g, '').slice(0, 20)).filter(x => Array.from(x).length >= 2)));
+  const have = new Set(Object.values(badCustom));
+  const add = ws.filter(w => !have.has(w));
+  if (!add.length){ alert('추가할 새 단어가 없습니다. (2글자 이상 · 이미 있는 단어는 제외)'); return false; }
+  if (Object.keys(badCustom).length + add.length > 300){ alert('금지어는 최대 300개까지 넣을 수 있습니다.'); return false; }
+  try {
+    for (const w of add){ const r = await fetch(`${DB}/badwords.json`, {method: 'POST', body: JSON.stringify({w, ts: Date.now()})}); if (!r.ok) throw new Error(r.status); }
+    await loadBadWords(); return true;
+  } catch(e){ alert('저장하지 못했습니다. Firebase 규칙(badwords 쓰기 허용)을 확인하세요.'); await loadBadWords(); return false; }
+}
+async function wbDel(k){
+  if (!isAdm || !confirm('이 금지어를 삭제할까요?')) return;
+  try { const r = await fetch(`${DB}/badwords/${k}.json`, {method: 'DELETE'}); if (!r.ok) throw new Error(r.status); await loadBadWords(); wbPanel(); }
+  catch(e){ alert('삭제하지 못했습니다.'); }
+}
+function wbPanel(){
+  const box = $('wbbox'); if (box.hidden) return;
+  box.innerHTML = '';
+  const h = document.createElement('div'); h.style.cssText = 'font-weight:700;color:var(--amber);margin-bottom:6px'; h.textContent = '🔤 금지어 관리 (관리자)'; box.append(h);
+  const nt = document.createElement('div'); nt.className = 'note'; nt.style.margin = '0 0 8px';
+  nt.textContent = '여기에 넣은 단어는 맛집·동네 홍보·배달 등록·채팅·댓글·쪽지에서 최대 1분 안에 모두에게 막힙니다. 쉼표(,)나 줄바꿈으로 여러 개를 한 번에 넣을 수 있고, 2글자 이상만 가능합니다. 3글자 이상은 사이에 공백·점을 넣어도 걸립니다. 기본 금지어는 파일 안에 있어 여기서 지울 수 없습니다.';
+  box.append(nt);
+  const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px';
+  const ti = document.createElement('input'); ti.placeholder = '금지어 (예: 단어1, 단어2)'; ti.setAttribute('aria-label', '금지어'); ti.style.cssText = 'flex:1;min-width:180px';
+  const go = document.createElement('button'); go.type = 'button'; go.className = 'btn pri'; go.textContent = '추가';
+  const run = async () => { if (!ti.value.trim()) return; go.disabled = true; const ok = await wbAdd(ti.value); go.disabled = false; if (ok){ ti.value = ''; wbPanel(); } };
+  go.onclick = run; ti.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) run(); });
+  row.append(ti, go); box.append(row);
+  const ks = Object.keys(badCustom);
+  const cnt = document.createElement('div'); cnt.className = 'note'; cnt.style.margin = '0 0 6px'; cnt.textContent = ks.length ? `추가한 금지어 ${ks.length}개` : '추가한 금지어가 아직 없습니다.'; box.append(cnt);
+  const wrap = document.createElement('div'); wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px';
+  ks.forEach(k => {
+    const c = document.createElement('span'); c.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:#b99a5b33;border-radius:10px;padding:2px 4px 2px 10px;font-size:14px';
+    const t = document.createElement('span'); t.textContent = badCustom[k];
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'fav'; x.style.fontSize = '13px'; x.textContent = '✕'; x.title = '삭제'; x.onclick = () => wbDel(k);
+    c.append(t, x); wrap.append(c);
+  });
+  box.append(wrap);
+}
+$('wbbtn').onclick = async () => { $('dmbox').hidden = true; $('banbox').hidden = true; $('wbbox').hidden = !$('wbbox').hidden; if (!$('wbbox').hidden){ await loadBadWords(); wbPanel(); } };
+
+function admLabel(){ $('adm').textContent = isAdm ? '🔓 관리자 중 (끝내기)' : '🔒 관리자'; $('banbtn').hidden = !isAdm; $('wbbtn').hidden = !isAdm; if (!isAdm){ $('banbox').hidden = true; $('wbbox').hidden = true; } }
 $('adm').onclick = async () => {
   if (isAdm){ isAdm = false; try { sessionStorage.removeItem('board_admin'); } catch(e){} admLabel(); render(); return; }
   const pw = prompt('관리자 비밀번호를 입력하세요.'); if (pw === null) return;
@@ -4533,7 +4719,7 @@ function card(p){
   const link = (href, text, cls) => { const a = document.createElement('a'); a.href = href; a.textContent = text; if (cls) a.className = cls; if (/^https?:/.test(href)){ a.target = '_blank'; a.rel = 'noopener noreferrer'; } return a; };
   if (digits(p.p).length >= 8) acts.append(link('tel:' + String(p.p).replace(/[^0-9+]/g, ''), '📞 전화하기', 'map'));
   const eq = encodeURIComponent((p.d && p.r !== '전국' ? p.r + ' ' : '') + p.s);
-  if (safeUrl(p.m)){ const a = link(p.m, '🔗 주문·안내 링크', 'map'); acts.append(a); }
+  if (isMapUrl(p.m)){ const a = link(p.m, '🗺 지도 보기', 'map'); acts.append(a); }
   const mp = link(`https://map.kakao.com/?q=${eq}`, '🗺 지도', 'map'); mp.style.background = '#3a3a3a'; acts.append(mp);
   const del = document.createElement('button'); del.type = 'button'; del.className = 'btn red'; del.textContent = isAdm ? '삭제 (관리자)' : '삭제';
   del.onclick = () => removeItem(p);
@@ -4619,7 +4805,8 @@ async function submit(){
   if (items.some(x => digits(x.p) === digits(p.p))){ msg('이미 등록된 전화번호입니다.'); return; }
   const pw = $('fpw').value;
   if (pw.length < 4){ msg('삭제용 비밀번호를 4자 이상 입력하세요.'); return; }
-  if (p.m && !safeUrl(p.m)){ msg('링크는 http:// 또는 https:// 로 시작하는 주소여야 합니다.'); return; }
+  { const bm = textMsg([p.s, p.d, p.h, p.o, p.b].concat(mn.map(x => x.n))); if (bm){ msg(bm); return; } }
+  if (p.m && !isMapUrl(p.m)){ msg('링크는 카카오맵·네이버지도·구글지도 주소만 넣을 수 있습니다.'); return; }
   if (!$('fok2').checked){ msg('아래 확인란에 체크해 주세요.'); return; }
   ['d','h','o','b','m'].forEach(k => { if (!p[k]) delete p[k]; });
   if (zs.length) p.zs = zs;
