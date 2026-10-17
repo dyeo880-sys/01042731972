@@ -95,6 +95,12 @@ body.hidebad .vr.bad{display:none}
 #mwscreen:fullscreen #liveAudio{max-width:100%!important;max-height:100%!important;width:100%;height:100%;object-fit:contain}
 #mwscreen:-webkit-full-screen #liveAudio{max-width:100%!important;max-height:100%!important;width:100%;height:100%;object-fit:contain}
 #mwyt{width:100%;max-width:calc(640px * var(--mws));aspect-ratio:16/9}
+#mwscreen:fullscreen{padding:0}
+#mwscreen:-webkit-full-screen{padding:0}
+#mwscreen:fullscreen #mwvid{max-width:100%!important;max-height:100%!important;width:100%;height:100%;object-fit:contain}
+#mwscreen:-webkit-full-screen #mwvid{max-width:100%!important;max-height:100%!important;width:100%;height:100%;object-fit:contain}
+#mwscreen:fullscreen #mwyt{max-width:100%;width:100%;height:100%;aspect-ratio:auto}
+#mwscreen:-webkit-full-screen #mwyt{max-width:100%;width:100%;height:100%;aspect-ratio:auto}
 .rdbar{margin-top:8px;padding:8px 10px;background:#1a0f08;border:1px solid #b99a5b55;border-radius:6px}
 .rdrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .rdrow strong{color:var(--amber)}
@@ -612,7 +618,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><span id="tkbadge" class="blink" hidden>🔔 요청</span><button class="addhome" style="margin:0" type="button" id="rvside" title="채팅창을 영상 옆 오른쪽/왼쪽/아래로 옮깁니다">💬 채팅: 오른쪽 ▶</button><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
   <section id="mediawin" hidden aria-label="미디어 창">
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
-    <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button></div>
+    <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button><button class="addhome" type="button" id="lisfs" style="display:none;margin:0 0 0 auto" title="영상을 전체화면으로 봅니다 (나갈 때는 Esc)" aria-label="영상 전체화면">⛶ 전체화면</button></div>
     <div class="mwsize" id="lagrow" hidden><label for="lagsel">🐢 끊김 줄이기</label><select id="lagsel" aria-label="끊김 줄이기 (영상을 조금 늦게 재생)" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:4px 8px;font-size:13px"><option value="0">끔 (가장 빠름)</option><option value="1000">1초 늦게</option><option value="1500">1.5초 늦게 (기본)</option><option value="2000">2초 늦게</option><option value="3000">3초 늦게</option><option value="4000">4초 늦게 (소리가 끊길 수 있음)</option></select><span class="chatnote" style="margin:0">늦게 볼수록 덜 끊깁니다</span></div>
     <div class="mwsize" id="lecmeter" hidden><strong style="color:var(--amber)">🎓 보내는 소리</strong><span>PC 소리 <meter id="mtsys" min="0" max="1" value="0" style="width:90px"></meter></span><span>내 마이크 <meter id="mtmic" min="0" max="1" value="0" style="width:90px"></meter></span><button class="addhome" type="button" id="lecmic" style="margin:0" title="강의 중 내 마이크만 끄거나 켭니다 (PC 소리는 계속 나갑니다)">🎤 마이크 끄기</button><span id="mtmsg" style="flex-basis:100%;font-size:13px"></span></div>
     <div class="chatnote" id="rxdiag" hidden style="margin:0 0 8px;font-size:13px"></div>
@@ -2762,7 +2768,7 @@ fsOn($('tvvid')); fsOn($('mwvid'));
 // 듣는 사람용: 강의·공유 영상 전체화면 + 방 소리 크기 조절 (전체화면에서도 버튼·볼륨이 보이도록 영상 영역 전체를 전체화면으로 씀)
 fsOn(liveAudio, $('mwscreen'));
 function lisFs(){
-  const box = $('mwscreen'), v = liveAudio;
+  const box = $('mwscreen'), v = mwvid.style.display === 'block' ? mwvid : liveAudio;
   try {
     if (document.fullscreenElement || document.webkitFullscreenElement){ (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
     if (box.requestFullscreen) box.requestFullscreen();
@@ -2772,11 +2778,7 @@ function lisFs(){
 }
 (function(){
   const scr = $('mwscreen'); if (!scr) return;
-  const b = document.createElement('button');
-  b.type = 'button'; b.id = 'lisfs'; b.className = 'addhome'; b.textContent = '⛶ 전체화면'; b.hidden = true;
-  b.setAttribute('aria-label', '영상 전체화면');
-  b.style.cssText = 'position:absolute;right:10px;top:10px;z-index:5;margin:0;background:#000c;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .25s';
-  b.onclick = lisFs;
+  const b = $('lisfs'); b.onclick = lisFs; // 영상 위 '화면 크기' 줄에 있는 버튼 (영상을 가리지 않음)
   // 방 소리 크기 (방장이 보내는 소리 전용 · 라디오 볼륨과 별개)
   // 평소에는 영상 바로 위 줄에 항상 보이고, 전체화면일 때는 영상 아래쪽에 겹쳐서 보임
   let lv = 1; try { const q = localStorage.getItem('radio_room_vol'); if (q !== null && q !== '') lv = Math.max(0, Math.min(1, +q || 0)); } catch(e){}
@@ -2796,7 +2798,7 @@ function lisFs(){
     box.append(mu, lb, rg); sets.push({mu, rg}); return box;
   };
   const bar = mkCtl('display:none;align-items:center;gap:8px;margin:0 0 8px;padding:4px 8px;border:1px solid #b99a5b88;border-radius:8px;background:#1a0f08');
-  bar.id = 'lisbar'; scr.parentNode.insertBefore(bar, scr); scr.append(b);
+  bar.id = 'lisbar'; scr.parentNode.insertBefore(bar, scr);
   const ov = mkCtl('display:none;position:absolute;left:10px;bottom:10px;z-index:5;align-items:center;gap:8px;background:#000c;border:1px solid #b99a5b88;border-radius:8px;padding:4px 8px');
   ov.id = 'lisctl'; ov.style.transition = 'opacity .25s'; scr.append(ov);
   const b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'addhome'; b2.textContent = '✕ 전체화면 나가기';
@@ -2809,16 +2811,9 @@ function lisFs(){
     hideT = setTimeout(() => { if (isFull()){ ov.style.opacity = '0'; ov.style.pointerEvents = 'none'; } }, 3000);
   };
   ['mousemove', 'pointerdown', 'touchstart', 'keydown'].forEach(ev => scr.addEventListener(ev, wake, {passive: true}));
-  let bT = 0;
-  const bShow = () => { b.style.opacity = '1'; b.style.pointerEvents = 'auto'; };
-  const bHide = () => { b.style.opacity = '0'; b.style.pointerEvents = 'none'; };
-  const bWake = () => { if (isFull()) return; bShow(); clearTimeout(bT); bT = setTimeout(bHide, 2500); };
-  ['mousemove', 'pointerdown', 'touchstart'].forEach(ev => scr.addEventListener(ev, bWake, {passive: true}));
-  scr.addEventListener('mouseleave', () => { clearTimeout(bT); bHide(); });
-  b.addEventListener('mouseenter', () => { clearTimeout(bT); bShow(); }); // 버튼 위에 있는 동안은 계속 보임
-  b.addEventListener('mouseleave', bWake);
   const sync = () => {
-    b.style.display = (liveAudio.style.display === 'block' && liveAudio.srcObject && liveAudio.videoWidth > 0 && !isFull()) ? '' : 'none';
+    const hasVid = (liveAudio.style.display === 'block' && liveAudio.srcObject && liveAudio.videoWidth > 0) || mwvid.style.display === 'block' || $('mwyt').style.display === 'block';
+    b.style.display = hasVid ? '' : 'none';
     const listening = !!(typeof lis !== 'undefined' && lis && liveAudio.srcObject);
     const full = document.fullscreenElement === scr || document.webkitFullscreenElement === scr;
     bar.style.display = (listening && !full) ? 'flex' : 'none';
