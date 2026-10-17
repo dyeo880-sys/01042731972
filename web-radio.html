@@ -88,6 +88,8 @@ body.hidebad .vr.bad{display:none}
 #liveAudio,#bcPreview{max-width:min(100%,calc(320px * var(--mws)))}
 #mwvid{width:100%;max-width:calc(640px * var(--mws))}
 #liveAudio.scr{width:100%;max-width:100%;max-height:calc(70vh * var(--mws));background:#000;object-fit:contain}
+#liveAudio:fullscreen{max-width:none!important;max-height:none!important;width:100%!important;height:100%!important;object-fit:contain;background:#000}
+#liveAudio:-webkit-full-screen{max-width:none!important;max-height:none!important;width:100%!important;height:100%!important;object-fit:contain;background:#000}
 #mwyt{width:100%;max-width:calc(640px * var(--mws));aspect-ratio:16/9}
 .rdbar{margin-top:8px;padding:8px 10px;background:#1a0f08;border:1px solid #b99a5b55;border-radius:6px}
 .rdrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -608,7 +610,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
     <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button></div>
     <div class="mwsize" id="lagrow" hidden><label for="lagsel">🐢 끊김 줄이기</label><select id="lagsel" aria-label="끊김 줄이기 (영상을 조금 늦게 재생)" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:4px 8px;font-size:13px"><option value="0">끔 (가장 빠름)</option><option value="1000">1초 늦게</option><option value="1500">1.5초 늦게 (기본)</option><option value="2000">2초 늦게</option><option value="3000">3초 늦게</option><option value="4000">4초 늦게 (소리가 끊길 수 있음)</option></select><span class="chatnote" style="margin:0">늦게 볼수록 덜 끊깁니다</span></div>
-    <div class="mwsize" id="lecmeter" hidden><strong style="color:var(--amber)">🎓 보내는 소리</strong><span>PC 소리 <meter id="mtsys" min="0" max="1" value="0" style="width:90px"></meter></span><span>내 마이크 <meter id="mtmic" min="0" max="1" value="0" style="width:90px"></meter></span><span id="mtmsg" style="flex-basis:100%;font-size:13px"></span></div>
+    <div class="mwsize" id="lecmeter" hidden><strong style="color:var(--amber)">🎓 보내는 소리</strong><span>PC 소리 <meter id="mtsys" min="0" max="1" value="0" style="width:90px"></meter></span><span>내 마이크 <meter id="mtmic" min="0" max="1" value="0" style="width:90px"></meter></span><button class="addhome" type="button" id="lecmic" style="margin:0" title="강의 중 내 마이크만 끄거나 켭니다 (PC 소리는 계속 나갑니다)">🎤 마이크 끄기</button><span id="mtmsg" style="flex-basis:100%;font-size:13px"></span></div>
     <div class="chatnote" id="rxdiag" hidden style="margin:0 0 8px;font-size:13px"></div>
     <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div></div>
     <div class="debate" id="debate" hidden></div><div id="rxfloat" aria-hidden="true"></div>
@@ -2753,6 +2755,28 @@ function fsOn(v, box){
   }, 60));
 }
 fsOn($('tvvid')); fsOn($('mwvid'));
+// 듣는 사람용: 강의·공유 영상 전체화면 (더블클릭 또는 「⛶ 전체화면」 버튼 · iPhone 포함)
+fsOn(liveAudio);
+function lisFs(){
+  const v = liveAudio;
+  try {
+    if (document.fullscreenElement || document.webkitFullscreenElement){ (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    if (v.requestFullscreen) v.requestFullscreen();
+    else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen();
+    else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+  } catch(e){}
+}
+(function(){
+  const scr = $('mwscreen'); if (!scr) return;
+  const b = document.createElement('button');
+  b.type = 'button'; b.id = 'lisfs'; b.className = 'addhome'; b.textContent = '⛶ 전체화면'; b.hidden = true;
+  b.setAttribute('aria-label', '영상 전체화면');
+  b.style.cssText = 'position:absolute;right:10px;top:10px;z-index:5;margin:0;background:#000c';
+  b.onclick = lisFs; scr.append(b);
+  const sync = () => { b.hidden = !(liveAudio.style.display === 'block' && liveAudio.srcObject && liveAudio.videoWidth > 0); };
+  liveAudio.addEventListener('loadedmetadata', sync); liveAudio.addEventListener('resize', sync);
+  setInterval(sync, 1000); sync();
+})();
 
 // ---- 미디어 창 화면 크기 슬라이더 (50%~200%, 값 기억) ----
 (function(){
@@ -3089,15 +3113,15 @@ async function startLecture(withFace){
   try { me.ac.resume(); } catch(e){}
   const dest = me.ac.createMediaStreamDestination(), nodes = [];
   const add = (stream, gain) => {
-    const g = me.ac.createGain(); g.gain.value = gain;
+    const g = me.ac.createGain(); g.gain.value = gain; add.last = g;
     const n = me.ac.createMediaStreamSource(stream); n.connect(g); g.connect(dest); nodes.push(n, g);
     const an = me.ac.createAnalyser(); an.fftSize = 512; n.connect(an); nodes.push(an); return an;
   };
   const sysA = sys.length ? add(new MediaStream(sys), 0.7) : null;   // PC 소리는 조금 낮춰서 목소리가 잘 들리게
-  const micA = mic ? add(mic, 1.0) : null;
+  const micA = mic ? add(mic, 1.0) : null; const micG = mic ? add.last : null; try { $('lecmic').textContent = '🎤 마이크 끄기'; } catch(e){}
   const dt = dest.stream.getAudioTracks()[0];
   const tracks = [dt].concat(sys, mic ? mic.getAudioTracks() : []);
-  MV.lec = {tracks, nodes, dest, timer: 0, keep: 0};
+  MV.lec = {tracks, nodes, dest, micG, micOff: false, timer: 0, keep: 0};
   const keepAc = () => { try { if (me.ac.state !== 'running') me.ac.resume().catch(() => {}); } catch(e){} }; // 소리 엔진이 멈추면 강의 소리가 통째로 사라짐
   me.ac.onstatechange = keepAc; MV.lec.keep = setInterval(keepAc, 1000); keepAc();
   // 보내는 소리 레벨 표시 (PC 소리·마이크가 실제로 잡히는지 확인용)
@@ -3109,10 +3133,12 @@ async function startLecture(withFace){
     const late = Date.now() - t0 > 6000, m = $('mtmsg'); let t, bad = true;
     if (me.ac.state !== 'running') t = '⚠ 소리 엔진이 멈춰 있습니다 (' + me.ac.state + '). 이 페이지를 한 번 클릭해 주세요.';
     else if (!sysA) t = '⚠ PC 소리가 공유되지 않았습니다. ■ 끄기 후 다시 시작하고, 전체 화면을 고른 뒤 "시스템 오디오 공유"를 체크하세요.';
+    else if (MV.lec && MV.lec.micOff) t = '🔇 마이크가 꺼져 있습니다. PC 소리만 방으로 나갑니다.';
     else if (!sysSeen && late) t = '⚠ PC 소리 신호가 0입니다. 공유한 화면에서 실제로 소리가 나고 있는지(영상 재생 중인지) 확인하세요. 개별 창 공유는 소리가 안 잡힙니다.';
     else if (!mic) t = '⚠ 마이크가 연결되지 않았습니다. 브라우저 마이크 권한을 확인하세요.';
     else if (!micSeen && late) t = '⚠ 마이크 소리가 0입니다. 말해 보세요. 그래도 0이면 윈도우 입력 장치/음소거를 확인하세요.';
     else { t = '✓ 소리가 방으로 나가는 중입니다. (막대가 움직이는데도 상대가 못 들으면 상대 기기 설정 문제입니다)'; bad = false; }
+    if (MV.lec && MV.lec.micOff && sysA) bad = false;
     if (m.textContent !== t) m.textContent = t; m.style.color = bad ? '#ff6b6b' : 'var(--amber)';
   }, 120);
   // swapSource는 getAudioTracks()[0]만 방송에 쓰고, 나중에 소리를 바꿀 때 getTracks() 전부를 끕니다
@@ -3125,6 +3151,14 @@ async function startLecture(withFace){
     ' 라디오도 들려주려면 "📻 방에 송출"을 누르세요. 끝내려면 "■ 끄기"를 누르세요.');
 }
 $('bclec').onclick = () => startLecture($('lecface').checked);
+$('lecmic').onclick = () => {
+  const l = MV.lec;
+  if (!l || !l.micG){ setBc('마이크가 연결된 강의 중에만 쓸 수 있습니다.'); return; }
+  l.micOff = !l.micOff;
+  try { l.micG.gain.value = l.micOff ? 0 : 1; } catch(e){}
+  $('lecmic').textContent = l.micOff ? '🎤 마이크 켜기' : '🎤 마이크 끄기';
+  setBc(l.micOff ? '🔇 마이크를 껐습니다. PC 소리만 방으로 나갑니다.' : '🎤 마이크를 다시 켰습니다.');
+};
 $('bcshare').onclick = () => startScreen(false);
 $('bcshare2').onclick = () => startScreen(true);
 $('bcscr').onclick = async () => {
