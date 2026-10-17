@@ -1738,7 +1738,15 @@ function guestSet(g){
   window.addEventListener('resize', () => { if (fl){ w = clampW(w); t.style.width = w + 'px'; keepIn(); } });
 })();
 function mwClose(){ try { talkStop(''); } catch(e){} $('guestTile').hidden = true; $('guestVid').srcObject = null; clearInterval(MV.poll); mvStop(); MV.rk = ''; MV.hostless = false; MV.gone = 0; lisVidReady = false; $('mediawin').hidden = true; $('mwnow').textContent = '대기 중'; mwUpdate(); }
+// 음악 방에 들어가면 라디오·TV·뮤직비디오는 멈춤 (같은 소리가 겹쳐 울리는 것을 막음)
+function stopOtherMedia(){
+  try { if (rdCast) rdCastOff(); } catch(e){}
+  try { audio.pause(); } catch(e){}
+  try { if (mtv.on) mtvOff('🎵 음악 방에 들어와서 멈췄습니다. ▶ 눌러서 다시 켜기'); } catch(e){}
+  try { if (tvHls || !$('tvplayer').hidden) tvStop(); } catch(e){}
+}
 function enterRoom(id, name){
+  stopOtherMedia();
   liveRoom = {id, name, host: !!(bc && bc.rid === id)}; renderRooms('b:' + id); $('room').onchange();
   $('roomwrap').hidden = false; $('hostctl').hidden = !liveRoom.host; $('leavebtn').hidden = true; showRoomView(); mwOpen(liveRoom.host);
   roomHead(); clearInterval(memTimer); memBeat(); memTimer = setInterval(memBeat, 8000);
