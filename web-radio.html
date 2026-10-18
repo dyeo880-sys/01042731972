@@ -199,6 +199,20 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 .tp[hidden]{display:none}
 .tp .addhome,.tp input[type=text],.tp input:not([type]),.tp select{font-size:13px;padding:4px 9px;margin:0}
 .tp input:not([type]),.tp select{background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px}
+#plbox{flex-basis:100%;background:#1a0f08;border-radius:6px;padding:6px 8px;font-size:13px}
+#plbox .plh{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:6px}
+#plbox .plh strong{color:var(--amber)}
+#plbox .plh label{display:inline-flex;align-items:center;gap:4px;font-size:12px;opacity:.9;cursor:pointer}
+#plbox .plh .addhome{padding:2px 8px;font-size:12px}
+#plbox .pll{max-height:220px;overflow-y:auto}
+#plbox .plr{display:flex;align-items:center;gap:6px;padding:4px 3px;border-bottom:1px solid #ffffff12}
+#plbox .plr.on{background:#b99a5b33;color:var(--amber);border-radius:4px}
+#plbox .pln{width:22px;text-align:right;opacity:.7;flex-shrink:0}
+#plbox .plt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#plbox .plr .addhome{padding:1px 7px;font-size:12px}
+#plbox .plm{opacity:.7;padding:6px 0}
+#roomview.mini .mwsize.mwvolrow{display:flex;margin-bottom:6px}
+.mwvolrow label{color:var(--amber);font-weight:700}
 .rw{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}.rw[hidden]{display:none}
 .foot{text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid #b99a5b55}
 .foot a{color:var(--amber);font-size:15px;text-decoration:none;border-bottom:1px solid var(--brass)}
@@ -314,13 +328,15 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 #roomview:is(.sideR,.sideL):not(.mini) #rvbody{display:contents}
 #roomview:is(.sideR,.sideL):not(.mini) .rvhead{grid-column:1/-1;grid-row:1}
 #roomview:is(.sideR,.sideL):not(.mini) #mediawin{grid-row:2;grid-column:1;margin-bottom:0;min-width:0}
-#roomview:is(.sideR,.sideL):not(.mini) #chatsec{grid-row:2;grid-column:2;margin-top:0;position:sticky;top:0;min-width:0}
+#roomview:is(.sideR,.sideL):not(.mini) #chatsec{grid-row:2 / span 2;grid-column:2;margin-top:0;position:sticky;top:0;min-width:0;align-self:start}
 #roomview.sideL:not(.mini) #mediawin{grid-column:2}
 #roomview.sideL:not(.mini) #chatsec{grid-column:1}
-#roomview:is(.sideR,.sideL):not(.mini) #roomwrap{grid-column:1/-1;grid-row:3;margin-top:12px}
+#roomview:is(.sideR,.sideL):not(.mini) #roomwrap{grid-column:1;grid-row:3;margin-top:12px;min-width:0}
+#roomview.sideL:not(.mini) #roomwrap{grid-column:2}
 #roomview:is(.sideR,.sideL):not(.mini) #chatlog{height:calc(100vh - 330px);min-height:240px}
 #roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]){grid-template-columns:minmax(0,1fr)}
-#roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]) #chatsec{grid-column:1;position:static}
+#roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]) #chatsec{grid-column:1;grid-row:2;position:static}
+#roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]) #roomwrap{grid-column:1}
 #chatsec>.debate{margin:10px 0 0}
 #roomview:is(.sideR,.sideL):not(.mini) #chatsec{max-height:calc(100vh - 24px);overflow-y:auto}
 #roomview:is(.sideR,.sideL):not(.mini) #chatsec:has(>.debate:not([hidden])) #chatlog{height:max(200px,calc(100vh - 640px))}
@@ -725,6 +741,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <section id="mediawin" hidden aria-label="미디어 창">
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
     <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button><button class="addhome" type="button" id="lisfs" style="display:none;margin:0 0 0 auto" title="영상을 전체화면으로 봅니다 (나갈 때는 Esc)" aria-label="영상 전체화면">⛶ 전체화면</button></div>
+    <div class="mwsize mwvolrow" id="mwvolrow"><label for="mwvol">🔊 볼륨</label><input type="range" id="mwvol" min="0" max="100" step="1" value="30" aria-label="전체 볼륨 (유튜브·링크 영상·방 소리 한꺼번에)"><output id="mwvolv" for="mwvol">30%</output><button class="addhome" type="button" id="mwmute" title="유튜브·영상·방 소리를 한꺼번에 껐다 켭니다">🔇 음소거</button><span class="chatnote" style="margin:0">유튜브·영상·방 소리 한꺼번에</span></div>
     <div class="mwsize" id="lagrow" hidden><label for="lagsel">🐢 끊김 줄이기</label><select id="lagsel" aria-label="끊김 줄이기 (영상을 조금 늦게 재생)" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:4px 8px;font-size:13px"><option value="0">끔 (가장 빠름)</option><option value="1000">1초 늦게</option><option value="1500">1.5초 늦게 (기본)</option><option value="2000">2초 늦게</option><option value="3000">3초 늦게</option><option value="4000">4초 늦게 (소리가 끊길 수 있음)</option></select><span class="chatnote" style="margin:0">늦게 볼수록 덜 끊깁니다</span></div>
     <div class="mwsize" id="lecmeter" hidden><strong style="color:var(--amber)">🎓 보내는 소리</strong><span>PC 소리 <meter id="mtsys" min="0" max="1" value="0" style="width:90px"></meter></span><span>내 마이크 <meter id="mtmic" min="0" max="1" value="0" style="width:90px"></meter></span><button class="addhome" type="button" id="lecmic" style="margin:0" title="강의 중 내 마이크만 끄거나 켭니다 (PC 소리는 계속 나갑니다)">🎤 마이크 끄기</button><span id="mtmsg" style="flex-basis:100%;font-size:13px"></span></div>
     <div class="chatnote" id="rxdiag" hidden style="margin:0 0 8px;font-size:13px"></div>
@@ -774,6 +791,9 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <label class="addhome" style="margin:0;cursor:pointer">📂 영상 파일<input id="bcvfile" type="file" accept="video/*" hidden></label>
         <input id="vurl" placeholder="영상 링크 붙여넣기 (유튜브 · mp4 · m3u8)" aria-label="영상 링크">
         <button class="addhome" style="margin:0" type="button" id="vgo">▶ 링크 재생</button>
+        <label class="addhome" style="margin:0;cursor:pointer" title="내 컴퓨터의 영상 파일을 목록 맨 뒤에 추가 (여러 개 선택 가능)">🎬 영상 파일 추가<input id="plfile" type="file" accept="video/*" multiple hidden></label>
+        <button class="addhome" style="margin:0" type="button" id="vadd" title="재생목록 맨 뒤에 추가합니다. 앞 영상이 끝나면 순서대로 자동 재생됩니다. (링크를 여러 개 붙여넣어도 됩니다)">➕ 목록에 추가</button>
+        <div id="plbox" aria-label="재생목록"></div>
       </div>
       <div class="tp" id="p-vfind" hidden>
               <div class="mwsearch">
@@ -1799,7 +1819,8 @@ function ytErr(code){
   } else if (code === 101 || code === 150){ setBc('이 영상은 퍼가기가 막혀 있어 재생할 수 없습니다. 다른 영상을 써 보세요.'); }
   else setBc('유튜브 영상을 재생할 수 없습니다. (오류 ' + (code || '?') + ')');
 }
-async function hostLink(raw){
+async function hostLink(raw, keep){
+  { let c = null; try { c = PL.cap; PL.cap = null; } catch(_){} if (c){ plPush(String(raw || '').trim(), c.title); return; } }   // 재생목록 추가 모드
   if (!bc){ setBc('먼저 음악 방을 만들어 주세요.'); return; }
   const u = (raw || '').trim();
   if (!/^https?:\/\//i.test(u)){ setBc('http:// 또는 https:// 로 시작하는 영상 주소를 넣어 주세요.'); return; }
@@ -1812,8 +1833,8 @@ async function hostLink(raw){
     if (location.protocol === 'file:') ytErr(153);
     const pre = MV.yerr; MV.k = 'yt'; MV.u = id; MV.yerr = !!pre && location.protocol === 'file:'; MV.ys = Date.now(); $('mwyt').innerHTML = '<div id="mwytp"></div>'; mvShow('yt');
     MV.yt = new YT.Player('mwytp', {width: '100%', height: '100%', videoId: id, playerVars: {autoplay: 1, playsinline: 1, rel: 0, cc_load_policy: 1, cc_lang_pref: 'ko', hl: 'ko'},
-      events: {onReady: e => { try { e.target.playVideo(); } catch(_){} mvPush(); }, onStateChange: ev => { mvPush(); try { kqVidState(ev); } catch(_){} },
-               onError: e => ytErr(e && e.data)}});
+      events: {onReady: e => { try { mvolApply(); } catch(_){} try { e.target.playVideo(); } catch(_){} mvPush(); }, onStateChange: ev => { mvPush(); try { kqVidState(ev); } catch(_){} try { plVidState(ev); } catch(_){} },
+               onError: e => { ytErr(e && e.data); try { plErr(e && e.data); } catch(_){} }}});
     if (!MV.yerr) mwUpdate('▶ 유튜브 영상 함께 보는 중');
   } else {
     MV.k = 'url'; MV.u = u; attachUrl(u); mvShow('vid');
@@ -1821,12 +1842,12 @@ async function hostLink(raw){
     mwvid.play().catch(() => {}); mwUpdate('▶ 링크 영상 함께 보는 중');
   }
   MV.timer = setInterval(mvPush, 5000); setTimeout(mvPush, 800);
-  setBc('영상을 틀었습니다. 방에 있는 사람들 화면에서도 같은 위치로 재생됩니다.'); closePanels();
+  setBc('영상을 틀었습니다. 방에 있는 사람들 화면에서도 같은 위치로 재생됩니다.'); if (!keep) closePanels();
 }
 // 방장: 내 동영상 파일 방송
-function hostFile(f){
+function hostFile(f, keep){
   if (!bc){ setBc('먼저 음악 방을 만들어 주세요.'); return; }
-  mvStop(); MV.k = 'file';
+  mvStop(); MV.k = 'file'; MV.f = f;
   mwvid.src = URL.createObjectURL(f); mvShow('vid'); mwUpdate('🎬 ' + f.name);
   mwvid.addEventListener('playing', () => {
     const cs = mwvid.captureStream ? mwvid.captureStream() : (mwvid.mozCaptureStream ? mwvid.mozCaptureStream() : null);
@@ -1835,7 +1856,7 @@ function hostFile(f){
     setBc('🎬 영상이 방에 연결되었습니다. (듣는 사람 화면에도 영상이 나옵니다)');
   }, {once: true});
   mwvid.play().catch(() => setBc('재생 버튼을 눌러 주세요.'));
-  closePanels();
+  if (!keep) closePanels();
 }
 function hostVideoOff(){
   if (!bc) return;
@@ -1959,7 +1980,7 @@ async function mvApply(s){
         if (!(window.YT && YT.Player) || MV.k !== 'yt' || !liveRoom){ MV.k = ''; return; }
         $('mwyt').innerHTML = '<div id="mwytp"></div>'; mvShow('yt');
         MV.yt = new YT.Player('mwytp', {width: '100%', height: '100%', videoId: s.u, playerVars: {autoplay: s.p ? 1 : 0, playsinline: 1, rel: 0, start: Math.floor(want)},
-          events: {onError: e => ytErr(e && e.data), onStateChange: () => mvPush()}});
+          events: {onReady: () => { try { mvolApply(); } catch(_){} }, onError: e => ytErr(e && e.data), onStateChange: () => mvPush()}});
       } else {
         attachUrl(s.u); mvShow('vid');
         mwvid.onerror = () => setBc('방장이 튼 영상 주소를 재생할 수 없습니다.');
@@ -3041,6 +3062,176 @@ $('bcvfile').onchange = e => { const f = e.target.files[0]; e.target.value = '';
 $('vgo').onclick = () => hostLink($('vurl').value);
 $('vurl').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) hostLink($('vurl').value); });
 $('vstop').onclick = hostVideoOff;
+// ---- 재생목록: 링크·검색 결과·내 영상 파일을 순서대로 담아 두면 영상이 끝날 때 다음 영상을 자동 재생 ----
+const PL = {list: [], cur: null, auto: true, loop: false, last: 0, cap: null, msg: ''};
+const PL_KEY = 'radio_playlist';
+try {
+  const sv = JSON.parse(localStorage.getItem(PL_KEY) || 'null');
+  if (sv && Array.isArray(sv.list)){
+    PL.list = sv.list.filter(x => x && typeof x.u === 'string' && /^https?:\/\//i.test(x.u)).slice(0, 100).map(x => ({u: x.u, t: String(x.t || x.u).slice(0, 120)}));
+    PL.loop = !!sv.loop; PL.auto = sv.auto !== false;
+  }
+} catch(e){}
+// 내 기기의 영상 파일(f)은 새로고침하면 사라지므로 저장하지 않음
+const plSave = () => { try { localStorage.setItem(PL_KEY, JSON.stringify({list: PL.list.filter(x => x.u).map(x => ({u: x.u, t: x.t})), loop: PL.loop, auto: PL.auto})); } catch(e){} };
+const plMsg = t => { PL.msg = t; try { setBc(t); } catch(_){} plRender(); };
+// 지금 재생 중인 영상이 이 항목인가?
+function plSame(it){
+  if (!it) return false;
+  if (it.f) return MV.k === 'file' && MV.f === it.f;
+  const id = ytId(it.u);
+  return id ? (MV.k === 'yt' && MV.u === id) : (MV.k === 'url' && MV.u === it.u);
+}
+function plName(u){
+  try { const x = new URL(u); const f = decodeURIComponent(x.pathname.split('/').filter(Boolean).pop() || ''); return f || x.hostname; } catch(e){ return u; }
+}
+// 주소 하나를 목록 맨 뒤에 담음 (title을 알면 그대로 사용)
+function plPush(u, title){
+  if (!/^https?:\/\//i.test(u)) return false;
+  if (PL.list.length >= 100){ plMsg('재생목록은 최대 100개까지입니다.'); return false; }
+  const id = ytId(u);
+  const it = {u: id ? 'https://www.youtube.com/watch?v=' + id : u, t: String(title || '').slice(0, 120) || (id ? '유튜브 ' + id : plName(u))};
+  PL.list.push(it); plSave();
+  if (id && !title){   // 유튜브는 제목을 가져와 보여줌 (실패해도 재생에는 지장 없음)
+    fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(it.u)).then(r => r.ok ? r.json() : null)
+      .then(j => { if (j && j.title){ it.t = String(j.title).slice(0, 120); plSave(); plRender(); } }).catch(() => {});
+  }
+  plMsg('➕ 「' + it.t.slice(0, 30) + '」 추가됨 (' + PL.list.length + '번째)');
+  return true;
+}
+function plAdd(raw){
+  const urls = String(raw || '').split(/[\s,]+/).filter(Boolean);
+  if (!urls.length){ plMsg('위 칸에 영상 링크를 먼저 붙여넣어 주세요.'); return false; }
+  let n = 0, bad = 0;
+  for (const u of urls){ if (/^https?:\/\//i.test(u)){ if (plPush(u)) n++; else break; } else bad++; }
+  if (n){ $('vurl').value = ''; plMsg('➕ 재생목록에 ' + n + '개 추가했습니다. (전체 ' + PL.list.length + '개)' + (bad ? ' · 주소가 아닌 ' + bad + '개는 건너뜀' : '')); }
+  else if (bad) plMsg('http:// 또는 https:// 로 시작하는 영상 주소를 넣어 주세요.');
+  return n > 0;
+}
+// 내 컴퓨터의 영상 파일 추가 (이 기기에서만 유지 · 새로고침하면 사라짐)
+function plAddFiles(files){
+  let n = 0, skip = 0;
+  for (const f of [...files]){
+    if (!(/^video\//.test(f.type) || /\.(mp4|webm|mkv|mov|m4v|ogv|avi)$/i.test(f.name))){ skip++; continue; }
+    if (PL.list.length >= 100) break;
+    PL.list.push({f, t: f.name}); n++;
+  }
+  plMsg(n ? '➕ 영상 파일 ' + n + '개 추가했습니다. (파일은 새로고침하면 목록에서 사라집니다)' + (skip ? ' · 영상이 아닌 ' + skip + '개는 건너뜀' : '') : '영상 파일(mp4·webm 등)을 골라 주세요.');
+}
+// 검색 결과 줄의 ➕ : 그 결과의 재생 주소를 찾아(필요하면 인터넷으로 조회) 목록에 담음
+async function plAddPick(it, btn){
+  const keep = $('mwnow').textContent, old = btn.textContent;
+  btn.disabled = true; btn.textContent = '…'; PL.cap = {title: String(it.title || '')};
+  try { await Promise.resolve(it.pick()); } catch(_){}
+  setTimeout(() => {
+    if (PL.cap){ PL.cap = null; plMsg('이 결과는 목록에 추가할 수 없습니다. (바로 재생만 가능)'); btn.textContent = old; }
+    else btn.textContent = '✔';
+    btn.disabled = false; $('mwnow').textContent = keep;
+  }, 250);
+}
+function plPlay(it){
+  if (!it) return Promise.resolve();
+  PL.cur = it; PL.msg = ''; plRender();
+  const i = PL.list.indexOf(it) + 1;
+  if (it.f){ hostFile(it.f, true); setTimeout(() => { if (plSame(it)) plMsg('📋 재생목록 ' + i + '/' + PL.list.length + '번째 재생 중'); }, 200); return Promise.resolve(); }
+  return hostLink(it.u, true).then(() => { if (plSame(it) || MV.k) plMsg('📋 재생목록 ' + i + '/' + PL.list.length + '번째 재생 중'); });
+}
+function plNext(){
+  if (!PL.list.length) return;
+  let i = (PL.cur && PL.list.includes(PL.cur)) ? PL.list.indexOf(PL.cur) : PL.list.findIndex(plSame);
+  let n = i + 1;
+  if (n >= PL.list.length){
+    if (PL.loop) n = 0;
+    else { PL.cur = null; plMsg('📋 재생목록이 모두 끝났습니다.'); return; }
+  }
+  plPlay(PL.list[n]);
+}
+// 영상이 끝났을 때: 방장이 틀던 목록 영상이면 다음 것으로
+function plEnded(){
+  if (!isHost() || !PL.auto) return;
+  try { if (kq.list.some(x => x.st === 'now')) return; } catch(_){}      // 노래방 신청곡 진행 중이면 건드리지 않음
+  if (!((PL.cur && plSame(PL.cur)) || PL.list.some(plSame))) return;     // 목록과 상관없는 영상이면 무시
+  if (Date.now() - PL.last < 1500) return; PL.last = Date.now();
+  plNext();
+}
+function plVidState(ev){ if (ev && ev.data === 0) plEnded(); }
+// 재생할 수 없는 영상(삭제·퍼가기 금지)은 잠시 뒤 다음으로 넘김
+function plErr(code){
+  if (![100, 101, 150].includes(code) || !PL.auto || !isHost() || !PL.cur || !plSame(PL.cur)) return;
+  const bad = PL.cur; setBc('⚠ 재생할 수 없는 영상이라 다음으로 넘어갑니다.');
+  setTimeout(() => { if (PL.cur === bad && plSame(bad)) plEnded(); }, 2500);
+}
+mwvid.addEventListener('ended', () => { if (MV.k === 'url' || MV.k === 'file') plEnded(); });
+mwvid.addEventListener('error', () => {
+  if (!mwvid.error || MV.k !== 'url' || !PL.cur || !plSame(PL.cur) || !PL.auto) return;
+  const bad = PL.cur; setTimeout(() => { if (PL.cur === bad && plSame(bad)) plEnded(); }, 1500);
+});
+function plRender(){
+  const b = $('plbox'); if (!b) return; b.innerHTML = '';
+  const mkb = (t, title, fn) => { const x = document.createElement('button'); x.type = 'button'; x.className = 'addhome'; x.textContent = t; x.title = title; x.onclick = fn; return x; };
+  const mkc = (t, val, fn) => { const l = document.createElement('label'); const c = document.createElement('input'); c.type = 'checkbox'; c.checked = val; c.onchange = () => fn(c.checked); l.append(c, ' ' + t); return l; };
+  const h = document.createElement('div'); h.className = 'plh';
+  const ttl = document.createElement('strong'); ttl.textContent = '📋 재생목록 (' + PL.list.length + ')';
+  h.append(ttl,
+    mkc('끝나면 다음 영상 자동 재생', PL.auto, v => { PL.auto = v; plSave(); }),
+    mkc('🔁 반복', PL.loop, v => { PL.loop = v; plSave(); }),
+    mkb('▶ 처음부터', '목록 첫 영상부터 재생', () => { if (PL.list.length) plPlay(PL.list[0]); }),
+    mkb('⏭ 다음', '다음 영상으로 건너뛰기', () => { PL.last = Date.now(); plNext(); }),
+    mkb('🗑 전체 삭제', '목록을 모두 지웁니다 (재생 중인 영상은 그대로)', () => { if (PL.list.length && confirm('재생목록을 모두 지울까요?')){ PL.list = []; PL.cur = null; PL.msg = ''; plSave(); plRender(); } }));
+  b.append(h);
+  if (PL.msg){ const m = document.createElement('div'); m.className = 'plm'; m.style.cssText = 'color:var(--amber);opacity:1;padding:2px 0 6px'; m.textContent = PL.msg; b.append(m); }
+  if (!PL.list.length){
+    const e = document.createElement('div'); e.className = 'plm';
+    e.textContent = '비어 있습니다. ① 위 칸에 링크를 넣고 「➕ 목록에 추가」 ② 「🎬 영상 파일 추가」 ③ 「🔎 영상 찾기」 결과 옆의 ➕ 로 순서대로 쌓아 두세요.';
+    b.append(e); return;
+  }
+  const box = document.createElement('div'); box.className = 'pll';
+  PL.list.forEach((it, i) => {
+    const r = document.createElement('div'); r.className = 'plr' + (it === PL.cur ? ' on' : '');
+    const n = document.createElement('span'); n.className = 'pln'; n.textContent = (i + 1) + '.';
+    const t = document.createElement('span'); t.className = 'plt'; t.textContent = (it === PL.cur ? '▶ ' : '') + (it.f ? '🎬 ' : '') + it.t; t.title = it.f ? '내 기기의 파일: ' + it.t : it.u;
+    const mv = d => () => { const j = i + d; if (j < 0 || j >= PL.list.length) return; [PL.list[i], PL.list[j]] = [PL.list[j], PL.list[i]]; plSave(); plRender(); };
+    r.append(n, t,
+      mkb('▶', '이 영상부터 재생', () => plPlay(it)),
+      mkb('▲', '위로', mv(-1)), mkb('▼', '아래로', mv(1)),
+      mkb('✕', '목록에서 빼기', () => { PL.list.splice(i, 1); if (PL.cur === it) PL.cur = null; plSave(); plRender(); }));
+    box.append(r);
+  });
+  b.append(box);
+}
+$('plfile').onchange = e => { const fs = e.target.files; if (fs && fs.length) plAddFiles(fs); e.target.value = ''; };
+$('vadd').onclick = () => plAdd($('vurl').value);
+plRender();
+// ---- 통합 볼륨: 유튜브 · 링크/파일 영상 · 방 소리를 슬라이더 하나로 (시작은 30%로 낮게, 값 기억) ----
+const MVOL = {v: 0.3, mute: false}, MVOL_KEY = 'radio_media_vol';
+try { const q = parseFloat(localStorage.getItem(MVOL_KEY)); if (q >= 0 && q <= 1) MVOL.v = q; } catch(e){}
+function mvolUI(){
+  const r = $('mwvol'); if (!r) return;
+  const pct = Math.round((MVOL.mute ? 0 : MVOL.v) * 100);
+  r.value = pct; $('mwvolv').textContent = pct + '%';
+  $('mwmute').textContent = (MVOL.mute || MVOL.v === 0) ? '🔊 소리 켜기' : '🔇 음소거';
+  try { if (window.lisUpd) window.lisUpd(); } catch(_){}
+}
+function mvolApply(){
+  try { liveAudio.volume = MVOL.v; liveAudio.muted = MVOL.mute; } catch(_){}
+  try { mwvid.volume = MVOL.v; mwvid.muted = MVOL.mute; } catch(_){}
+  try { if (MV.yt && MV.yt.setVolume){ MV.yt.setVolume(Math.round(MVOL.v * 100)); if (MVOL.mute) MV.yt.mute(); else MV.yt.unMute(); } } catch(_){}
+  mvolUI();
+}
+function mvolSet(v){
+  MVOL.v = Math.max(0, Math.min(1, +v || 0));
+  if (MVOL.v > 0) MVOL.mute = false;
+  try { localStorage.setItem(MVOL_KEY, String(MVOL.v)); } catch(e){}
+  mvolApply();
+}
+function mvolMute(){
+  if (MVOL.mute || MVOL.v === 0){ MVOL.mute = false; if (MVOL.v === 0) MVOL.v = 0.3; }
+  else MVOL.mute = true;
+  mvolApply();
+}
+$('mwvol').addEventListener('input', e => mvolSet(+e.target.value / 100));
+$('mwmute').onclick = mvolMute;
+mvolApply();
 // ---- 영상 검색 (방장이 옆에서 찾아서 클릭하면 바로 재생) ----
 function vResMsg(t){ const v = $('vres'); v.hidden = false; v.innerHTML = ''; const d = document.createElement('div'); d.className = 'vm'; d.textContent = t; v.append(d); }
 const kload = n => { try { return localStorage.getItem('radio_key_' + n) || ''; } catch(e){ return ''; } };
@@ -3242,9 +3433,14 @@ async function searchVideos(){
     const v = $('vres'); v.innerHTML = '';
     items.forEach(it => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'vr';
-      b.textContent = String(it.title).slice(0, 70); const sm = document.createElement('small'); sm.textContent = it.sub + ' · 클릭하면 바로 재생'; b.append(sm);
+      b.textContent = String(it.title).slice(0, 70); const sm = document.createElement('small'); sm.textContent = it.sub + ' · 클릭하면 바로 재생 · ➕ 는 목록에 추가'; b.append(sm);
       b.onclick = () => { v.querySelectorAll('.vr').forEach(x => x.style.background = ''); b.style.background = '#b99a5b33'; it.pick(); };
-      v.append(b);
+      if (key === 'tv'){ v.append(b); return; }   // 실시간 TV는 끝나지 않아 목록 이어재생 대상이 아님
+      const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center;border-bottom:1px solid #b99a5b33';
+      b.style.cssText = 'flex:1;min-width:0;border-bottom:0;width:auto';
+      const ad = document.createElement('button'); ad.type = 'button'; ad.className = 'addhome'; ad.textContent = '➕'; ad.title = '재생목록에 추가 (바로 재생하지 않고 순서대로 쌓기)'; ad.style.cssText = 'margin:0 6px;padding:3px 10px;font-size:13px;flex-shrink:0';
+      ad.onclick = e => { e.stopPropagation(); plAddPick(it, ad); };
+      row.append(b, ad); v.append(row);
     });
   } catch(e){
     const m = String(e && e.message);
@@ -3434,20 +3630,20 @@ function lisFs(){
   const b = $('lisfs'); b.onclick = lisFs; // 영상 위 '화면 크기' 줄에 있는 버튼 (영상을 가리지 않음)
   // 방 소리 크기 (방장이 보내는 소리 전용 · 라디오 볼륨과 별개)
   // 평소에는 영상 바로 위 줄에 항상 보이고, 전체화면일 때는 영상 아래쪽에 겹쳐서 보임
-  let lv = 1; try { const q = localStorage.getItem('radio_room_vol'); if (q !== null && q !== '') lv = Math.max(0, Math.min(1, +q || 0)); } catch(e){}
-  liveAudio.volume = lv;
+  // 볼륨은 위의 통합 볼륨(MVOL)이 관리합니다
   const sets = [];
   const updAll = () => sets.forEach(x => {
     x.mu.textContent = (liveAudio.muted || liveAudio.volume === 0) ? '🔇' : (liveAudio.volume < 0.5 ? '🔉' : '🔊');
     x.rg.value = String(liveAudio.muted ? 0 : liveAudio.volume);
   });
+  window.lisUpd = updAll;
   const mkCtl = style => {
     const box = document.createElement('div'); box.style.cssText = style;
     const mu = document.createElement('button'); mu.type = 'button'; mu.className = 'addhome'; mu.style.cssText = 'margin:0;padding:4px 8px'; mu.setAttribute('aria-label', '방 소리 음소거');
     const lb = document.createElement('span'); lb.textContent = '방 소리'; lb.style.cssText = 'font-size:13px;opacity:.9';
     const rg = document.createElement('input'); rg.type = 'range'; rg.min = '0'; rg.max = '1'; rg.step = '0.01'; rg.style.cssText = 'flex:1;min-width:80px;max-width:220px'; rg.setAttribute('aria-label', '방 소리 크기');
-    mu.onclick = () => { liveAudio.muted = !liveAudio.muted; if (!liveAudio.muted && liveAudio.volume === 0) liveAudio.volume = 0.5; updAll(); };
-    rg.oninput = () => { liveAudio.volume = +rg.value; liveAudio.muted = +rg.value === 0; try { localStorage.setItem('radio_room_vol', String(liveAudio.volume)); } catch(e){} updAll(); };
+    mu.onclick = () => mvolMute();
+    rg.oninput = () => mvolSet(+rg.value);
     box.append(mu, lb, rg); sets.push({mu, rg}); return box;
   };
   const bar = mkCtl('display:none;align-items:center;gap:8px;margin:0 0 8px;padding:4px 8px;border:1px solid #b99a5b88;border-radius:8px;background:#1a0f08');
@@ -3469,7 +3665,7 @@ function lisFs(){
     b.style.display = hasVid ? '' : 'none';
     const listening = !!(typeof lis !== 'undefined' && lis && liveAudio.srcObject);
     const full = document.fullscreenElement === scr || document.webkitFullscreenElement === scr;
-    bar.style.display = (listening && !full) ? 'flex' : 'none';
+    bar.style.display = 'none';
     ov.style.display = (listening && full) ? 'flex' : 'none';
     if (full && !wasFull) wake();
     if (!full){ clearTimeout(hideT); ov.style.opacity = '1'; ov.style.pointerEvents = 'auto'; }
