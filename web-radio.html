@@ -2242,6 +2242,31 @@ function vidOff(me){
 }
 const gvOf = (me, u) => (me.gv && me.gv[u] != null ? me.gv[u] : 1) * (me.gvAll != null ? me.gvAll : 1);
 function gvApply(me){ Object.keys(me.tk || {}).forEach(lid => { const e = me.tk[lid]; if (e && e.g){ try { e.g.gain.value = gvOf(me, e.uid); } catch(x){} } }); }
+// 말하는 손님마다 '내 목소리만 뺀' 소리를 따로 만들어 그 손님에게만 보냄 (방장 음악 + 다른 손님 목소리)
+function rmSync(me){
+  if (!me.mix || !me.mg) return;
+  const rm = me.rm || (me.rm = {});
+  const talking = lid => { const e = me.tk[lid]; return !!(e && e.node && e.g && me.pcs[lid]); };
+  Object.keys(rm).forEach(lid => {
+    if (talking(lid) && rm[lid].g === me.tk[lid].g) return;
+    const r = rm[lid]; delete rm[lid];
+    try { me.mg.disconnect(r.dest); } catch(x){}
+    Object.keys(me.tk).forEach(o => { try { if (me.tk[o].g) me.tk[o].g.disconnect(r.dest); } catch(x){} });
+    const pc = me.pcs[lid];
+    if (pc){ const sd = pc.getSenders().find(x => x.track && x.track.kind === 'audio'); const mt = me.mix.dest.stream.getAudioTracks()[0]; if (sd && mt) sd.replaceTrack(mt).catch(() => {}); }
+  });
+  Object.keys(me.tk).forEach(lid => {
+    if (!talking(lid)) return;
+    let r = rm[lid];
+    if (!r){
+      r = rm[lid] = {dest: me.ac.createMediaStreamDestination(), g: me.tk[lid].g};
+      try { me.mg.connect(r.dest); } catch(x){}
+      const sd = me.pcs[lid].getSenders().find(x => x.track && x.track.kind === 'audio');
+      if (sd) sd.replaceTrack(r.dest.stream.getAudioTracks()[0]).catch(() => {});
+    }
+    Object.keys(me.tk).forEach(o => { if (o !== lid && talking(o)){ try { me.tk[o].g.connect(r.dest); } catch(x){} } }); // 다른 손님 목소리는 들려줌
+  });
+}
 function hostTalkApply(me){
   let act = null;
   Object.keys(me.tk).forEach(lid => {
@@ -2257,6 +2282,7 @@ function hostTalkApply(me){
     if (live && e.vt && me.okV[e.uid] === true) act = lid;
     if (!live) delete me.tk[lid];
   });
+  try { rmSync(me); } catch(x){}
   if (act && me.vact !== act) vidOn(me, act, me.tk[act].vt, me.rq[me.tk[act].uid] && me.rq[me.tk[act].uid].n);
   else if (!act && me.vact) vidOff(me);
 }
@@ -2460,7 +2486,7 @@ function talkRelease(k){
   try { talkAttach(); } catch(e){}
 }
 function talkStop(msg){ ['a', 'v'].forEach(k => { if (talk[k]) talkKindStop(k, msg); }); talk.blk = {a: '', v: ''}; talk.msg = msg || ''; talkUI(); }
-$('talkbtn').onclick = () => { if (talk.a) talkKindStop('a', ''); else talkStart('a'); };
+$('talkbtn').onclick = () => { karaCtx(); if (talk.a) talkKindStop('a', ''); else talkStart('a'); };
 // ===== 🎤 노래방 (음악 방): 손님이 곡·유튜브 반주를 정해 신청 → 방장이 시작하면 영상 재생 + 마이크 허용 =====
 const KARA = {echo: true, file: null, vol: 0.8};
 const KURL_OK = /^https?:\/\/[^\s]+\.(mp4|webm|m3u8|mp3|m4a|ogg|mov)(\?[^\s]*)?$/i; // 노래 신청 직접 주소는 영상·음악 파일만 허용
@@ -2489,17 +2515,24 @@ function karaAcc(ctx, dest){ // 내 파일 반주를 마이크 소리와 섞어�
   a.play().catch(() => {}); // 막히면 ▶ 버튼을 직접 누르면 됩니다
   return a;
 }
+let KCTX = null; // 휴대폰은 화면을 누른 순간에만 소리 장치를 켤 수 있어서, 누를 때 미리 만들어 두고 계속 씀
+function karaCtx(){
+  try { if (!KCTX || KCTX.state === 'closed') KCTX = new (window.AudioContext || window.webkitAudioContext)(); if (KCTX.state === 'suspended') KCTX.resume().catch(() => {}); } catch(e){}
+  return KCTX;
+}
+['pointerdown', 'touchend', 'keydown'].forEach(ev => addEventListener(ev, () => { if (KCTX && KCTX.state === 'suspended') KCTX.resume().catch(() => {}); }, true));
 function karaWrap(st){
   if (!KARA.echo && !KARA.file) return st;
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)(), src = ctx.createMediaStreamSource(st), dest = ctx.createMediaStreamDestination();
+    const ctx = karaCtx(), src = ctx.createMediaStreamSource(st), dest = ctx.createMediaStreamDestination(), nodes = [src, dest];
     if (KARA.echo){
       const dry = ctx.createGain(), wet = ctx.createGain(), fb = ctx.createGain(), dl = ctx.createDelay(1), lp = ctx.createBiquadFilter();
       wet.gain.value = 0.35; fb.gain.value = 0.4; dl.delayTime.value = 0.14; lp.type = 'lowpass'; lp.frequency.value = 3500;
+      nodes.push(dry, wet, fb, dl, lp);
       src.connect(dry); dry.connect(dest); src.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(wet); wet.connect(dest);
     } else src.connect(dest);
     ctx.resume().catch(() => {});
-    const out = dest.stream; out._orig = st; out._ctx = ctx;
+    const out = dest.stream; out._orig = st; out._ctx = {close(){ nodes.forEach(n => { try { n.disconnect(); } catch(e){} }); }}; // 공용 장치는 닫지 않고 연결만 정리
     const acc = karaAcc(ctx, dest); if (acc) out._acc = acc;
     return out;
   } catch(e){ return st; }
@@ -2527,7 +2560,7 @@ const kChos = t => Array.from(t).map(c => { const n = c.charCodeAt(0) - 0xAC00; 
 function klibSet(paths){
   KLIB.items = paths.map((p, i) => { const parts = p.split('/'), file = parts.pop(), t = file.replace(/\.[^.]+$/, ''), g = parts.length > 1 ? parts[1] : '';
     return {p, t, g, no: 10001 + i, k: (t + ' ' + g).toLowerCase(), c: kChos(t.toLowerCase()).replace(/\s/g, '')}; });
-  KLIB.n = KLIB.items.length; KLIB.cat = '';
+  KLIB.n = KLIB.items.length; KLIB.cat = ''; KLIB.shuf = null;
 }
 async function klibPick(files){
   const st = $('klibdir'); if (st) st.value = '';
@@ -2571,9 +2604,12 @@ function klibShow(){
   }
   if (!KLIB.n){ note('방장이 아직 곡 목록을 등록하지 않았습니다. (잠시 후 「새로고침」을 눌러 보세요)'); return; }
   const num = /^\d{2,5}$/.test(q), cho = /^[ㄱ-ㅎ\s]+$/.test(q), terms = q.split(/\s+/).filter(Boolean), cq = q.replace(/\s/g, '');
-  let hit = KLIB.items.filter(it => (!KLIB.cat || it.g === KLIB.cat) && (!q || (num ? String(it.no).startsWith(q) : cho ? it.c.includes(cq) : terms.every(w => it.k.includes(w)))));
+  // 검색어가 없을 때(처음 열 때)는 방에 등록된 곡을 무작위 순서로 맨 위부터 보여 줌 (다시 섞기 누르기 전까지 순서 유지)
+  if (!q && (!KLIB.shuf || KLIB.shuf.length !== KLIB.items.length)){ KLIB.shuf = KLIB.items.slice(); for (let i = KLIB.shuf.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [KLIB.shuf[i], KLIB.shuf[j]] = [KLIB.shuf[j], KLIB.shuf[i]]; } }
+  let hit = (q ? KLIB.items : KLIB.shuf).filter(it => (!KLIB.cat || it.g === KLIB.cat) && (!q || (num ? String(it.no).startsWith(q) : cho ? it.c.includes(cq) : terms.every(w => it.k.includes(w)))));
   const h = document.createElement('div'); h.className = 'khead';
-  h.textContent = q || KLIB.cat ? '검색 결과 ' + hit.length + '곡' + (hit.length > 40 ? ' (앞의 40곡만 표시 — 더 자세히 검색하세요)' : '') : '🎶 전체 ' + KLIB.n + '곡 — 제목·곡번호·초성으로 검색하세요';
+  h.textContent = q || KLIB.cat ? '검색 결과 ' + hit.length + '곡' + (hit.length > 40 ? ' (앞의 40곡만 표시 — 더 자세히 검색하세요)' : '') : '🎶 전체 ' + KLIB.n + '곡 중 무작위 추천 — 제목·곡번호·초성으로 검색하세요';
+  if (!q){ const rb = document.createElement('button'); rb.type = 'button'; rb.className = 'addhome'; rb.textContent = '🔀 다시 섞기'; rb.style.cssText = 'margin:0 0 0 8px;padding:2px 8px;font-size:12px'; rb.onclick = () => { KLIB.shuf = null; klibShow(); }; h.append(rb); }
   box.append(h);
   hit.slice(0, 40).forEach(it => {
     const r = document.createElement('div'); r.className = 'krow' + (kf.lib === it.p ? ' sel' : ''); r.setAttribute('role', 'button'); r.tabIndex = 0;
@@ -2607,6 +2643,7 @@ $('kprevbtn').onclick = () => {
   else { talk.msg = '반주 주소를 넣거나 내 파일을 고르세요.'; talkUI(); }
 };
 $('kgo').onclick = async () => {
+  karaCtx();
   const t = $('kt').value.trim().slice(0, 30), raw = $('ku').value.trim(), id = ytId(raw), ts = nowS();
   if (!t){ talk.msg = '곡 제목을 적어 주세요.'; talkUI(); return; }
   let rec;
@@ -5592,6 +5629,52 @@ setInterval(() => { if (!document.hidden) load(); }, 60000);
   addEventListener('keydown', e => { if (e.key === 'Escape' && cur && $('roomview').hidden) foldSet(cur, true); });
   if (INVITE) foldSet('musicroom', false);
   $('rptoggle').onclick = () => { const o = $('rpopts'); o.hidden = !o.hidden; $('rptoggle').textContent = o.hidden ? '⚙ 확인·설정 ▾' : '⚙ 확인·설정 ▴'; $('rptoggle').setAttribute('aria-expanded', String(!o.hidden)); };
+})();
+</script>
+<script>
+// ===== 📞 전화·알림 등으로 라디오가 끊기면, 끝난 뒤 자동으로 이어서 재생 =====
+// 내가 누른 일시정지(앱 코드가 audio.pause() 호출)와, 전화 등 시스템이 멈춘 것을 구분한다.
+(function(){
+  var byApp=false, sys=false, tries=0, timer=null, t0=0;
+  var rawPause=audio.pause.bind(audio);
+  audio.pause=function(){ if(!audio.paused) byApp=true; return rawPause(); };
+  function stop(){ sys=false; tries=0; clearInterval(timer); timer=null; }
+  function resume(){
+    if(!sys||!audio.paused) return;
+    tries++;
+    try{
+      if(hls){ hls.startLoad(); }
+      else if(tries===1||tries%5===0){ var u=audio.currentSrc||audio.src; if(u) audio.src=u; } // 생방송은 처음부터 다시 연결
+    }catch(e){}
+    var p=audio.play(); if(p&&p.catch) p.catch(function(){});
+  }
+  function tick(){
+    if(!sys||Date.now()-t0>15*60*1000){ stop(); return; } // 15분 넘게 안 되면 포기
+    resume();
+  }
+  audio.addEventListener('play',function(){ byApp=false; });
+  audio.addEventListener('playing',stop);
+  audio.addEventListener('pause',function(){
+    if(byApp){ byApp=false; stop(); return; }   // 내가 멈춘 것 → 그대로 둠
+    if(audio.ended||(!audio.src&&!hls)) return;
+    sys=true; t0=Date.now(); tries=0;            // 전화 등으로 끊김 → 이어 듣기 대기
+    if(!timer) timer=setInterval(tick,3000);
+  });
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden&&sys) resume(); });
+  addEventListener('focus',function(){ if(sys) resume(); });
+  // 이어폰·알림창의 재생/일시정지 버튼 → 내가 누른 것으로 처리
+  if(navigator.mediaSession){
+    try{
+      navigator.mediaSession.setActionHandler('pause',function(){
+        stop();
+        if(!audio.paused){ audio.pause(); try{lastOff(1);}catch(e){} }
+        else document.querySelectorAll('video,audio').forEach(function(m){ if(!m.paused) m.pause(); });
+      });
+      navigator.mediaSession.setActionHandler('play',function(){
+        if(sys||(audio.paused&&audio.src&&!(typeof mtv!=='undefined'&&mtv.on))){ stop(); audio.play().catch(function(){}); }
+      });
+    }catch(e){}
+  }
 })();
 </script>
 <!-- ===== 실시간 뉴스 자막(티커) ===== -->
