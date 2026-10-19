@@ -2665,7 +2665,7 @@ $('kprevbtn').onclick = () => {
   if (kf.cur){ media(URL.createObjectURL(kf.cur)); return; }
   if (kf.lib){ const lf = KLIB.map[kf.lib]; if (lf){ media(URL.createObjectURL(lf)); } else { talk.msg = '목록 곡은 방장이 노래를 틀 때 방장 화면에서 나옵니다. 미리보기는 방장만 가능합니다.'; talkUI(); } return; }
   const raw = $('ku').value.trim(), id = ytId(raw);
-  if (id){ const f = document.createElement('iframe'); f.src = 'https://www.youtube.com/embed/' + id; f.allow = 'encrypted-media'; f.allowFullscreen = true; f.style.cssText = 'width:100%;height:190px;border:0;border-radius:6px'; b.append(f); }
+  if (id){ const f = document.createElement('iframe'); f.src = 'https://www.youtube.com/embed/' + id; f.allow = 'encrypted-media'; f.referrerPolicy = 'strict-origin-when-cross-origin'; f.allowFullscreen = true; f.style.cssText = 'width:100%;height:190px;border:0;border-radius:6px'; b.append(f); }
   else if (/^https?:\/\//i.test(raw)) media(raw);
   else { talk.msg = '반주 주소를 넣거나 내 파일을 고르세요.'; talkUI(); }
 };
@@ -3574,6 +3574,19 @@ function tvStop(){
   $('tvsub').hidden = true; $('tvsub').innerHTML = ''; v.querySelectorAll('track').forEach(t => t.remove());
 }
 let tvLast = null;
+// 유튜브 방송이 오류(100·101·150·153)로 안 나올 때 알려 주고 직접 열기 링크를 보여 줌
+window.addEventListener('message', e => {
+  if (!/^https:\/\/www\.youtube(-nocookie)?\.com$/.test(e.origin)) return;
+  const fr = $('tvytf'); if (!fr || e.source !== fr.contentWindow || !tvLast || !ytId(tvLast.u)) return;
+  let d = e.data; try { if (typeof d === 'string') d = JSON.parse(d); } catch(x){ return; }
+  if (!d || d.event !== 'onError') return;
+  const code = +d.info; if (![100, 101, 150, 153].includes(code)) return;
+  if (code !== 153){ tvSet(tvLast.u, 0); if (tvNext(tvLast)) return; }   // 153은 이 페이지 열린 방식 문제일 수 있어 '안 되는 방송'으로 기록하지 않음
+  const m = $('tvmsg'); m.textContent = code === 153
+    ? '유튜브가 이 페이지에서 영상 재생을 막았습니다 (오류 153). ' + (location.protocol === 'file:' ? '파일(file://)로 열면 모든 유튜브 영상이 이렇게 나옵니다. https:// 주소로 올려서 여세요. ' : '')
+    : '이 유튜브 방송은 퍼가기가 막혀 있거나 지금 방송이 없습니다 (오류 ' + code + '). ';
+  const a = document.createElement('a'); a.href = 'https://www.youtube.com/watch?v=' + ytId(tvLast.u); a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = '↗ 유튜브에서 직접 보기'; a.style.color = 'var(--amber)'; m.append(a);
+});
 function tvWatch(x, auto){
   if (!auto) tvAutoN = 0;
   try { if (mtv.on) mtvQuiet(); } catch(e){}
@@ -3587,7 +3600,9 @@ function tvWatch(x, auto){
   const yid = ytId(x.u);
   if (yid){
     const f = $('tvyt'); f.style.display = 'block';
-    f.innerHTML = '<iframe src="https://www.youtube.com/embed/' + yid + '?autoplay=1&rel=0&cc_load_policy=1&cc_lang_pref=ko&hl=ko" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen style="width:100%;height:100%;border:0;border-radius:8px"></iframe>';
+    const org = /^https?:$/.test(location.protocol) ? '&origin=' + encodeURIComponent(location.origin) : '';
+    f.innerHTML = '<iframe id="tvytf" src="https://www.youtube.com/embed/' + yid + '?autoplay=1&rel=0&cc_load_policy=1&cc_lang_pref=ko&hl=ko&enablejsapi=1' + org + '" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen style="width:100%;height:100%;border:0;border-radius:8px"></iframe>';
+    const fr = f.firstChild; fr.onload = () => { try { fr.contentWindow.postMessage(JSON.stringify({event: 'listening', id: 1, channel: 'widget'}), '*'); } catch(e){} };
     $('tvmsg').textContent = '';
   } else {
     const v = $('tvvid'); v.hidden = false; v.muted = false; if (v.volume === 0) v.volume = 0.8;
