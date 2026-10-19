@@ -2635,23 +2635,19 @@ function klibShow(){
     const go = document.createElement('span'); go.className = 'go'; go.textContent = '선택 ▶';
     r.append(no, tt, go);
     const pick = () => { kfClear(); kf.lib = it.p; $('kt').value = it.t.slice(0, 30); $('ku').value = ''; $('kfname').textContent = '🎤 ' + it.no + ' ' + it.t.slice(0, 22); $('kfclr').hidden = false; $('kprev').innerHTML = ''; talk.msg = '「' + it.t.slice(0, 20) + '」 선택! 아래 「🎤 신청하기」를 누르세요.'; talkUI(); klibShow(); };
-    const go2 = () => { pick(); if (isHost()) klibHostPlay(it); }; // 방장은 곡을 누르면 바로 신청 + 재생
+    const go2 = () => { if (isHost()) klibPlayNow(it); else pick(); }; // 방장은 곡을 누르면 바로 재생, 손님은 선택 후 신청
     r.onclick = go2; r.onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go2(); } };
     box.append(r);
   });
 }
-async function klibHostPlay(it){
-  if (!isHost() || !liveRoom || !DB) return;
-  if (kqStarting) return;
-  setBc('🎵 「' + it.t.slice(0, 20) + '」 신청하고 재생을 시작하는 중…');
-  try {
-    await $('kgo').onclick();
-    await kqTick();
-    if (kq.list.some(x => x.st === 'now')){ setBc('진행 중인 노래가 있어 「' + it.t.slice(0, 20) + '」은(는) 신청 순서에 담아 두었습니다. 끝나면 이어서 나옵니다.'); return; }
-    const e = kq.list.filter(x => x.w === myId && x.u === 'lib' && x.x === it.p && x.st !== 'now').pop();
-    if (e){ kqStarting = true; try { await kqStart(e); } finally { kqStarting = false; } }
-    else setBc('신청은 됐지만 재생을 시작하지 못했습니다. 「노래 신청 순서」 상자에서 ▶ 시작을 눌러 보세요.');
-  } catch(err){ setBc('재생을 시작하지 못했습니다: ' + String(err && err.message || err).slice(0, 60)); }
+// 방장이 목록에서 곡을 누르면: 신청·순서 없이 바로 그 파일을 틀어서 방 모두에게 들려 줌
+function klibPlayNow(it){
+  const f = KLIB.map[it.p];
+  if (!f){ talk.msg = '⚠ 이 곡 파일을 이 기기에서 찾지 못했습니다. 「📚 노래 폴더 고르기」를 다시 눌러 폴더를 고르세요.'; talkUI(); return; }
+  try { $('kform').hidden = true; kfClear(); } catch(_){}
+  talk.msg = '🎵 「' + it.t.slice(0, 24) + '」 재생 중 — 방 모두에게 들립니다. 소리가 안 나면 미디어 창의 볼륨·음소거를 확인하세요.'; talkUI();
+  setBc('🎵 「' + it.t.slice(0, 24) + '」 재생을 시작합니다…');
+  hostFile(f);
 }
 $('kq2').addEventListener('input', klibShow);
 $('klibreload').onclick = () => klibLoad(true);
@@ -2727,11 +2723,11 @@ async function kqStart(e){
   if (isYt) hostLink('https://www.youtube.com/watch?v=' + e.u);
   else if (e.u === 'url') hostLink(String(e.x || ''));
   else if (e.u === 'lib'){
-    if (e.w === myId){ try { hostVideoOff(); $('bcAudio').pause(); } catch(_){} KARA.file = KLIB.map[e.x]; } // 방장이 부를 때: 내 기기에서 반주 재생 + 마이크 섞기
+    if (e.w === myId){ try { hostVideoOff(); $('bcAudio').pause(); } catch(_){} const lf = KLIB.map[e.x]; kq.fb = true; hostFile(lf, true); talk.msg = '🎵 「' + String(e.t).slice(0, 24) + '」 재생 중 — 방 모두에게 들립니다. 소리가 안 나면 미디어 창의 볼륨·음소거를 확인하세요.'; talkUI(); } // 방장 본인 곡: 파일을 바로 틀어 방 모두에게 들려 줌
     else { kq.libNow = e.k; try { $('bcAudio').pause(); } catch(_){} hostFile(KLIB.map[e.x]); } // 손님이 부를 때: 방장이 영상을 방에 틀어 줌
   }
   else { try { hostVideoOff(); $('bcAudio').pause(); } catch(_){} if (e.w === myId) KARA.file = kfiles[e.ts] || null; } // 파일 반주: 부르는 사람 기기에서 재생
-  if (e.w === myId) kqHostMic(); kqTick();
+  if (e.w === myId && e.u !== 'lib') kqHostMic(); kqTick();
   fetch(`${DB}/chat/live_${liveRoom.id}.json`, {method: 'POST', body: JSON.stringify({n: '🎤 노래방', t: '🎙 ' + String(e.n || '손님').slice(0, 12) + '님 차례 — ' + String(e.t).slice(0, 30), ts: Date.now()})}).then(() => { try { if (!(es && esOk)) fetchChat(true); } catch(_){} }).catch(() => {});
 }
 async function kqDel(e){
