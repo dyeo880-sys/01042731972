@@ -2551,7 +2551,7 @@ function karaWrap(st){
     return out;
   } catch(e){ return st; }
 }
-const kq = {list: [], auto: false};
+const kq = {list: [], auto: true};
 function kqAuto(b){
   if (!isHost()) return;
   const l = document.createElement('label'); l.style.cssText = 'display:block;margin-top:6px;font-size:12px;opacity:.9'; const c = document.createElement('input'); c.type = 'checkbox'; c.checked = !!kq.auto; c.onchange = () => { kq.auto = c.checked; };
@@ -2635,9 +2635,23 @@ function klibShow(){
     const go = document.createElement('span'); go.className = 'go'; go.textContent = '선택 ▶';
     r.append(no, tt, go);
     const pick = () => { kfClear(); kf.lib = it.p; $('kt').value = it.t.slice(0, 30); $('ku').value = ''; $('kfname').textContent = '🎤 ' + it.no + ' ' + it.t.slice(0, 22); $('kfclr').hidden = false; $('kprev').innerHTML = ''; talk.msg = '「' + it.t.slice(0, 20) + '」 선택! 아래 「🎤 신청하기」를 누르세요.'; talkUI(); klibShow(); };
-    r.onclick = pick; r.onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pick(); } };
+    const go2 = () => { pick(); if (isHost()) klibHostPlay(it); }; // 방장은 곡을 누르면 바로 신청 + 재생
+    r.onclick = go2; r.onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go2(); } };
     box.append(r);
   });
+}
+async function klibHostPlay(it){
+  if (!isHost() || !liveRoom || !DB) return;
+  if (kqStarting) return;
+  setBc('🎵 「' + it.t.slice(0, 20) + '」 신청하고 재생을 시작하는 중…');
+  try {
+    await $('kgo').onclick();
+    await kqTick();
+    if (kq.list.some(x => x.st === 'now')){ setBc('진행 중인 노래가 있어 「' + it.t.slice(0, 20) + '」은(는) 신청 순서에 담아 두었습니다. 끝나면 이어서 나옵니다.'); return; }
+    const e = kq.list.filter(x => x.w === myId && x.u === 'lib' && x.x === it.p && x.st !== 'now').pop();
+    if (e){ kqStarting = true; try { await kqStart(e); } finally { kqStarting = false; } }
+    else setBc('신청은 됐지만 재생을 시작하지 못했습니다. 「노래 신청 순서」 상자에서 ▶ 시작을 눌러 보세요.');
+  } catch(err){ setBc('재생을 시작하지 못했습니다: ' + String(err && err.message || err).slice(0, 60)); }
 }
 $('kq2').addEventListener('input', klibShow);
 $('klibreload').onclick = () => klibLoad(true);
@@ -2696,7 +2710,7 @@ function kqRender(){
 }
 async function kqHostMic(){
   try { swapSource(karaWrap(await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true}}))); mwUpdate('🎤 내 노래 방송 중'); }
-  catch(err){ setBc('마이크를 사용할 수 없습니다. 권한을 확인하세요.'); }
+  catch(err){ setBc('마이크를 사용할 수 없어 노래만 방에 틀어 줍니다. (마이크는 권한을 확인하세요)'); if (KARA.file){ const f = KARA.file; KARA.file = null; kq.fb = true; try { hostFile(f, true); } catch(_){} } }
 }
 function kqHostMicOff(){
   KARA.file = null;
@@ -2709,7 +2723,7 @@ async function kqStart(e){
   if (e.u === 'url' && !KURL_OK.test(String(e.x || ''))){ setBc('올바르지 않은 반주 주소라 건너뜁니다.'); kqDel(e); return; }
   if (e.u === 'lib' && !KLIB.map[e.x]){ setBc('「' + String(e.t).slice(0, 20) + '」 파일을 찾지 못했습니다. 「📚 노래 폴더 고르기」로 폴더를 다시 고르세요.'); return; }
   try { await lj('kq_' + liveRoom.id + '/' + e.k, 'PATCH', {st: 'now', sts: Date.now()}); } catch(_){}
-  KARA.file = null;
+  KARA.file = null; kq.fb = false;
   if (isYt) hostLink('https://www.youtube.com/watch?v=' + e.u);
   else if (e.u === 'url') hostLink(String(e.x || ''));
   else if (e.u === 'lib'){
@@ -2733,7 +2747,7 @@ async function kqDel(e){
 }
 let kqBusy = false, kqStarting = false;
 // 자동 진행: 영상이 끝나면 다음 곡으로
-mwvid.addEventListener('ended', () => { if (isHost() && kq.auto){ const nw = kq.list.find(x => x.st === 'now' && (x.u === 'url' || (x.u === 'lib' && x.w !== myId))); if (nw) kqDel(nw); } });
+mwvid.addEventListener('ended', () => { if (isHost() && kq.auto){ const nw = kq.list.find(x => x.st === 'now' && (x.u === 'url' || (x.u === 'lib' && (x.w !== myId || kq.fb)))); if (nw){ kq.fb = false; kqDel(nw); } } });
 function kqVidState(ev){
   if (!(ev && ev.data === 0 && isHost() && kq.auto)) return;
   const nw = kq.list.find(x => x.st === 'now'); if (nw) kqDel(nw);
