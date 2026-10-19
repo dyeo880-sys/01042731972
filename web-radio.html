@@ -1017,8 +1017,9 @@ audio.addEventListener('pause', () => {
   if (rUserPause || audio.ended || !audio.src || curView < 0 || rIntr) return;
   setTimeout(() => { // 방송국을 바꾸는 중의 일시 정지는 무시
     if (!audio.paused || rUserPause || rIntr || curView < 0) return;
-    rIntr = true; rIntrSince = Date.now(); clearInterval(rIntrT); rIntrT = setInterval(rRetry, 3000);
-    setStatus('통화·알림으로 멈췄습니다. 끝나면 자동으로 이어집니다');
+    rIntr = true; rIntrSince = Date.now(); clearInterval(rIntrT);
+    setStatus('통화·알림으로 멈췄습니다. 통화가 끝나면 ▶ 를 눌러 주세요'); // 통화 중에 저절로 다시 켜지지 않도록 자동 재생 안 함
+    rArm();
   }, 400);
 });
 async function rRetry(force){
@@ -1034,13 +1035,16 @@ async function rRetry(force){
     if (e && e.name === 'NotAllowedError'){ setStatus('▶ 화면을 한 번 누르면 이어서 나옵니다'); rArm(); }
   } finally { rTrying = false; }
 }
+let rArmed = false;
 function rArm(){
-  const go = () => { document.removeEventListener('pointerdown', go, true); document.removeEventListener('keydown', go, true); if (rIntr && !rUserPause){ if (curView >= 0) playView(curView); else audio.play().catch(() => {}); } };
+  if (rArmed) return; rArmed = true;
+  const go = () => { rArmed = false; document.removeEventListener('pointerdown', go, true); document.removeEventListener('keydown', go, true); if (rIntr && !rUserPause){ if (curView >= 0) playView(curView); else audio.play().catch(() => {}); } };
   document.addEventListener('pointerdown', go, true); document.addEventListener('keydown', go, true);
 }
-document.addEventListener('visibilitychange', () => { if (!document.hidden && rIntr) rRetry(true); });
-addEventListener('focus', () => { if (rIntr) rRetry(true); });
-addEventListener('pageshow', () => { if (rIntr) rRetry(true); });
+// 화면에 돌아와도 자동으로 틀지 않음 (통화 중일 수 있음) — 한 번 누르면 이어서 재생
+document.addEventListener('visibilitychange', () => { if (!document.hidden && rIntr) rArm(); });
+addEventListener('focus', () => { if (rIntr) rArm(); });
+addEventListener('pageshow', () => { if (rIntr) rArm(); });
 try {
   if (navigator.mediaSession){ // 잠금화면·이어폰·차량 버튼
     const ms = navigator.mediaSession;
