@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Radiola 웹 라디오</title>
+<meta name="description" content="Radiola 웹 라디오 — 전 세계 라디오 방송과 TV·위성 방송을 한 곳에서 듣고 보는 무료 웹 라디오. 채팅, 24시간 뮤직비디오, 실시간 방송 확인.">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Radiola 웹 라디오">
+<meta property="og:description" content="전 세계 라디오·TV 방송을 한 곳에서. 안 나오는 방송은 자동으로 숨겨집니다.">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.8/hls.min.js"></script>
 <style>
 :root{--wood:#3b2417;--wood2:#5a3822;--brass:#b99a5b;--amber:#ffcf7a;--glass:#2a1a08;--ink:#f0e2c4;--panel:#241610}
@@ -214,6 +219,10 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 #roomview.mini .mwsize.mwvolrow{display:flex;margin-bottom:6px}
 .mwvolrow label{color:var(--amber);font-weight:700}
 .rw{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}.rw[hidden]{display:none}
+.tvnotice{font-size:12.5px;line-height:1.6;color:var(--ink);background:#1a0f08;border:1px solid #b99a5b66;border-left:3px solid var(--amber);border-radius:6px;padding:8px 10px;margin:0 0 8px}
+.tvnotice b{color:var(--amber)}
+.legal{font-size:12px;line-height:1.7;opacity:.8;margin-top:10px}
+.legal a{color:var(--amber)}
 .foot{text-align:center;margin-top:18px;padding-top:14px;border-top:1px solid #b99a5b55}
 .foot a{color:var(--amber);font-size:15px;text-decoration:none;border-bottom:1px solid var(--brass)}
 .foot a:hover{filter:brightness(1.2)}
@@ -496,7 +505,8 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <section class="chat" id="tvsec" aria-label="TV 보기">
     <div class="chathead"><strong>📺 TV·위성 방송</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvadm">➕ 방송 추가</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvmv">🎵 24시간 뮤직비디오</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvresume" hidden>▶ 다시 켜기</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvopen">나라별 채널 펼치기</button></span></div>
     <div class="gate" id="tvadmin" hidden style="text-align:left;margin-bottom:8px">
-      <div style="color:var(--amber);font-weight:700;font-size:14px;margin-bottom:6px">⭐ 기타 방송 추가 — 누구나 가능 · 실시간 영상이 나오는 주소만 등록되고, 안 나오는 방송은 자동으로 숨겨집니다</div>
+      <div style="color:var(--amber);font-weight:700;font-size:14px;margin-bottom:6px">⭐ 기타 방송 추가 — 관리자 전용 · 실시간 영상이 나오는 주소만 등록되고, 안 나오는 방송은 자동으로 숨겨집니다</div>
+      <div class="tvnotice" role="note"><b>방송 추가는 관리자만 할 수 있습니다.</b> 불법 중계, 유료 방송, 저작권자가 허락하지 않은 방송은 올리지 않습니다. 방송사나 권리자가 공식으로 공개한 주소만 등록하며, 문제가 있는 방송은 목록의 '🚩 신고' 버튼으로 알려 주시면 확인 후 삭제합니다.</div>
       <div class="chatform" style="flex-wrap:wrap"><input id="tvan" maxlength="60" placeholder="방송 이름" aria-label="방송 이름"><input id="tvau" placeholder="주소 (m3u8 · mp4 · 유튜브 링크)" aria-label="방송 주소"></div>
       <div class="chatform"><button id="tvaadd" class="addhome" style="margin:0" type="button">＋ 추가</button><button id="tvaout" class="addhome" style="margin:0" type="button">🔒 관리자 로그인 (삭제용)</button></div>
       <div class="chatnote" id="tvamsg"></div>
@@ -733,6 +743,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <footer class="foot"><a href="https://blog.naver.com/fb1234" target="_blank" rel="noopener noreferrer">이진주방산업</a>
     <div><button id="addhome" class="addhome">바탕화면에 바로가기 만들기</button></div>
     <div class="addmsg" id="addmsg" role="status"></div>
+    <p class="legal" id="legal">이 사이트는 방송사와 권리자가 공개한 스트림 주소를 연결할 뿐 영상을 저장하거나 올리지 않습니다. 저작권 침해, 불법 중계, 유료 방송 등 문제가 되는 방송을 발견하면 '기타 방송' 목록의 <b>🚩 신고</b> 버튼을 눌러 주세요. 확인 후 바로 삭제합니다. <span id="legalmail">삭제 요청은 위 '이진주방산업' 블로그로 연락해 주세요.</span></p>
   </footer>
   <p class="note">※ 실제 AM/FM 전파가 아니라, 각 방송국이 인터넷으로 송출하는 스트림을 radio-browser.info 공개 목록에서 불러옵니다. 일부 방송국은 지역 제한이나 주소 변경으로 재생되지 않을 수 있습니다. 이 파일을 내 컴퓨터에서 직접 열어 사용하세요.</p>
 </main>
@@ -993,10 +1004,52 @@ audio.addEventListener('pause', () => { $('play').textContent = '▶'; if (audio
 audio.addEventListener('waiting', () => setStatus('버퍼링…'));
 audio.addEventListener('error', () => { if (!hls) setStatus('재생할 수 없는 방송국입니다 (주소 만료 또는 지역 제한)'); });
 
+let rUserPause = false; // 사용자가 직접 멈췄는지 (전화·문자 같은 시스템 끊김과 구분)
 $('play').onclick = () => {
   if (curView < 0){ if (view.length) playView(0); return; }
-  audio.paused ? audio.play().catch(()=>{}) : (audio.pause(), lastOff(1));
+  if (audio.paused){ rUserPause = false; audio.play().catch(()=>{}); } else { rUserPause = true; audio.pause(); lastOff(1); }
 };
+// ===== 전화·문자·알림으로 소리가 끊기면 끝난 뒤 자동으로 이어 틀기 =====
+// 사용자가 ⏸ 를 누르거나 이어폰 버튼으로 멈춘 경우는 그대로 두고, 시스템이 끊은 경우만 되살립니다.
+let rIntr = false, rIntrT = 0, rIntrSince = 0, rTrying = false;
+audio.addEventListener('playing', () => { rUserPause = false; rIntr = false; clearInterval(rIntrT); });
+audio.addEventListener('pause', () => {
+  if (rUserPause || audio.ended || !audio.src || curView < 0 || rIntr) return;
+  setTimeout(() => { // 방송국을 바꾸는 중의 일시 정지는 무시
+    if (!audio.paused || rUserPause || rIntr || curView < 0) return;
+    rIntr = true; rIntrSince = Date.now(); clearInterval(rIntrT); rIntrT = setInterval(rRetry, 3000);
+    setStatus('통화·알림으로 멈췄습니다. 끝나면 자동으로 이어집니다');
+  }, 400);
+});
+async function rRetry(force){
+  if (!rIntr || rUserPause || rTrying) return;
+  if (Date.now() - rIntrSince > 20 * 60 * 1000){ rIntr = false; clearInterval(rIntrT); return; } // 20분 넘으면 포기
+  if (document.hidden && force !== true) return;
+  rTrying = true;
+  try {
+    await audio.play(); // 잠깐 끊긴 경우: 그대로 이어서
+    await new Promise(r => setTimeout(r, 2500));
+    if (audio.paused || audio.readyState < 3 || audio.error){ if (curView >= 0) playView(curView); } // 오래 끊겨 방송이 낡은 경우: 다시 연결
+  } catch(e){
+    if (e && e.name === 'NotAllowedError'){ setStatus('▶ 화면을 한 번 누르면 이어서 나옵니다'); rArm(); }
+  } finally { rTrying = false; }
+}
+function rArm(){
+  const go = () => { document.removeEventListener('pointerdown', go, true); document.removeEventListener('keydown', go, true); if (rIntr && !rUserPause){ if (curView >= 0) playView(curView); else audio.play().catch(() => {}); } };
+  document.addEventListener('pointerdown', go, true); document.addEventListener('keydown', go, true);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden && rIntr) rRetry(true); });
+addEventListener('focus', () => { if (rIntr) rRetry(true); });
+addEventListener('pageshow', () => { if (rIntr) rRetry(true); });
+try {
+  if (navigator.mediaSession){ // 잠금화면·이어폰·차량 버튼
+    const ms = navigator.mediaSession;
+    ms.setActionHandler('play', () => { rUserPause = false; rIntr = false; if (audio.src) audio.play().catch(() => {}); else if (view.length) playView(Math.max(curView, 0)); });
+    ms.setActionHandler('pause', () => { rUserPause = true; audio.pause(); lastOff(1); });
+    ms.setActionHandler('nexttrack', () => { if (view.length) playView((curView + 1) % view.length); });
+    ms.setActionHandler('previoustrack', () => { if (view.length) playView((curView - 1 + view.length) % view.length); });
+  }
+} catch(e){}
 $('next').onclick = () => { if (view.length) playView((curView + 1) % view.length); };
 $('prev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length); };
 $('vol').oninput = e => audio.volume = +e.target.value;
@@ -3429,11 +3482,26 @@ function tvBrowse(v, pick){
         list.forEach(x => {
           const b = document.createElement('button'); b.type = 'button'; b.className = 'vr'; b.textContent = x.name.slice(0, 70); b.dataset.u = x.u; b._x = x;
           b.onclick = () => { v.querySelectorAll('.vr').forEach(y => y.style.background = ''); b.style.background = '#b99a5b33'; pick(x); };
-          if (o.value === 'extra' && tvIsAdm()){
+          if (o.value === 'extra'){
             const row = document.createElement('div'); row.className = 'vrow'; row.style.cssText = 'display:flex;align-items:center;border-bottom:1px solid #b99a5b33';
-            b.style.cssText = 'flex:1;border-bottom:0'; const del = document.createElement('button'); del.type = 'button'; del.className = 'addhome'; del.style.cssText = 'margin:0 6px;padding:3px 9px;font-size:12px'; del.textContent = '✕ 삭제';
-            del.onclick = async e => { e.stopPropagation(); if (confirm('"' + x.name + '" 을(를) 목록에서 지울까요?')){ await tvExtraDel(x); refreshTvLists(); } };
-            row.append(b, del); box.append(row);
+            b.style.cssText = 'flex:1;border-bottom:0';
+            const rp = document.createElement('button'); rp.type = 'button'; rp.className = 'addhome'; rp.style.cssText = 'margin:0 6px;padding:3px 9px;font-size:12px'; rp.textContent = '🚩 신고'; rp.title = '불법 중계·유료 방송 등 문제가 있는 방송을 신고합니다';
+            rp.onclick = async e => {
+              e.stopPropagation();
+              const why = prompt('\"' + x.name + '\" 을(를) 신고합니다.\n사유를 간단히 적어 주세요. (예: 불법 중계, 유료 방송, 저작권 침해)', '불법 중계');
+              if (why === null) return;
+              rp.disabled = true; const r = await tvExtraReport(x, why);
+              alert(r === 'shared' ? '신고가 접수되었습니다. 관리자가 확인해 삭제합니다. 이 방송은 이 기기에서 목록에서 숨겨집니다.' : '신고를 서버에 보내지 못했습니다. 이 기기에서만 숨기고, 아래 삭제 요청 연락처로 알려 주세요.');
+              refreshTvLists();
+            };
+            row.append(b, rp);
+            if (tvIsAdm()){
+              if (x.rep){ const nb = document.createElement('span'); nb.style.cssText = 'color:#ff8fd0;font-size:12px;font-weight:700;margin-right:4px'; nb.textContent = '신고 ' + x.rep; row.append(nb); }
+              const del = document.createElement('button'); del.type = 'button'; del.className = 'addhome'; del.style.cssText = 'margin:0 6px 0 0;padding:3px 9px;font-size:12px'; del.textContent = '✕ 삭제';
+              del.onclick = async e => { e.stopPropagation(); if (confirm('\"' + x.name + '\" 을(를) 목록에서 지울까요?')){ await tvExtraDel(x); try { if (!String(x.id).startsWith('L')) await lj('tvreport/' + x.id, 'DELETE'); } catch(e2){} refreshTvLists(); } };
+              row.append(del);
+            }
+            box.append(row);
           } else box.append(b);
         });
         tvMark(); if (v === $('tvlist')){ tvApplyFilter(true); tvProbe(d); }
@@ -3943,14 +4011,28 @@ const TV_ADMIN_HASH = '8be22f5b30df095a0d37f7ddd772b77fc4be5e8503665a11172320f0d
 const tvIsAdm = () => { try { return sessionStorage.getItem('radio_admin') === '1'; } catch(e){ return false; } };
 const exLocal = () => { try { return JSON.parse(localStorage.getItem('radio_tvextra') || '[]'); } catch(e){ return []; } };
 const exLocalSave = a => { try { localStorage.setItem('radio_tvextra', JSON.stringify(a)); } catch(e){} };
+// ---- 신고: 기타 방송 목록의 방송을 신고하면 관리자가 확인해 삭제합니다 ----
+const TAKEDOWN_EMAIL = ''; // 삭제 요청을 받을 메일 주소를 넣으면 푸터에 표시됩니다 (예: 'me@example.com')
+const repDev = () => { try { let d = localStorage.getItem('radio_dev'); if (!d){ d = 'd' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem('radio_dev', d); } return d; } catch(e){ return 'anon'; } };
+const repMine = () => { try { return JSON.parse(localStorage.getItem('radio_tvrep') || '[]'); } catch(e){ return []; } };
+const repMineAdd = id => { try { const a = repMine(); if (!a.includes(id)) a.push(id); localStorage.setItem('radio_tvrep', JSON.stringify(a.slice(-300))); } catch(e){} };
+async function tvExtraReport(x, reason){
+  repMineAdd(x.id);
+  if (String(x.id).startsWith('L')) return 'local';
+  try { await lj('tvreport/' + x.id + '/' + repDev(), 'PUT', {ts: Date.now(), why: String(reason || '').slice(0, 60), name: String(x.name).slice(0, 60), u: String(x.u).slice(0, 300)}); return 'shared'; }
+  catch(e){ return 'local'; }
+}
 async function tvExtra(){
-  let out = [];
+  let out = [], rep = {};
   try {
     const j = await lj('tvextra', 'GET');
     out = Object.entries(j || {}).map(([id, v]) => ({id, name: String(v.name || ''), u: String(v.u || ''), ts: +v.ts || 0, extra: true}));
   } catch(e){}
+  if (tvIsAdm()){ try { const r = await lj('tvreport', 'GET'); Object.entries(r || {}).forEach(([id, v]) => { rep[id] = v && typeof v === 'object' ? Object.keys(v).length : 0; }); } catch(e){} }
+  const mine = repMine();
   exLocal().forEach(v => out.push(Object.assign({extra: true}, v)));
-  return out.filter(x => x.name && /^https?:\/\//i.test(x.u)).sort((a, b) => a.ts - b.ts);
+  out.forEach(x => { x.rep = rep[x.id] || 0; });
+  return out.filter(x => x.name && /^https?:\/\//i.test(x.u) && (tvIsAdm() || !mine.includes(x.id))).sort((a, b) => a.ts - b.ts);
 }
 async function tvExtraAdd(name, u){
   const id = 'x' + Date.now().toString(36) + Math.floor(Math.random() * 1000), rec = {name, u, ts: Date.now()};
@@ -3965,7 +4047,11 @@ function refreshTvLists(){
   if (!$('tvbox').hidden) tvBrowse($('tvlist'), tvWatch);
   if (!$('vres').hidden && $('vres').querySelector('details')) tvBrowse();
 }
-function admShow(){ $('tvaout').textContent = tvIsAdm() ? '🔓 관리자 끝내기' : '🔒 관리자 로그인 (삭제용)'; }
+function admShow(){
+  const a = tvIsAdm(); $('tvaout').textContent = a ? '🔓 관리자 끝내기' : '🔒 관리자 로그인 (추가·삭제용)';
+  ['tvan', 'tvau', 'tvaadd'].forEach(id => { $(id).disabled = !a; });
+  $('tvan').placeholder = a ? '방송 이름' : '관리자만 추가할 수 있습니다';
+}
 $('tvadm').onclick = () => { $('tvadmin').hidden = !$('tvadmin').hidden; };
 $('tvaout').onclick = async () => {
   if (tvIsAdm()){ try { sessionStorage.removeItem('radio_admin'); } catch(e){} admShow(); refreshTvLists(); return; }
@@ -3980,6 +4066,7 @@ $('tvaout').onclick = async () => {
 let tvLastAdd = 0;
 $('tvaadd').onclick = async () => {
   const name = $('tvan').value.trim(), u = $('tvau').value.trim(), m = $('tvamsg');
+  if (!tvIsAdm()){ m.textContent = '방송 추가는 관리자만 할 수 있습니다. 아래 \'관리자 로그인\'을 먼저 해 주세요.'; return; }
   if (!name){ m.textContent = '방송 이름을 넣어 주세요.'; return; }
   if (!/^https?:\/\//i.test(u)){ m.textContent = '주소는 http:// 또는 https:// 로 시작해야 합니다.'; return; }
   if (location.protocol === 'https:' && u.startsWith('http:')){ m.textContent = '이 사이트는 https라서 http:// 주소는 브라우저가 막습니다. https:// 주소를 넣어 주세요.'; return; }
@@ -5947,6 +6034,8 @@ body.hasticker #roomview{padding-bottom:calc(52px + env(safe-area-inset-bottom,0
   load();
   timer=setInterval(load,10*60*1000);
 })();
+
+try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(TAKEDOWN_EMAIL)){ const sp = document.getElementById('legalmail'); sp.textContent = '삭제 요청 연락처: '; const a = document.createElement('a'); a.href = 'mailto:' + TAKEDOWN_EMAIL; a.textContent = TAKEDOWN_EMAIL; sp.append(a); } } catch(e){}
 </script>
 <!-- ===== /실시간 뉴스 자막 ===== -->
 
