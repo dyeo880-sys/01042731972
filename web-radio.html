@@ -1018,8 +1018,10 @@ audio.addEventListener('pause', () => {
   setTimeout(() => { // 방송국을 바꾸는 중의 일시 정지는 무시
     if (!audio.paused || rUserPause || rIntr || curView < 0) return;
     rIntr = true; rIntrSince = Date.now(); clearInterval(rIntrT);
-    setStatus('통화·알림으로 멈췄습니다. 통화가 끝나면 ▶ 를 눌러 주세요'); // 통화 중에 저절로 다시 켜지지 않도록 자동 재생 안 함
+    setStatus('다른 소리(통화·내비 안내)로 멈췄습니다. 잠시 뒤 자동으로 이어집니다'); // 통화 중에 저절로 다시 켜지지 않도록 자동 재생 안 함
     rArm();
+    clearInterval(rIntrT); const t0 = Date.now();
+    rIntrT = setInterval(() => { if (!rIntr || rUserPause || Date.now() - t0 > 30000){ clearInterval(rIntrT); return; } rRetry(true); }, 3000);
   }, 400);
 });
 async function rRetry(force){
@@ -2118,7 +2120,7 @@ function mwClose(){ try { talkStop(''); } catch(e){} $('guestTile').hidden = tru
 // 음악 방에 들어가면 라디오·TV·뮤직비디오는 멈춤 (같은 소리가 겹쳐 울리는 것을 막음)
 function stopOtherMedia(){
   try { if (rdCast) rdCastOff(); } catch(e){}
-  try { audio.pause(); } catch(e){}
+  try { rUserPause = true; rIntr = false; audio.pause(); } catch(e){}
   try { if (mtv.on) mtvQuiet(); } catch(e){}
   try { if (tvHls || !$('tvplayer').hidden) tvStop(); } catch(e){}
 }
@@ -2927,7 +2929,7 @@ async function listen(bid, name, locked, presetPw){
   let pw = '';
   if (locked){ pw = presetPw || prompt('이 음악 방은 비밀번호가 필요합니다.') || ''; if (!pw) return; }
   if (bc) stopBroadcast(); // 방장이던 방이 있으면 먼저 정리 (유령 방장 방지)
-  stopListen(); audio.pause();
+  stopListen(); rUserPause = true; rIntr = false; audio.pause();
   $('now').textContent = name; $('meta').textContent = '음악 방'; setStatus('연결 중…'); enterRoom(bid, name);
   try { localStorage.setItem('radio_last_room', JSON.stringify({id: bid, name: String(name)})); } catch(e){}
   return connectListen(bid, name, pw);
@@ -6043,5 +6045,30 @@ try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@
 </script>
 <!-- ===== /실시간 뉴스 자막 ===== -->
 
+<script>
+// 통화·블루투스 보강: 듣기 전용일 때는 '재생' 오디오 모드로 두고, 통화로 끊기면 마이크를 끄고 소리를 멈춤
+(function(){
+  const as = navigator.audioSession;
+  const setT = t => { try { if (as && as.type !== t) as.type = t; } catch(e){} };
+  setInterval(() => {
+    if (lis) setT((talk.mic || talk.cam) ? 'play-and-record' : 'playback'); else if (!bc) setT('auto');
+  }, 1500);
+  const onCall = () => {
+    try { talkStop('통화·알림 때문에 마이크를 껐습니다.'); } catch(e){}
+    try { if (lis) setStatus('통화·알림으로 소리가 멈췄습니다. 끝나면 화면을 한 번 눌러 주세요'); } catch(e){}
+  };
+  if (as && as.addEventListener) as.addEventListener('statechange', () => { if (as.state === 'interrupted') setTimeout(() => { if (as.state === 'interrupted') onCall(); }, 8000); });
+  liveAudio.addEventListener('pause', () => {
+    if (!lis || !liveAudio.srcObject) return;
+    try { setStatus('다른 소리(통화·내비 안내)로 멈췄습니다. 잠시 뒤 자동으로 이어집니다'); } catch(e){}
+    const t0 = Date.now();
+    const iv = setInterval(() => {
+      if (!lis || !liveAudio.srcObject || !liveAudio.paused || Date.now() - t0 > 30000){ clearInterval(iv); return; }
+      liveAudio.play().catch(() => {});
+    }, 3000);
+    setTimeout(() => { if (lis && liveAudio.paused){ onCall(); const go = () => { if (lis && liveAudio.paused) liveAudio.play().catch(() => {}); }; addEventListener('pointerdown', go, {once: true, capture: true}); } }, 8000);
+  });
+})();
+</script>
 </body>
 </html>
