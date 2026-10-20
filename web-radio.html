@@ -496,6 +496,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <label><input type="checkbox" id="rphide" checked> 안 되는 방송국 숨기기</label>
     <label><input type="checkbox" id="rpauto" checked> 24시간마다 자동 확인</label>
     <label><input type="checkbox" id="rsume" checked> 마지막 방송 자동 재생</label>
+    <label><input type="checkbox" id="rcont" checked> 내비·알림으로 끊기면 자동 이어듣기</label>
     <button class="addhome" type="button" id="rpgo" title="지금 보이는 방송국이 실제로 나오는지 하나씩 확인합니다">🔍 지금 확인</button>
     <button class="addhome" type="button" id="rpreload" title="방송국 목록을 서버에서 다시 불러옵니다">🔄 목록 새로고침</button>
     </span>
@@ -1021,7 +1022,7 @@ audio.addEventListener('pause', () => {
     setStatus('다른 소리(통화·내비 안내)로 멈췄습니다. 잠시 뒤 자동으로 이어집니다'); // 통화 중에 저절로 다시 켜지지 않도록 자동 재생 안 함
     rArm();
     clearInterval(rIntrT); const t0 = Date.now();
-    rIntrT = setInterval(() => { if (!rIntr || rUserPause || Date.now() - t0 > 30000){ clearInterval(rIntrT); return; } rRetry(true); }, 3000);
+    if ($('rcont').checked) rIntrT = setInterval(() => { if (!rIntr || rUserPause || Date.now() - t0 > 30000){ clearInterval(rIntrT); return; } rRetry(true); }, 3000);
   }, 400);
 });
 async function rRetry(force){
@@ -6058,15 +6059,25 @@ try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@
     try { if (lis) setStatus('통화·알림으로 소리가 멈췄습니다. 끝나면 화면을 한 번 눌러 주세요'); } catch(e){}
   };
   if (as && as.addEventListener) as.addEventListener('statechange', () => { if (as.state === 'interrupted') setTimeout(() => { if (as.state === 'interrupted') onCall(); }, 8000); });
+  try { $('rcont').checked = localStorage.getItem('radio_cont') !== '0'; } catch(e){}
+  $('rcont').onchange = () => { try { localStorage.setItem('radio_cont', $('rcont').checked ? '1' : '0'); } catch(e){} };
+  let roomOff = false; // 내가 직접 끈 경우 (차량·이어폰·알림창의 정지 버튼) 자동으로 다시 켜지 않음
+  liveAudio.addEventListener('playing', () => { roomOff = false; });
+  try { if (navigator.mediaSession){ const ms = navigator.mediaSession;
+    const offH = () => { if (lis && liveAudio.srcObject){ roomOff = true; liveAudio.pause(); return; } rUserPause = true; rIntr = false; audio.pause(); lastOff(1); };
+    ms.setActionHandler('pause', offH);
+    try { ms.setActionHandler('stop', offH); } catch(e){}
+    ms.setActionHandler('play', () => { if (lis && liveAudio.srcObject){ roomOff = false; liveAudio.play().catch(() => {}); return; } rUserPause = false; rIntr = false; if (audio.src) audio.play().catch(() => {}); else if (view.length) playView(Math.max(curView, 0)); });
+  } } catch(e){}
   liveAudio.addEventListener('pause', () => {
-    if (!lis || !liveAudio.srcObject) return;
+    if (!lis || !liveAudio.srcObject || roomOff || !$('rcont').checked) return;
     try { setStatus('다른 소리(통화·내비 안내)로 멈췄습니다. 잠시 뒤 자동으로 이어집니다'); } catch(e){}
     const t0 = Date.now();
     const iv = setInterval(() => {
-      if (!lis || !liveAudio.srcObject || !liveAudio.paused || Date.now() - t0 > 30000){ clearInterval(iv); return; }
+      if (!lis || roomOff || !liveAudio.srcObject || !liveAudio.paused || Date.now() - t0 > 30000){ clearInterval(iv); return; }
       liveAudio.play().catch(() => {});
     }, 3000);
-    setTimeout(() => { if (lis && liveAudio.paused){ onCall(); const go = () => { if (lis && liveAudio.paused) liveAudio.play().catch(() => {}); }; addEventListener('pointerdown', go, {once: true, capture: true}); } }, 8000);
+    setTimeout(() => { if (lis && !roomOff && liveAudio.paused){ onCall(); const go = () => { if (lis && liveAudio.paused) liveAudio.play().catch(() => {}); }; addEventListener('pointerdown', go, {once: true, capture: true}); } }, 8000);
   });
 })();
 </script>
