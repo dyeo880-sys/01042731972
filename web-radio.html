@@ -1042,7 +1042,7 @@ async function rRetry(force){
   try {
     await audio.play(); // 잠깐 끊긴 경우: 그대로 이어서
     await new Promise(r => setTimeout(r, 2500));
-    if (audio.paused || audio.readyState < 3 || audio.error){ if (curView >= 0) playView(curView); } // 오래 끊겨 방송이 낡은 경우: 다시 연결
+    if (audio.paused || audio.readyState < 3 || audio.error){ if (curView >= 0) playView(curView, !!liveRoom); } // 오래 끊겨 방송이 낡은 경우: 다시 연결
   } catch(e){
     if (e && e.name === 'NotAllowedError'){ setStatus('▶ 화면을 한 번 누르면 이어서 나옵니다'); rArm(); }
   } finally { rTrying = false; }
@@ -1050,7 +1050,7 @@ async function rRetry(force){
 let rArmed = false;
 function rArm(){
   if (rArmed) return; rArmed = true;
-  const go = () => { rArmed = false; document.removeEventListener('pointerdown', go, true); document.removeEventListener('keydown', go, true); if (rIntr && !rUserPause){ if (curView >= 0) playView(curView); else audio.play().catch(() => {}); } };
+  const go = () => { rArmed = false; document.removeEventListener('pointerdown', go, true); document.removeEventListener('keydown', go, true); if (rIntr && !rUserPause){ if (curView >= 0) playView(curView, !!liveRoom); else audio.play().catch(() => {}); } };
   document.addEventListener('pointerdown', go, true); document.addEventListener('keydown', go, true);
 }
 // 화면에 돌아와도 자동으로 틀지 않음 (통화 중일 수 있음) — 한 번 누르면 이어서 재생
@@ -1063,8 +1063,8 @@ try {
     const ms = navigator.mediaSession;
     ms.setActionHandler('play', () => { rUserPause = false; rIntr = false; if (audio.src) audio.play().catch(() => {}); else if (view.length) playView(Math.max(curView, 0)); });
     ms.setActionHandler('pause', () => { rUserPause = true; audio.pause(); lastOff(1); });
-    ms.setActionHandler('nexttrack', () => { if (view.length) playView((curView + 1) % view.length); });
-    ms.setActionHandler('previoustrack', () => { if (view.length) playView((curView - 1 + view.length) % view.length); });
+    ms.setActionHandler('nexttrack', () => { if (view.length) playView((curView + 1) % view.length, !!liveRoom); });
+    ms.setActionHandler('previoustrack', () => { if (view.length) playView((curView - 1 + view.length, !!liveRoom) % view.length); });
   }
 } catch(e){}
 $('next').onclick = () => { if (view.length) playView((curView + 1) % view.length); };
@@ -3006,7 +3006,7 @@ async function connectListen(bid, name, pw){
     if (st === 'connected'){ lisRetry = 0; clearTimeout(lis.rt); return; }
     if (st !== 'failed' && st !== 'disconnected') return;
     clearTimeout(lis.rt);
-    if (lisRetry >= 6){ if (st === 'failed') setStatus('연결하지 못했습니다 (네트워크 제한)'); return; }
+    if (lisRetry >= 6){ setStatus('연결이 불안정합니다. 30초 뒤 다시 시도합니다…'); lis.rt = setTimeout(() => { if (lis && lis.pc === pc && pc.connectionState !== 'connected'){ lisRetry = 3; reconnectListen(); } }, 30000); return; }
     const wait = st === 'failed' ? 500 : Math.min(2000 * Math.pow(2, lisRetry), 15000); // 2→4→8→15초
     setStatus('연결이 끊겨 다시 연결하는 중… (' + (lisRetry + 1) + '/6)');
     lis.rt = setTimeout(() => { if (lis && lis.pc === pc && pc.connectionState !== 'connected'){ lisRetry++; reconnectListen(); } }, wait);
@@ -6105,25 +6105,37 @@ try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@
       still = 0;
       if (++fails > 20) return;              // 계속 실패하면 포기 (약 5분)
       if (hls && fails === 1){ try { hls.startLoad(); } catch(e){} audio.play().catch(() => {}); return; }
-      playView(curView);                     // 같은 방송국에 다시 연결
+      playView(curView, !!liveRoom);           // 같은 방송국에 다시 연결
     } catch(e){}
   }, 5000);
 })();
 </script>
 <script>
-// 방장·참가자: 화면이 꺼지거나 다른 앱에 가 있어도 방 신호(하트비트)가 끊기지 않게, 백그라운드에서도 느려지지 않는 Worker 타이머로 신호를 보냄
+// 방장·참가자: 화면이 꺼지거나 다른 앱에 가 있어도 방 신호가 느려지지 않게, 백그라운드에서도 일정한 Worker 타이머를 사용
 (function(){
+  let n = 0;
+  const tick = () => {
+    n++;
+    if (!document.hidden) return;
+    try { if (bc && typeof bcPoll === 'function') bcPoll(); } catch(e){}                       // 방장: 듣는 사람의 연결 요청을 2초마다 확인
+    try { if (liveRoom && !isHost() && typeof mvPoll === 'function' && n % 2 === 0) mvPoll(); } catch(e){}
+    if (n % 5 === 0){                                                                          // 10초마다: 방 살아있음 신호·참가자 신호
+      try { if (bc && bc.reg) bc.reg(); } catch(e){}
+      try { if (liveRoom) memBeat(); } catch(e){}
+    }
+  };
   try {
     if (typeof Worker !== 'undefined' && window.Blob && URL.createObjectURL){
-      const w = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},10000)'], {type: 'text/javascript'})));
-      w.onmessage = () => {
-        if (!document.hidden) return;
-        try { if (bc && bc.reg) bc.reg(); } catch(e){}
-        try { if (liveRoom) memBeat(); } catch(e){}
-      };
+      const w = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},2000)'], {type: 'text/javascript'})));
+      w.onmessage = tick;
     }
   } catch(e){}
-  ['focus', 'pageshow', 'online'].forEach(ev => addEventListener(ev, () => { try { if (bc && bc.reg) bc.reg(); } catch(e){} }));
+  const back = () => {
+    try { if (bc && bc.reg) bc.reg(); } catch(e){}
+    try { if (lis && lis.pc && lis.pc.connectionState !== 'connected'){ lisRetry = 0; reconnectListen(); } } catch(e){}
+  };
+  ['focus', 'pageshow', 'online'].forEach(ev => addEventListener(ev, back));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) back(); });
 })();
 </script>
 <script>
