@@ -6110,5 +6110,46 @@ try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@
   }, 5000);
 })();
 </script>
+<script>
+// 방장·참가자: 화면이 꺼지거나 다른 앱에 가 있어도 방 신호(하트비트)가 끊기지 않게, 백그라운드에서도 느려지지 않는 Worker 타이머로 신호를 보냄
+(function(){
+  try {
+    if (typeof Worker !== 'undefined' && window.Blob && URL.createObjectURL){
+      const w = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},10000)'], {type: 'text/javascript'})));
+      w.onmessage = () => {
+        if (!document.hidden) return;
+        try { if (bc && bc.reg) bc.reg(); } catch(e){}
+        try { if (liveRoom) memBeat(); } catch(e){}
+      };
+    }
+  } catch(e){}
+  ['focus', 'pageshow', 'online'].forEach(ev => addEventListener(ev, () => { try { if (bc && bc.reg) bc.reg(); } catch(e){} }));
+})();
+</script>
+<script>
+// 방장용 빠른 조작 막대: 영상 화면 바로 아래에 항상 보임 (재생/멈춤 · 다음 영상 · 영상 파일 추가 · 링크 추가)
+(function(){
+  const scr = document.getElementById('mwscreen'); if (!scr) return;
+  const bar = document.createElement('div'); bar.id = 'mwquick'; bar.hidden = true;
+  bar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;padding:8px 10px;background:#1a0f08;border:1px solid #b99a5b88;border-radius:8px;position:sticky;bottom:8px;z-index:5';
+  const mk = (txt, title, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.textContent = txt; b.title = title; b.setAttribute('aria-label', title);
+    b.style.cssText = 'margin:0;font-size:16px;min-height:44px;padding:6px 14px'; b.onclick = fn; return b; };
+  const info = document.createElement('span'); info.style.cssText = 'flex:1;min-width:120px;font-size:13px;opacity:.9';
+  bar.append(
+    mk('⏯ 재생/멈춤', '영상 재생 · 멈춤', () => document.getElementById('vplay').click()),
+    mk('⏭ 다음', '재생목록의 다음 영상', () => { try { if (PL.list.length) plNext(); else setBc('재생목록이 비어 있습니다. ➕ 로 영상을 추가하세요.'); } catch(e){} }),
+    mk('➕ 영상 파일', '내 영상 파일을 재생목록 뒤에 추가 (여러 개 선택 가능)', () => document.getElementById('plfile').click()),
+    mk('🔗 링크 추가', '영상 링크 붙여넣기 칸 열기', () => { const t = document.querySelector('.tbtn[data-p="p-vplay"]'); const p = document.getElementById('p-vplay'); if (t && p && p.hidden) t.click(); const v = document.getElementById('vurl'); if (v){ v.scrollIntoView({block: 'center'}); v.focus(); } }),
+    info);
+  scr.after(bar);
+  setInterval(() => {
+    try {
+      bar.hidden = document.getElementById('mwctl').hidden;
+      const n = PL.list.length;
+      info.textContent = n ? '📋 재생목록 ' + n + '개' : '📋 재생목록 비어 있음 — ➕ 로 영상 추가';
+    } catch(e){}
+  }, 700);
+})();
+</script>
 </body>
 </html>
