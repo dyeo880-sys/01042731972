@@ -497,6 +497,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <label><input type="checkbox" id="rpauto" checked> 24시간마다 자동 확인</label>
     <label><input type="checkbox" id="rsume" checked> 마지막 방송 자동 재생</label>
     <label><input type="checkbox" id="rcont" checked> 내비·알림으로 끊기면 자동 이어듣기</label>
+    <label>이어듣기 시도 시간 <select id="rcontmin"><option value="10">10초</option><option value="20">20초</option><option value="30">30초</option><option value="60">1분</option><option value="180">3분</option><option value="300">5분</option><option value="600">10분</option><option value="1200" selected>20분</option><option value="2400">40분</option><option value="3600">1시간</option></select></label>
     <button class="addhome" type="button" id="rpgo" title="지금 보이는 방송국이 실제로 나오는지 하나씩 확인합니다">🔍 지금 확인</button>
     <button class="addhome" type="button" id="rpreload" title="방송국 목록을 서버에서 다시 불러옵니다">🔄 목록 새로고침</button>
     </span>
@@ -987,7 +988,14 @@ function playView(i, keepRoom, restore){
   const isHls = /\.m3u8(\?|$)/i.test(url) || (s.hls === 1);
   if (isHls && window.Hls && Hls.isSupported()){
     hls = new Hls(); hls.loadSource(url); hls.attachMedia(audio);
-    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) setStatus('재생할 수 없는 방송국입니다'); });
+    hls.on(Hls.Events.ERROR, (_, d) => {
+      if (!d.fatal) return;
+      try {
+        if (d.type === Hls.ErrorTypes.NETWORK_ERROR){ hls.startLoad(); return; }
+        if (d.type === Hls.ErrorTypes.MEDIA_ERROR){ hls.recoverMediaError(); return; }
+      } catch(e){}
+      setStatus('재생할 수 없는 방송국입니다');
+    });
   } else {
     audio.src = url;
   }
@@ -1013,6 +1021,7 @@ $('play').onclick = () => {
 // ===== 전화·문자·알림으로 소리가 끊기면 끝난 뒤 자동으로 이어 틀기 =====
 // 사용자가 ⏸ 를 누르거나 이어폰 버튼으로 멈춘 경우는 그대로 두고, 시스템이 끊은 경우만 되살립니다.
 let rIntr = false, rIntrT = 0, rIntrSince = 0, rTrying = false;
+function rContMs(){ const e = $('rcontmin'); return (e ? +e.value || 1200 : 1200) * 1000; } // 이어듣기 시도 시간(설정)
 audio.addEventListener('playing', () => { rUserPause = false; rIntr = false; clearInterval(rIntrT); });
 audio.addEventListener('pause', () => {
   if (rUserPause || audio.ended || !audio.src || curView < 0 || rIntr) return;
@@ -1022,12 +1031,12 @@ audio.addEventListener('pause', () => {
     setStatus('다른 소리(통화·내비 안내)로 멈췄습니다. 잠시 뒤 자동으로 이어집니다'); // 통화 중에 저절로 다시 켜지지 않도록 자동 재생 안 함
     rArm();
     clearInterval(rIntrT); const t0 = Date.now();
-    if ($('rcont').checked) rIntrT = setInterval(() => { if (!rIntr || rUserPause || Date.now() - t0 > 30000){ clearInterval(rIntrT); return; } rRetry(true); }, 3000);
+    if ($('rcont').checked) rIntrT = setInterval(() => { if (!rIntr || rUserPause || Date.now() - t0 > rContMs()){ clearInterval(rIntrT); return; } rRetry(true); }, 3000);
   }, 400);
 });
 async function rRetry(force){
   if (!rIntr || rUserPause || rTrying) return;
-  if (Date.now() - rIntrSince > 20 * 60 * 1000){ rIntr = false; clearInterval(rIntrT); return; } // 20분 넘으면 포기
+  if (Date.now() - rIntrSince > rContMs()){ rIntr = false; clearInterval(rIntrT); return; } // 20분 넘으면 포기
   if (document.hidden && force !== true) return;
   rTrying = true;
   try {
@@ -1045,9 +1054,10 @@ function rArm(){
   document.addEventListener('pointerdown', go, true); document.addEventListener('keydown', go, true);
 }
 // 화면에 돌아와도 자동으로 틀지 않음 (통화 중일 수 있음) — 한 번 누르면 이어서 재생
-document.addEventListener('visibilitychange', () => { if (!document.hidden && rIntr) rArm(); });
-addEventListener('focus', () => { if (rIntr) rArm(); });
-addEventListener('pageshow', () => { if (rIntr) rArm(); });
+const rBack = () => { if (!rIntr) return; rArm(); if ($('rcont').checked) rRetry(true); };
+document.addEventListener('visibilitychange', () => { if (!document.hidden) rBack(); });
+addEventListener('focus', rBack);
+addEventListener('pageshow', rBack);
 try {
   if (navigator.mediaSession){ // 잠금화면·이어폰·차량 버튼
     const ms = navigator.mediaSession;
@@ -6060,6 +6070,8 @@ try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@
   };
   if (as && as.addEventListener) as.addEventListener('statechange', () => { if (as.state === 'interrupted') setTimeout(() => { if (as.state === 'interrupted') onCall(); }, 8000); });
   try { $('rcont').checked = localStorage.getItem('radio_cont') !== '0'; } catch(e){}
+  try { const v = localStorage.getItem('radio_contsec'); if (v && $('rcontmin').querySelector('option[value="' + v + '"]')) $('rcontmin').value = v; } catch(e){}
+  $('rcontmin').onchange = () => { try { localStorage.setItem('radio_contsec', $('rcontmin').value); } catch(e){} };
   $('rcont').onchange = () => { try { localStorage.setItem('radio_cont', $('rcont').checked ? '1' : '0'); } catch(e){} };
   let roomOff = false; // 내가 직접 끈 경우 (차량·이어폰·알림창의 정지 버튼) 자동으로 다시 켜지 않음
   liveAudio.addEventListener('playing', () => { roomOff = false; });
@@ -6074,11 +6086,28 @@ try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@
     try { setStatus('다른 소리(통화·내비 안내)로 멈췄습니다. 잠시 뒤 자동으로 이어집니다'); } catch(e){}
     const t0 = Date.now();
     const iv = setInterval(() => {
-      if (!lis || roomOff || !liveAudio.srcObject || !liveAudio.paused || Date.now() - t0 > 30000){ clearInterval(iv); return; }
+      if (!lis || roomOff || !liveAudio.srcObject || !liveAudio.paused || Date.now() - t0 > rContMs()){ clearInterval(iv); return; }
       liveAudio.play().catch(() => {});
     }, 3000);
     setTimeout(() => { if (lis && !roomOff && liveAudio.paused){ onCall(); const go = () => { if (lis && liveAudio.paused) liveAudio.play().catch(() => {}); }; addEventListener('pointerdown', go, {once: true, capture: true}); } }, 8000);
   });
+})();
+</script>
+<script>
+// 화면이 꺼져도 라디오가 조용히 멈추면(데이터 끊김) 5초 간격으로 감시해서 다시 연결
+(function(){
+  let last = -1, still = 0, fails = 0;
+  setInterval(() => {
+    try {
+      if (curView < 0 || rUserPause || rIntr || lis || audio.paused || !audio.src && !hls || !$('rcont').checked){ still = 0; fails = 0; last = -1; return; }
+      if (audio.currentTime !== last){ last = audio.currentTime; still = 0; fails = 0; return; }
+      if (++still < 3) return;               // 15초 동안 소리가 진행하지 않음
+      still = 0;
+      if (++fails > 20) return;              // 계속 실패하면 포기 (약 5분)
+      if (hls && fails === 1){ try { hls.startLoad(); } catch(e){} audio.play().catch(() => {}); return; }
+      playView(curView);                     // 같은 방송국에 다시 연결
+    } catch(e){}
+  }, 5000);
 })();
 </script>
 </body>
