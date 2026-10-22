@@ -850,12 +850,12 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
                 <div class="tp" id="p-rs" hidden>
             <div class="sgrp" style="flex-basis:100%"><input id="rsname" maxlength="20" placeholder="새 방 이름 (최대 20자)" aria-label="새 방 이름" style="width:200px"><button class="addhome" style="margin:0" type="button" id="rsnameok">✏ 이름 변경</button></div>
             <div class="sgrp" style="flex-basis:100%"><strong>⏱ 방 자동 폭파 타이머</strong>
-              <input id="rshold" type="number" min="1" max="1440" step="1" value="1" aria-label="시간" style="width:76px"><select id="rsunit" aria-label="단위" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"><option value="1">분</option><option value="60" selected>시간</option></select>
-              <button class="addhome rspre" style="margin:0" type="button" data-m="10">10분</button><button class="addhome rspre" style="margin:0" type="button" data-m="60">1시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="360">6시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="1440">24시간</button>
+              <input id="rshold" type="number" min="1" max="14400" step="1" value="1" aria-label="시간" style="width:76px"><select id="rsunit" aria-label="단위" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"><option value="1">분</option><option value="60" selected>시간</option><option value="1440">일</option></select>
+              <button class="addhome rspre" style="margin:0" type="button" data-m="10">10분</button><button class="addhome rspre" style="margin:0" type="button" data-m="60">1시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="360">6시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="1440">24시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="4320">3일</button><button class="addhome rspre" style="margin:0" type="button" data-m="5760">4일</button><button class="addhome rspre" style="margin:0" type="button" data-m="14400">10일</button>
               <button class="addhome" style="margin:0" type="button" id="rsapply">적용</button></div>
             <label class="chatnote" style="margin:0;flex-basis:100%;display:block"><input type="checkbox" id="rsalone"> 방장 혼자 있을 때(듣는 사람이 없을 때)도 이 시간이 지나면 자동 폭파</label>
             <div class="chatnote" id="rsleft" style="margin:0;flex-basis:100%"></div>
-            <div class="chatnote" style="margin:0;flex-basis:100%">방장이 나가서 방이 비면 설정한 시간(최대 24시간) 동안 빈 방으로 남다가 사라집니다. 그 사이에 누가 들어오면 타이머는 사라졌다가, 방이 다시 비면 처음부터 다시 시작합니다. 「💣 방 폭파」는 시간과 상관없이 바로 사라집니다.</div>
+            <div class="chatnote" style="margin:0;flex-basis:100%">방장이 나가서 방이 비면 설정한 시간(최대 10일) 동안 빈 방으로 남다가 사라집니다. 그 사이에 누가 들어오면 타이머는 사라졌다가, 방이 다시 비면 처음부터 다시 시작합니다. 「💣 방 폭파」는 시간과 상관없이 바로 사라집니다. 빈 방에서는 음악·영상이 재생되지 않으며, 들어온 사람이 방장이 되어 다시 틀어야 합니다.</div>
           </div>
                 <div class="tp" id="p-pw" hidden>
             <input id="bcpw2" maxlength="12" placeholder="비밀번호 설정/변경" aria-label="방 비밀번호 설정 또는 변경" style="width:150px">
@@ -2200,7 +2200,7 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
       vbase = cv.captureStream(1).getVideoTracks()[0]; stream.addTrack(vbase); timers.push(setInterval(tick, 1000));
     } catch(e){ vbase = null; }
   }
-  const me = {hold: (opts && +opts.hold >= 1) ? Math.min(1440, Math.round(+opts.hold)) : 60, alone: !!(opts && opts.alone), aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
+  const me = {hold: (opts && +opts.hold >= 1) ? Math.min(14400, Math.round(+opts.hold)) : 60, alone: !!(opts && opts.alone), aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
   bc = me;
   me.sid = Math.random().toString(36).slice(2, 12);
   me.reg = async () => {
@@ -2245,7 +2245,7 @@ function stopBroadcast(noKeep, local){
   try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep) lj('livereg/' + me.rid, 'DELETE').catch(() => {});
-  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + Math.min(1440, me.hold || 60) * 60000, hd: me.hold || 60, al: me.alone ? 1 : 0, lk: me.lock || ''}).catch(() => {});
+  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + Math.min(14400, me.hold || 60) * 60000, hd: me.hold || 60, al: me.alone ? 1 : 0, lk: me.lock || ''}).catch(() => {});
   lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
   leaveRoom(); setBc(''); loadLive();
@@ -3168,8 +3168,8 @@ $('mkcancel').onclick = () => openMk(false);
 $('bctitle').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) makeMusicRoom(); });
 $('livereload').onclick = loadLive;
 // ===== ⏱ 방 설정: 이름 변경 · 빈 방 자동 폭파 타이머 · 관리자 강제 폭파 · 메인 라디오 상단 고정 =====
-function fmtMin(m){ m = Math.max(1, Math.round(+m || 1)); const h = Math.floor(m / 60), r = m % 60; return h ? (r ? h + '시간 ' + r + '분' : h + '시간') : r + '분'; }
-function fmtClock(ms){ ms = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(ms / 3600), m = Math.floor(ms % 3600 / 60), s = ms % 60, z = n => String(n).padStart(2, '0'); return (h ? h + ':' + z(m) : m) + ':' + z(s); }
+function fmtMin(m){ m = Math.max(1, Math.round(+m || 1)); const d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60), r = m % 60; return [d ? d + '일' : '', h ? h + '시간' : '', r ? r + '분' : ''].filter(Boolean).join(' '); }
+function fmtClock(ms){ ms = Math.max(0, Math.ceil(ms / 1000)); const d = Math.floor(ms / 86400), h = Math.floor(ms % 86400 / 3600), m = Math.floor(ms % 3600 / 60), s = ms % 60, z = n => String(n).padStart(2, '0'); return (d ? d + '일 ' : '') + ((d || h) ? (d ? z(h) : h) + ':' + z(m) : m) + ':' + z(s); }
 const rmAdm = () => { try { return isAdmin || sessionStorage.getItem('board_admin') === '1'; } catch(e){ return !!isAdmin; } };
 function rsUpdate(){
   const me = bc, el = $('rsleft'), cd = $('rscd');
@@ -3182,16 +3182,16 @@ function rsUpdate(){
 function rsFill(){
   const me = bc; if (!me) return;
   const m = me.hold || 60;
-  if (m % 60 === 0){ $('rsunit').value = '60'; $('rshold').value = m / 60; } else { $('rsunit').value = '1'; $('rshold').value = m; }
+  if (m % 1440 === 0){ $('rsunit').value = '1440'; $('rshold').value = m / 1440; } else if (m % 60 === 0){ $('rsunit').value = '60'; $('rshold').value = m / 60; } else { $('rsunit').value = '1'; $('rshold').value = m; }
   $('rsalone').checked = !!me.alone; rsUpdate();
 }
 document.querySelector('[data-p="p-rs"]').addEventListener('click', rsFill);
-document.querySelectorAll('.rspre').forEach(b => { b.onclick = () => { const m = +b.dataset.m; if (m % 60 === 0){ $('rsunit').value = '60'; $('rshold').value = m / 60; } else { $('rsunit').value = '1'; $('rshold').value = m; } }; });
+document.querySelectorAll('.rspre').forEach(b => { b.onclick = () => { const m = +b.dataset.m; if (m % 1440 === 0 && m > 1440){ $('rsunit').value = '1440'; $('rshold').value = m / 1440; } else if (m % 60 === 0){ $('rsunit').value = '60'; $('rshold').value = m / 60; } else { $('rsunit').value = '1'; $('rshold').value = m; } }; });
 $('rsapply').onclick = () => {
   if (!bc) return;
   let m = Math.round((+$('rshold').value || 0) * (+$('rsunit').value || 1));
   if (!(m >= 1)){ setBc('1분 이상으로 정해 주세요.'); return; }
-  if (m > 1440){ m = 1440; setBc('최대 24시간까지입니다. 24시간으로 맞췄습니다.'); }
+  if (m > 14400){ m = 14400; setBc('최대 10일까지입니다. 10일로 맞췄습니다.'); }
   bc.hold = m; bc.alone = $('rsalone').checked; bc.aloneSince = 0; bc.reg(); rsFill();
   setBc('⏱ 타이머를 ' + fmtMin(m) + '로 설정했습니다.' + (bc.alone ? ' (혼자 있어도 시간이 지나면 자동 폭파)' : ' (방이 비었을 때 이 시간 동안 유지)'));
 };
@@ -3446,17 +3446,17 @@ $('vgo').onclick = () => hostLink($('vurl').value);
 $('vurl').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) hostLink($('vurl').value); });
 $('vstop').onclick = hostVideoOff;
 // ---- 재생목록: 링크·검색 결과·내 영상 파일을 순서대로 담아 두면 영상이 끝날 때 다음 영상을 자동 재생 ----
-const PL = {list: [], cur: null, auto: true, loop: false, last: 0, cap: null, msg: ''};
+const PL = {list: [], cur: null, auto: true, loop: false, one: false, last: 0, cap: null, msg: ''};
 const PL_KEY = 'radio_playlist';
 try {
   const sv = JSON.parse(localStorage.getItem(PL_KEY) || 'null');
   if (sv && Array.isArray(sv.list)){
     PL.list = sv.list.filter(x => x && typeof x.u === 'string' && /^https?:\/\//i.test(x.u)).slice(0, 100).map(x => ({u: x.u, t: String(x.t || x.u).slice(0, 120)}));
-    PL.loop = !!sv.loop; PL.auto = sv.auto !== false;
+    PL.loop = !!sv.loop; PL.one = !!sv.one; PL.auto = sv.auto !== false;
   }
 } catch(e){}
 // 내 기기의 영상 파일(f)은 새로고침하면 사라지므로 저장하지 않음
-const plSave = () => { try { localStorage.setItem(PL_KEY, JSON.stringify({list: PL.list.filter(x => x.u && !x.g).map(x => ({u: x.u, t: x.t})), loop: PL.loop, auto: PL.auto})); } catch(e){} };
+const plSave = () => { try { localStorage.setItem(PL_KEY, JSON.stringify({list: PL.list.filter(x => x.u && !x.g).map(x => ({u: x.u, t: x.t})), loop: PL.loop, one: PL.one, auto: PL.auto})); } catch(e){} };
 const plMsg = t => { PL.msg = t; try { setBc(t); } catch(_){} plRender(); };
 // 지금 재생 중인 영상이 이 항목인가?
 function plSame(it){
@@ -3543,14 +3543,22 @@ function plEnded(){
   if (Date.now() - PL.last < 1500) return; PL.last = Date.now();
   plNext();
 }
-function plVidState(ev){ if (ev && ev.data === 0) plEnded(); }
+// 🔂 영상 한 개 반복: 방장이 켜 두면 유튜브·링크 영상이 끝날 때 처음부터 다시 재생
+function plOne(){
+  if (!isHost() || !PL.one) return false;
+  try { if (kq.list.some(x => x.st === 'now')) return false; } catch(_){}
+  if (MV.k === 'yt' && MV.yt && MV.yt.seekTo){ try { MV.yt.seekTo(0, true); MV.yt.playVideo(); } catch(_){} try { mvPush(); } catch(_){} return true; }
+  if (MV.k === 'url'){ try { mwvid.currentTime = 0; mwvid.play().catch(() => {}); } catch(_){} try { mvPush(); } catch(_){} return true; }
+  return false;
+}
+function plVidState(ev){ if (ev && ev.data === 0){ if (plOne()) return; plEnded(); } }
 // 재생할 수 없는 영상(삭제·퍼가기 금지)은 잠시 뒤 다음으로 넘김
 function plErr(code){
   if (![100, 101, 150].includes(code) || !PL.auto || !isHost() || !PL.cur || !plSame(PL.cur)) return;
   const bad = PL.cur; setBc('⚠ 재생할 수 없는 영상이라 다음으로 넘어갑니다.');
   setTimeout(() => { if (PL.cur === bad && plSame(bad)) plEnded(); }, 2500);
 }
-mwvid.addEventListener('ended', () => { if (MV.k === 'url' || MV.k === 'file') plEnded(); });
+mwvid.addEventListener('ended', () => { if (MV.k === 'url' || MV.k === 'file'){ if (plOne()) return; plEnded(); } });
 mwvid.addEventListener('error', () => {
   if (!mwvid.error || MV.k !== 'url' || !PL.cur || !plSame(PL.cur) || !PL.auto) return;
   const bad = PL.cur; setTimeout(() => { if (PL.cur === bad && plSame(bad)) plEnded(); }, 1500);
@@ -3563,7 +3571,8 @@ function plRender(){
   const ttl = document.createElement('strong'); ttl.textContent = '📋 재생목록 (' + PL.list.length + ')' + (PL.list.filter(x => x.g && !x.ok).length ? ' · 🙋 허용 대기 ' + PL.list.filter(x => x.g && !x.ok).length : '');
   h.append(ttl,
     mkc('끝나면 다음 영상 자동 재생', PL.auto, v => { PL.auto = v; plSave(); }),
-    mkc('🔁 반복', PL.loop, v => { PL.loop = v; plSave(); }),
+    mkc('🔁 목록 반복', PL.loop, v => { PL.loop = v; plSave(); }),
+    mkc('🔂 영상 한 개 반복', PL.one, v => { PL.one = v; plSave(); }),
     mkb('▶ 처음부터', '목록 첫 영상부터 재생', () => { const f = PL.list.find(plOk); if (f) plPlay(f); }),
     mkb('⏭ 다음', '다음 영상으로 건너뛰기', () => { PL.last = Date.now(); plNext(); }),
     mkb('🗑 전체 삭제', '목록을 모두 지웁니다 (재생 중인 영상은 그대로)', () => { if (PL.list.length && confirm('재생목록을 모두 지울까요?')){ PL.list.filter(x => x.g).forEach(x => vqDel(x.g)); PL.list = []; PL.cur = null; PL.msg = ''; plSave(); plRender(); } }));
@@ -4596,6 +4605,7 @@ $('bcscr').onclick = async () => {
     swapSource(new MediaStream(at)); mwUpdate('🖥 PC 소리 방송 중');
   } catch(e){ setBc('PC 소리 공유를 사용할 수 없습니다. 컴퓨터의 Chrome/Edge에서 시도하세요.'); }
 };
+addEventListener('beforeunload', e => { if (bc) { e.preventDefault(); e.returnValue = ''; return ''; } }); // 방장이 탭·브라우저를 닫으려 하면 확인 창 (문구는 브라우저가 정함)
 addEventListener('pagehide', e => { if (e.persisted) return; stopBroadcast(); stopListen(); }); // 앱 전환 등으로 페이지가 보관만 되는 경우(persisted)에는 방을 닫지 않음
 document.addEventListener('visibilitychange', () => { if (!document.hidden && bc && bc.reg) bc.reg(); });
 setInterval(() => { if (!document.hidden) loadLive(); }, 10000);
