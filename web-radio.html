@@ -2030,7 +2030,7 @@ async function mvPoll(){
   if (!liveRoom || liveRoom.id !== id) return;
   { let hh = null; Object.keys(gg || {}).forEach(k => { const m = gg[k]; if (m && m.h && (!hh || m.ts > hh.ts)) hh = m; }); guestSet(hh && hh.g ? {n: hh.g} : null); }
   if (reg && reg.ts !== MV.regTs){ MV.regTs = reg.ts; MV.regAt = Date.now(); }
-  if (reg){ MV.hd = reg.hd; MV.al = reg.al; if (reg.n && String(reg.n) !== liveRoom.name){ liveRoom.name = String(reg.n); roomHead(); } }
+  if (reg){ MV.hd = reg.hd; MV.hs = reg.hs; MV.al = reg.al; if (reg.n && String(reg.n) !== liveRoom.name){ liveRoom.name = String(reg.n); roomHead(); } }
   if (!reg || reg.e || Date.now() - (MV.regAt || Date.now()) > 90000){
     // 방장이 나간 것으로 보이는 동안에는 지금 재생 중인 영상을 멈추지 않고 그대로 둠 (새 방장이 정해질 때까지)
     if (++MV.gone >= 2){ MV.hostless = true; electStep(id); }
@@ -2080,7 +2080,7 @@ async function takeOver(R){
     clearInterval(MV.poll);
     if (lis){ const l = lis; lis = null; clearInterval(l.dtm); clearTimeout(l.rt); try { l.pc.close(); } catch(e){} liveAudio.srcObject = null; liveAudio.style.display = 'none'; lj('sig_' + R + '/o_' + l.lid, 'DELETE').catch(() => {}); lj('sig_' + R + '/a_' + l.lid, 'DELETE').catch(() => {}); }
     const keepVideo = MV.k === 'yt' || MV.k === 'url';
-    if (!(await buildBc(R, name, pw, false, keepVideo, {hold: MV.hd, alone: !!MV.al}))){ leaveRoom(); return; }
+    if (!(await buildBc(R, name, pw, false, keepVideo, {hold: MV.hd, holdSet: !!MV.hs, alone: !!MV.al}))){ leaveRoom(); return; }
     MV.hostless = false; MV.gone = 0;
     liveRoom.host = true; $('hostctl').hidden = false; $('leavebtn').hidden = true;
     lisRetry = 0; $('rxdiag').hidden = true; $('lagrow').hidden = true; $('mwre').hidden = true; $('guestTile').hidden = true; lisVidReady = false;
@@ -2234,7 +2234,7 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
       vbase = cv.captureStream(1).getVideoTracks()[0]; stream.addTrack(vbase); timers.push(setInterval(tick, 1000));
     } catch(e){ vbase = null; }
   }
-  const me = {hold: (opts && +opts.hold >= 1) ? Math.min(43200, Math.round(+opts.hold)) : 10080, alone: !!(opts && opts.alone), aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
+  const me = {holdSet: !!(opts && opts.holdSet && +opts.hold >= 1), hold: (opts && opts.holdSet && +opts.hold >= 1) ? Math.min(43200, Math.round(+opts.hold)) : 10080, alone: !!(opts && opts.alone), aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
   bc = me;
   me.sid = Math.random().toString(36).slice(2, 12);
   me.reg = async () => {
@@ -2249,7 +2249,7 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
     }
     if (bc !== me) return;
     me.regd = true;
-    return lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: nowS(), s: me.sid, p: me.pw ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length, hd: me.hold, al: me.alone ? 1 : 0, np: npText(), nk: npKind()}).catch(() => {});
+    return lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: nowS(), s: me.sid, p: me.pw ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length, hd: me.hold, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, np: npText(), nk: npKind()}).catch(() => {});
   };
   await me.reg(); if (!keepState) mvPut({k: hasCam ? 'cam' : ''});
   me.timers.push(setInterval(me.reg, 15000), setInterval(bcPoll, 2000), setInterval(bcWatch, 6000));
@@ -2280,7 +2280,7 @@ function stopBroadcast(noKeep, local){
   try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep) lj('livereg/' + me.rid, 'DELETE').catch(() => {});
-  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + Math.min(43200, me.hold || 10080) * 60000, hd: me.hold || 10080, al: me.alone ? 1 : 0, lk: me.lock || '', v: snap}).catch(() => {});
+  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + Math.min(43200, me.hold || 10080) * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, lk: me.lock || '', v: snap}).catch(() => {});
   lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
   leaveRoom(); setBc(''); loadLive();
@@ -3112,7 +3112,7 @@ async function claimEmptyRoom(R, info){
   if (!cur){ setBc('이미 사라진 방입니다.'); loadLive(); return; }
   if (!cur.e){ loadLive(); listen(R, String(cur.n), !!cur.p, pw); return; }
   stopListen(); audio.pause(); stopBroadcast(true);
-  if (!(await buildBc(R, String(info.n), pw, false, undefined, {hold: info.hd, alone: !!info.al}))) return;
+  if (!(await buildBc(R, String(info.n), pw, false, undefined, {hold: cur.hd || info.hd, holdSet: !!(cur.hs || info.hs), alone: !!info.al}))) return;
   enterRoom(R, String(info.n)); fillInvite(); loadLive();
   let resumed = false;
   if (cur.v && cur.v.u){ try { resumed = await resumeVirtual(cur.v); } catch(e){} }
@@ -3230,7 +3230,7 @@ $('rsapply').onclick = () => {
   let m = Math.round((+$('rshold').value || 0) * (+$('rsunit').value || 1));
   if (!(m >= 1)){ setBc('1분 이상으로 정해 주세요.'); return; }
   if (m > 43200){ m = 43200; setBc('최대 30일까지입니다. 30일로 맞췄습니다.'); }
-  bc.hold = m; bc.alone = $('rsalone').checked; bc.aloneSince = 0; bc.reg(); rsFill();
+  bc.hold = m; bc.holdSet = true; bc.alone = $('rsalone').checked; bc.aloneSince = 0; bc.reg(); rsFill();
   setBc('⏱ 타이머를 ' + fmtMin(m) + '로 설정했습니다.' + (bc.alone ? ' (혼자 있어도 시간이 지나면 자동 폭파)' : ' (방이 비었을 때 이 시간 동안 유지)'));
 };
 $('rskeep').onchange = () => { if (bc) bc.keep = $('rskeep').checked; };
