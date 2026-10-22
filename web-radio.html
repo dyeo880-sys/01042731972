@@ -850,12 +850,13 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
                 <div class="tp" id="p-rs" hidden>
             <div class="sgrp" style="flex-basis:100%"><input id="rsname" maxlength="20" placeholder="새 방 이름 (최대 20자)" aria-label="새 방 이름" style="width:200px"><button class="addhome" style="margin:0" type="button" id="rsnameok">✏ 이름 변경</button></div>
             <div class="sgrp" style="flex-basis:100%"><strong>⏱ 방 자동 폭파 타이머</strong>
-              <input id="rshold" type="number" min="1" max="14400" step="1" value="1" aria-label="시간" style="width:76px"><select id="rsunit" aria-label="단위" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"><option value="1">분</option><option value="60" selected>시간</option><option value="1440">일</option></select>
-              <button class="addhome rspre" style="margin:0" type="button" data-m="10">10분</button><button class="addhome rspre" style="margin:0" type="button" data-m="60">1시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="360">6시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="1440">24시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="4320">3일</button><button class="addhome rspre" style="margin:0" type="button" data-m="5760">4일</button><button class="addhome rspre" style="margin:0" type="button" data-m="14400">10일</button>
+              <input id="rshold" type="number" min="1" max="43200" step="1" value="1" aria-label="시간" style="width:76px"><select id="rsunit" aria-label="단위" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"><option value="1">분</option><option value="60" selected>시간</option><option value="1440">일</option></select>
+              <button class="addhome rspre" style="margin:0" type="button" data-m="10">10분</button><button class="addhome rspre" style="margin:0" type="button" data-m="60">1시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="360">6시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="1440">24시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="4320">3일</button><button class="addhome rspre" style="margin:0" type="button" data-m="5760">4일</button><button class="addhome rspre" style="margin:0" type="button" data-m="14400">10일</button><button class="addhome rspre" style="margin:0" type="button" data-m="10080">7일</button><button class="addhome rspre" style="margin:0" type="button" data-m="43200">30일</button>
               <button class="addhome" style="margin:0" type="button" id="rsapply">적용</button></div>
+            <label class="chatnote" style="margin:0;flex-basis:100%;display:block"><input type="checkbox" id="rskeep" checked> 방장이 나가도 유튜브·링크 영상은 계속 재생 중인 것처럼 이어지게 하기 (영상 반복)</label>
             <label class="chatnote" style="margin:0;flex-basis:100%;display:block"><input type="checkbox" id="rsalone"> 방장 혼자 있을 때(듣는 사람이 없을 때)도 이 시간이 지나면 자동 폭파</label>
             <div class="chatnote" id="rsleft" style="margin:0;flex-basis:100%"></div>
-            <div class="chatnote" style="margin:0;flex-basis:100%">방장이 나가서 방이 비면 설정한 시간(최대 10일) 동안 빈 방으로 남다가 사라집니다. 그 사이에 누가 들어오면 타이머는 사라졌다가, 방이 다시 비면 처음부터 다시 시작합니다. 「💣 방 폭파」는 시간과 상관없이 바로 사라집니다. 빈 방에서는 음악·영상이 재생되지 않으며, 들어온 사람이 방장이 되어 다시 틀어야 합니다.</div>
+            <div class="chatnote" style="margin:0;flex-basis:100%">방장이 나가서 방이 비면 설정한 시간(최대 30일, 따로 설정하지 않으면 7일) 동안 빈 방으로 남다가 사라집니다. 그 사이에 누가 들어오면 타이머는 사라졌다가, 방이 다시 비면 처음부터 다시 시작합니다. 「💣 방 폭파」는 시간과 상관없이 바로 사라집니다. 방장이 나가면 유튜브·링크 영상은 방 안에서 계속 재생 중인 것으로 계산되어, 다음에 들어온 사람이 방장이 되면 지금 위치부터 이어서 재생됩니다. (아무도 없는 동안 실제로 소리가 나는 것은 아닙니다. 음악 파일·마이크·PC 소리는 방장 기기에서 나오므로 방장이 나가면 멈춥니다.)</div>
           </div>
                 <div class="tp" id="p-pw" hidden>
             <input id="bcpw2" maxlength="12" placeholder="비밀번호 설정/변경" aria-label="방 비밀번호 설정 또는 변경" style="width:150px">
@@ -1914,7 +1915,29 @@ function ytErr(code){
   } else if (code === 101 || code === 150){ setBc('이 영상은 퍼가기가 막혀 있어 재생할 수 없습니다. 다른 영상을 써 보세요.'); }
   else setBc('유튜브 영상을 재생할 수 없습니다. (오류 ' + (code || '?') + ')');
 }
-async function hostLink(raw, keep){
+// ===== 방장이 나가도 영상이 '계속 재생 중'인 것처럼 이어지게 하기 =====
+// 유튜브·링크 영상은 각자 브라우저에서 재생되므로, 나갈 때 "몇 시에 처음부터 틀었는지"를 방 정보에 남겨 두고
+// 다음에 들어온 사람이 (지금 시각 - 시작 시각) % 영상 길이 위치부터 이어서 틀어 줍니다.
+function mvKeepSnap(){
+  try {
+    if (!bc || bc.keep === false) return null;
+    if (MV.k !== 'yt' && MV.k !== 'url') return null;
+    const c = mvCur(); if (!c.p) return null;                       // 방장이 일시정지해 둔 영상은 이어 틀지 않음
+    let d = 0;
+    if (MV.k === 'yt' && MV.yt && MV.yt.getDuration) d = MV.yt.getDuration() || 0;
+    else if (MV.k === 'url' && isFinite(mwvid.duration)) d = mwvid.duration || 0;
+    return {k: MV.k, u: String(MV.u || '').slice(0, 500), d: Math.round(d), st: Math.round(nowS() - c.t * 1000)};
+  } catch(e){ return null; }
+}
+async function resumeVirtual(v){
+  if (!v || !v.u || !bc) return false;
+  const url = v.k === 'yt' ? 'https://www.youtube.com/watch?v=' + v.u : String(v.u);
+  const el = Math.max(0, (nowS() - (+v.st || nowS())) / 1000);
+  const pos = (+v.d > 5) ? el % +v.d : 0;                           // 길이를 모르면(생방송 등) 처음/현재 위치부터
+  await hostLink(url, true, pos);
+  return !!MV.k;
+}
+async function hostLink(raw, keep, startSec){
   { let c = null; try { c = PL.cap; PL.cap = null; } catch(_){} if (c){ plPush(String(raw || '').trim(), c.title); return; } }   // 재생목록 추가 모드
   if (!bc){ setBc('먼저 음악 방을 만들어 주세요.'); return; }
   const u = (raw || '').trim();
@@ -1927,13 +1950,14 @@ async function hostLink(raw, keep){
     MV.yerr = false;
     if (location.protocol === 'file:') ytErr(153);
     const pre = MV.yerr; MV.k = 'yt'; MV.u = id; MV.yerr = !!pre && location.protocol === 'file:'; MV.ys = Date.now(); $('mwyt').innerHTML = '<div id="mwytp"></div>'; mvShow('yt');
-    MV.yt = new YT.Player('mwytp', {width: '100%', height: '100%', videoId: id, playerVars: {autoplay: 1, playsinline: 1, rel: 0, cc_load_policy: 1, cc_lang_pref: 'ko', hl: 'ko'},
+    MV.yt = new YT.Player('mwytp', {width: '100%', height: '100%', videoId: id, playerVars: Object.assign({autoplay: 1, playsinline: 1, rel: 0, cc_load_policy: 1, cc_lang_pref: 'ko', hl: 'ko'}, startSec > 1 ? {start: Math.floor(startSec)} : {}),
       events: {onReady: e => { try { mvolApply(); } catch(_){} try { e.target.playVideo(); } catch(_){} mvPush(); }, onStateChange: ev => { mvPush(); try { kqVidState(ev); } catch(_){} try { plVidState(ev); } catch(_){} },
                onError: e => { ytErr(e && e.data); try { plErr(e && e.data); } catch(_){} }}});
     if (!MV.yerr) mwUpdate('▶ 유튜브 영상 함께 보는 중');
   } else {
     MV.k = 'url'; MV.u = u; attachUrl(u); mvShow('vid');
     mwvid.onerror = () => setBc('이 주소의 영상을 재생할 수 없습니다. mp4·webm·m3u8 같은 영상 파일 직접 주소여야 합니다.');
+    if (startSec > 1) mwvid.addEventListener('loadedmetadata', () => { try { mwvid.currentTime = startSec; } catch(_){} }, {once: true});
     mwvid.play().catch(() => {}); mwUpdate('▶ 링크 영상 함께 보는 중');
   }
   MV.timer = setInterval(mvPush, 5000); setTimeout(mvPush, 800);
@@ -2007,7 +2031,9 @@ async function mvPoll(){
   if (reg && reg.ts !== MV.regTs){ MV.regTs = reg.ts; MV.regAt = Date.now(); }
   if (reg){ MV.hd = reg.hd; MV.al = reg.al; if (reg.n && String(reg.n) !== liveRoom.name){ liveRoom.name = String(reg.n); roomHead(); } }
   if (!reg || reg.e || Date.now() - (MV.regAt || Date.now()) > 90000){
-    if (++MV.gone >= 2){ MV.hostless = true; electStep(id); return; }
+    // 방장이 나간 것으로 보이는 동안에는 지금 재생 중인 영상을 멈추지 않고 그대로 둠 (새 방장이 정해질 때까지)
+    if (++MV.gone >= 2){ MV.hostless = true; electStep(id); }
+    return;
   } else {
     MV.gone = 0;
     if (MV.hostless){ MV.hostless = false; setBc('새 방장에게 다시 연결합니다.'); reconnectListen(); }
@@ -2024,7 +2050,17 @@ async function mvPoll(){
 // ---- 방장이 나갔을 때: 방에 남은 사람이 새 방장이 됨 ----
 async function electStep(R){
   if (MV.taking || !liveRoom || liveRoom.id !== R || isHost()) return;
-  if (liveRoom.only){ setBc('방이 닫혔거나 방장이 나가서 소리 듣기를 멈췄습니다.'); setStatus('정지'); stopListen(); loadLive(); return; }
+  if (liveRoom.only){
+    let closed = null; try { closed = await lj('roomclosed_' + R, 'GET'); } catch(e){}
+    const keepable = (MV.k === 'yt' || MV.k === 'url') && !(closed && Date.now() - closed.ts < 600000);
+    if (!keepable){ setBc('방이 닫혔거나 방장이 나가서 소리 듣기를 멈췄습니다.'); setStatus('정지'); stopListen(); loadLive(); return; }
+    let dd = {}; try { dd = await lj('roommem_' + R, 'GET') || {}; } catch(e){ return; }
+    const nw = nowS(), others = Object.keys(dd).filter(k => k !== myId && dd[k] && nw - dd[k].ts < 25000);
+    if (others.length) return;                 // 방에 남은 다른 사람이 새 방장이 될 때까지 영상은 그대로 재생
+    if (!liveRoom || liveRoom.id !== R || !liveRoom.only) return;
+    openOnlyRoom(); takeOver(R);               // 아무도 안 남았으면 내가 방을 이어받아 영상을 계속 틀어 줌
+    return;
+  }
   try {
     const c = await lj('roomclosed_' + R, 'GET');
     if (c && Date.now() - c.ts < 600000){
@@ -2080,7 +2116,7 @@ async function mvApply(s){
         if (!(window.YT && YT.Player) || MV.k !== 'yt' || !liveRoom){ MV.k = ''; return; }
         $('mwyt').innerHTML = '<div id="mwytp"></div>'; mvShow('yt');
         MV.yt = new YT.Player('mwytp', {width: '100%', height: '100%', videoId: s.u, playerVars: {autoplay: s.p ? 1 : 0, playsinline: 1, rel: 0, start: Math.floor(want)},
-          events: {onReady: () => { try { mvolApply(); } catch(_){} }, onError: e => ytErr(e && e.data), onStateChange: () => mvPush()}});
+          events: {onReady: () => { try { mvolApply(); } catch(_){} }, onError: e => ytErr(e && e.data), onStateChange: ev => { mvPush(); try { if (ev && ev.data === 0){ if (isHost()) plVidState(ev); else if (MV.hostless){ MV.yt.seekTo(0, true); MV.yt.playVideo(); } } } catch(_){} }}});
       } else {
         attachUrl(s.u); mvShow('vid');
         mwvid.onerror = () => setBc('방장이 튼 영상 주소를 재생할 수 없습니다.');
@@ -2200,7 +2236,7 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
       vbase = cv.captureStream(1).getVideoTracks()[0]; stream.addTrack(vbase); timers.push(setInterval(tick, 1000));
     } catch(e){ vbase = null; }
   }
-  const me = {hold: (opts && +opts.hold >= 1) ? Math.min(14400, Math.round(+opts.hold)) : 60, alone: !!(opts && opts.alone), aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
+  const me = {hold: (opts && +opts.hold >= 1) ? Math.min(43200, Math.round(+opts.hold)) : 10080, alone: !!(opts && opts.alone), aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
   bc = me;
   me.sid = Math.random().toString(36).slice(2, 12);
   me.reg = async () => {
@@ -2234,6 +2270,7 @@ async function makeMusicRoom(){
   setBc('음악 방이 만들어졌습니다. 아래에서 음악 파일·마이크·PC 소리 중 하나를 골라 재생하세요.');
 }
 function stopBroadcast(noKeep, local){
+  const snap = (!noKeep && !local) ? mvKeepSnap() : null;
   const lj = local ? (() => Promise.resolve()) : ljReal; // local=true: 내 화면만 정리(새 방장의 방 정보는 건드리지 않음)
   if (!bc) return;
   const me = bc; bc = null;
@@ -2245,7 +2282,7 @@ function stopBroadcast(noKeep, local){
   try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep) lj('livereg/' + me.rid, 'DELETE').catch(() => {});
-  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + Math.min(14400, me.hold || 60) * 60000, hd: me.hold || 60, al: me.alone ? 1 : 0, lk: me.lock || ''}).catch(() => {});
+  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + Math.min(43200, me.hold || 10080) * 60000, hd: me.hold || 10080, al: me.alone ? 1 : 0, lk: me.lock || '', v: snap}).catch(() => {});
   lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
   leaveRoom(); setBc(''); loadLive();
@@ -3079,7 +3116,10 @@ async function claimEmptyRoom(R, info){
   stopListen(); audio.pause(); stopBroadcast(true);
   if (!(await buildBc(R, String(info.n), pw, false, undefined, {hold: info.hd, alone: !!info.al}))) return;
   enterRoom(R, String(info.n)); fillInvite(); loadLive();
-  setBc('빈 방에 들어와 내가 방장이 되었습니다. 음악 파일·마이크·PC 소리나 영상을 골라 틀어 주세요.');
+  let resumed = false;
+  if (cur.v && cur.v.u){ try { resumed = await resumeVirtual(cur.v); } catch(e){} }
+  setBc(resumed ? '빈 방에 들어와 내가 방장이 되었습니다. 방장이 나간 뒤에도 영상은 계속 재생 중이었고, 지금 위치부터 이어집니다.' : '빈 방에 들어와 내가 방장이 되었습니다. 음악 파일·마이크·PC 소리나 영상을 골라 틀어 주세요.');
+  if (resumed){ try { $('mediawin').hidden = false; $('mwctl').hidden = false; } catch(_){} }
 }
 async function loadLive(){
   const box = $('livelist');
@@ -3096,7 +3136,7 @@ async function loadLive(){
     ids.forEach(id => {
       const b = document.createElement('button'); b.className = 'st'; b.type = 'button'; b.style.flex = '1';
       const n = document.createElement('span'); n.className = 'n';
-      n.textContent = (id === INVITE ? '▶ 초대받은 음악 방 입장: ' : '🎵 ') + String(d[id].n).slice(0, 24) + (d[id].p ? ' 🔒' : '') + (d[id].e ? ' · 빈 방 — 들어가면 내가 방장 (' + fmtMin(Math.max(1, Math.ceil((d[id].e - now) / 60000))) + ' 남음)' : ' · ' + (d[id].c || 0) + '명 듣는 중' + (d[id].np ? ' · ' + String(d[id].np).slice(0, 40) : '')) + (bc && bc.rid === id ? ' (내 방)' : '');
+      n.textContent = (id === INVITE ? '▶ 초대받은 음악 방 입장: ' : '🎵 ') + String(d[id].n).slice(0, 24) + (d[id].p ? ' 🔒' : '') + (d[id].e ? ' · 빈 방 — 들어가면 내가 방장' + (d[id].v ? ' · ▶ 영상 계속 재생 중' : '') + ' (' + fmtMin(Math.max(1, Math.ceil((d[id].e - now) / 60000))) + ' 남음)' : ' · ' + (d[id].c || 0) + '명 듣는 중' + (d[id].np ? ' · ' + String(d[id].np).slice(0, 40) : '')) + (bc && bc.rid === id ? ' (내 방)' : '');
       if (id === INVITE) b.classList.add('on');
       b.append(n);
       if (!(bc && bc.rid === id)) b.onclick = d[id].e ? () => claimEmptyRoom(id, d[id]) : () => listenFav(id, d[id]);
@@ -3181,9 +3221,9 @@ function rsUpdate(){
 }
 function rsFill(){
   const me = bc; if (!me) return;
-  const m = me.hold || 60;
+  const m = me.hold || 10080;
   if (m % 1440 === 0){ $('rsunit').value = '1440'; $('rshold').value = m / 1440; } else if (m % 60 === 0){ $('rsunit').value = '60'; $('rshold').value = m / 60; } else { $('rsunit').value = '1'; $('rshold').value = m; }
-  $('rsalone').checked = !!me.alone; rsUpdate();
+  $('rsalone').checked = !!me.alone; $('rskeep').checked = me.keep !== false; rsUpdate();
 }
 document.querySelector('[data-p="p-rs"]').addEventListener('click', rsFill);
 document.querySelectorAll('.rspre').forEach(b => { b.onclick = () => { const m = +b.dataset.m; if (m % 1440 === 0 && m > 1440){ $('rsunit').value = '1440'; $('rshold').value = m / 1440; } else if (m % 60 === 0){ $('rsunit').value = '60'; $('rshold').value = m / 60; } else { $('rsunit').value = '1'; $('rshold').value = m; } }; });
@@ -3191,10 +3231,11 @@ $('rsapply').onclick = () => {
   if (!bc) return;
   let m = Math.round((+$('rshold').value || 0) * (+$('rsunit').value || 1));
   if (!(m >= 1)){ setBc('1분 이상으로 정해 주세요.'); return; }
-  if (m > 14400){ m = 14400; setBc('최대 10일까지입니다. 10일로 맞췄습니다.'); }
+  if (m > 43200){ m = 43200; setBc('최대 30일까지입니다. 30일로 맞췄습니다.'); }
   bc.hold = m; bc.alone = $('rsalone').checked; bc.aloneSince = 0; bc.reg(); rsFill();
   setBc('⏱ 타이머를 ' + fmtMin(m) + '로 설정했습니다.' + (bc.alone ? ' (혼자 있어도 시간이 지나면 자동 폭파)' : ' (방이 비었을 때 이 시간 동안 유지)'));
 };
+$('rskeep').onchange = () => { if (bc) bc.keep = $('rskeep').checked; };
 $('rsnameok').onclick = () => {
   if (!bc) return;
   const v = $('rsname').value.trim().slice(0, 20);
@@ -3286,7 +3327,7 @@ function pinRow(id, d, hit, now, noOnly){
   const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center'; row.setAttribute('role', 'listitem');
   const b = document.createElement('button'); b.className = 'st' + (hit ? ' on' : ''); b.type = 'button'; b.style.cssText = 'flex:1;border-left:4px solid var(--amber)';
   const n = document.createElement('span'); n.className = 'n';
-  n.textContent = '🎵 ' + String(d.n).slice(0, 24) + (d.p ? ' 🔒' : '') + (d.e ? ' · 빈 방 — 들어가면 내가 방장 (' + fmtMin(Math.max(1, Math.ceil((d.e - now) / 60000))) + ' 남음)' : ' · ' + (d.c || 0) + '명 듣는 중' + (d.np ? ' · ' + String(d.np).slice(0, 40) : '')) + (mine ? ' (내 방)' : '');
+  n.textContent = '🎵 ' + String(d.n).slice(0, 24) + (d.p ? ' 🔒' : '') + (d.e ? ' · 빈 방 — 들어가면 내가 방장' + (d.v ? ' · ▶ 영상 계속 재생 중' : '') + ' (' + fmtMin(Math.max(1, Math.ceil((d.e - now) / 60000))) + ' 남음)' : ' · ' + (d.c || 0) + '명 듣는 중' + (d.np ? ' · ' + String(d.np).slice(0, 40) : '')) + (mine ? ' (내 방)' : '');
   b.append(n);
   if (!mine) b.onclick = d.e ? () => claimEmptyRoom(id, d) : () => listenFav(id, d);
   row.append(b);
@@ -3401,7 +3442,7 @@ $('rvleave').onclick = () => {
   try { localStorage.removeItem('radio_last_room'); } catch(e){}
   if (!liveRoom){ hideRoomView(); return; }
   if (isHost()){
-    if (!confirm('방을 나가면 지금 방에 있는 사람 중 한 명이 새 방장이 됩니다. (아무도 없어도 방은 ' + fmtMin((bc && bc.hold) || 60) + ' 동안 빈 방으로 남아 누구나 들어와 방장이 될 수 있습니다. 방을 아예 없애려면 "💣 방 폭파"를 누르세요.) 나갈까요?')) return;
+    if (!confirm('방을 나가면 지금 방에 있는 사람 중 한 명이 새 방장이 됩니다. (아무도 없어도 방은 ' + fmtMin((bc && bc.hold) || 10080) + ' 동안 빈 방으로 남아 누구나 들어와 방장이 될 수 있습니다. 방을 아예 없애려면 "💣 방 폭파"를 누르세요.) 나갈까요?')) return;
     stopBroadcast();
   } else { stopListen(); if (liveRoom) leaveRoom(); setStatus('정지'); }
 };
@@ -3545,7 +3586,9 @@ function plEnded(){
 }
 // 🔂 영상 한 개 반복: 방장이 켜 두면 유튜브·링크 영상이 끝날 때 처음부터 다시 재생
 function plOne(){
-  if (!isHost() || !PL.one) return false;
+  if (!isHost()) return false;
+  const inList = (PL.cur && plSame(PL.cur)) || PL.list.some(plSame);
+  if (!(PL.one || (bc && bc.keep !== false && !inList))) return false;   // 한 개 반복을 켰거나, '나가도 계속 재생'이 켜진 방의 목록 밖 영상
   try { if (kq.list.some(x => x.st === 'now')) return false; } catch(_){}
   if (MV.k === 'yt' && MV.yt && MV.yt.seekTo){ try { MV.yt.seekTo(0, true); MV.yt.playVideo(); } catch(_){} try { mvPush(); } catch(_){} return true; }
   if (MV.k === 'url'){ try { mwvid.currentTime = 0; mwvid.play().catch(() => {}); } catch(_){} try { mvPush(); } catch(_){} return true; }
@@ -3558,7 +3601,10 @@ function plErr(code){
   const bad = PL.cur; setBc('⚠ 재생할 수 없는 영상이라 다음으로 넘어갑니다.');
   setTimeout(() => { if (PL.cur === bad && plSame(bad)) plEnded(); }, 2500);
 }
-mwvid.addEventListener('ended', () => { if (MV.k === 'url' || MV.k === 'file'){ if (plOne()) return; plEnded(); } });
+mwvid.addEventListener('ended', () => {
+  if (!isHost() && MV.hostless && MV.k === 'url'){ try { mwvid.currentTime = 0; mwvid.play().catch(() => {}); } catch(_){} return; }
+  if (MV.k === 'url' || MV.k === 'file'){ if (plOne()) return; plEnded(); }
+});
 mwvid.addEventListener('error', () => {
   if (!mwvid.error || MV.k !== 'url' || !PL.cur || !plSame(PL.cur) || !PL.auto) return;
   const bad = PL.cur; setTimeout(() => { if (PL.cur === bad && plSame(bad)) plEnded(); }, 1500);
