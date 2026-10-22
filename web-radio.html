@@ -310,6 +310,14 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 .mtvbar button:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
 .mtvbar input{flex:1;min-width:36px;accent-color:var(--brass)}
 .mtvbox:fullscreen{width:100vw;height:100vh;border:0;border-radius:0;background:#000}
+/* 📺 방을 작게 줄이면 방 영상(유튜브·링크·파일·화면)을 메인 TV 창 위에 겹쳐서 재생 */
+.mwscreen.tvdocked{position:fixed!important;z-index:75;max-height:none!important;min-height:0!important;padding:0!important;margin:0!important;overflow:hidden!important;background:#000;border:3px solid var(--brass);border-radius:8px;box-sizing:border-box;flex-wrap:nowrap;gap:0}
+.mwscreen.tvdocked #mwvid,.mwscreen.tvdocked #liveAudio,.mwscreen.tvdocked #bcPreview{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:contain;background:#000}
+.mwscreen.tvdocked #mwyt{width:100%!important;height:100%!important;max-width:none!important;aspect-ratio:auto!important}
+#rvdock{display:none}#roomview.mini #rvdock{display:inline-block}
+#rdonly{position:fixed;left:12px;bottom:12px;z-index:66;max-width:calc(100vw - 24px);display:flex;gap:8px;align-items:center;background:linear-gradient(180deg,#3a2616,#1d120b);border:2px solid var(--brass);border-radius:999px;padding:6px 12px;box-shadow:0 6px 18px #000a;color:var(--ink);font-size:13px}
+#rdonly[hidden]{display:none}#rdonly .rdn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#rdonly .addhome{margin:0;padding:3px 10px;font-size:12px;white-space:nowrap}
+#roomview.tvon #mwnow::before{content:'📺 TV 창에서 재생 중 · '}
 .mtvbox:fullscreen .mtvbar{padding:10px 18px}
 .mtvbox:fullscreen .mtvbar button{font-size:26px}
 .mtvbox:fullscreen .mtvname{font-size:16px;padding:4px 10px}
@@ -503,9 +511,11 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     </span>
   </div>
   <div class="count" id="count"></div>
+  <div id="livepin"></div>
   <div class="list" id="list" role="list"></div>
   <section class="chat" id="tvsec" aria-label="TV 보기">
     <div class="chathead"><strong>📺 TV·위성 방송</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvadm">➕ 방송 추가</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvmv">🎵 24시간 뮤직비디오</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvresume" hidden>▶ 다시 켜기</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvopen">나라별 채널 펼치기</button></span></div>
+    <div id="livepin2"></div>
     <div class="gate" id="tvadmin" hidden style="text-align:left;margin-bottom:8px">
       <div style="color:var(--amber);font-weight:700;font-size:14px;margin-bottom:6px">⭐ 기타 방송 추가 — 관리자 전용 · 실시간 영상이 나오는 주소만 등록되고, 안 나오는 방송은 자동으로 숨겨집니다</div>
       <div class="tvnotice" role="note"><b>방송 추가는 관리자만 할 수 있습니다.</b> 불법 중계, 유료 방송, 저작권자가 허락하지 않은 방송은 올리지 않습니다. 방송사나 권리자가 공식으로 공개한 주소만 등록하며, 문제가 있는 방송은 목록의 '🚩 신고' 버튼으로 알려 주시면 확인 후 삭제합니다.</div>
@@ -559,7 +569,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="chatnote">음악 방 목록에서 ☆를 누르면 여기에 저장됩니다. 방마다 내 이름과 비밀번호를 정해 두면 「입장」만 눌러 바로 들어갑니다. (이름·비밀번호는 이 기기에만 저장됩니다)</div>
   </section>
   <section class="chat" id="musicroom" aria-label="음악 방">
-    <div class="chathead"><strong>🎵 음악 방</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="mkopen">＋ 음악 방 만들기</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="livereload">새로고침</button></span></div>
+    <div class="chathead"><strong>🎵 음악 방</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="mkopen">＋ 음악 방 만들기</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="livereload">새로고침</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="rmadm" title="관리자는 모든 음악 방을 강제로 폭파할 수 있습니다">🔒 관리자</button></span></div>
     <div class="gate" id="mkform" hidden style="text-align:left;margin-bottom:8px">
       <div class="chatform" style="flex-wrap:wrap"><input id="bctitle" maxlength="20" placeholder="방 이름 (예: 금요일 밤 재즈)" aria-label="방 이름"><input id="bcpw" maxlength="12" placeholder="비밀번호 (선택 · 비우면 누구나 입장)" aria-label="비밀번호" style="max-width:260px"></div>
       <label class="chatnote" style="display:block"><input type="checkbox" id="bccam"> 📷 내 카메라도 보여주기 (방을 만들 때만 선택할 수 있습니다)</label>
@@ -750,7 +760,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <p class="note">※ 실제 AM/FM 전파가 아니라, 각 방송국이 인터넷으로 송출하는 스트림을 radio-browser.info 공개 목록에서 불러옵니다. 일부 방송국은 지역 제한이나 주소 변경으로 재생되지 않을 수 있습니다. 이 파일을 내 컴퓨터에서 직접 열어 사용하세요.</p>
 </main>
 <div id="roomview" hidden role="dialog" aria-label="음악 방"><div class="rvbox">
-  <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><span id="tkbadge" class="blink" hidden>🔔 요청</span><button class="addhome" style="margin:0" type="button" id="rvside" title="채팅창을 영상 옆 오른쪽/왼쪽/아래로 옮깁니다">💬 채팅: 오른쪽 ▶</button><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
+  <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><span id="rscd" class="chatnote" hidden style="margin:0;align-self:center;color:var(--amber);white-space:nowrap"></span><button class="addhome danger" style="margin:0" type="button" id="rvforce" hidden title="관리자 권한으로 이 방을 강제 폭파합니다">💣 강제 폭파</button><span id="tkbadge" class="blink" hidden>🔔 요청</span><button class="addhome" style="margin:0" type="button" id="rvside" title="채팅창을 영상 옆 오른쪽/왼쪽/아래로 옮깁니다">💬 채팅: 오른쪽 ▶</button><button class="addhome" style="margin:0" type="button" id="rvdock" title="작은 창일 때 방 영상을 메인 TV 창에서 재생합니다">📺 TV로 보기: 켜짐</button><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
   <section id="mediawin" hidden aria-label="미디어 창">
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
     <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button><button class="addhome" type="button" id="lisfs" style="display:none;margin:0 0 0 auto" title="영상을 전체화면으로 봅니다 (나갈 때는 Esc)" aria-label="영상 전체화면">⛶ 전체화면</button></div>
@@ -758,7 +768,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="mwsize" id="lagrow" hidden><label for="lagsel">🐢 끊김 줄이기</label><select id="lagsel" aria-label="끊김 줄이기 (영상을 조금 늦게 재생)" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:4px 8px;font-size:13px"><option value="0">끔 (가장 빠름)</option><option value="1000">1초 늦게</option><option value="1500">1.5초 늦게 (기본)</option><option value="2000">2초 늦게</option><option value="3000">3초 늦게</option><option value="4000">4초 늦게 (소리가 끊길 수 있음)</option></select><span class="chatnote" style="margin:0">늦게 볼수록 덜 끊깁니다</span></div>
     <div class="mwsize" id="lecmeter" hidden><strong style="color:var(--amber)">🎓 보내는 소리</strong><span>PC 소리 <meter id="mtsys" min="0" max="1" value="0" style="width:90px"></meter></span><span>내 마이크 <meter id="mtmic" min="0" max="1" value="0" style="width:90px"></meter></span><button class="addhome" type="button" id="lecmic" style="margin:0" title="강의 중 내 마이크만 끄거나 켭니다 (PC 소리는 계속 나갑니다)">🎤 마이크 끄기</button><span id="mtmsg" style="flex-basis:100%;font-size:13px"></span></div>
     <div class="chatnote" id="rxdiag" hidden style="margin:0 0 8px;font-size:13px"></div>
-    <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><button class="addhome" id="kbtn" type="button" hidden>🎤 노래 신청</button><button class="addhome" id="gfbtn" type="button" hidden title="내 컴퓨터의 음악·영상 파일을 방에 틀어 줍니다 (방장 허용 필요)">🎵 내 파일 틀기</button><input id="gffile" type="file" accept="audio/*,video/*" hidden><input id="klibdir" type="file" webkitdirectory multiple hidden><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div><div id="kform" hidden style="flex-basis:100%;background:#1a0f08;border-radius:6px;padding:8px 10px"><div class="chatnote" style="margin:0 0 6px">🎤 노래 신청 — 부를 곡과 반주(노래방) 영상을 미리 골라 넣어 두세요. 순서가 되면 방장이 시작하고, 내 마이크가 자동으로 켜집니다. 마이크는 이어폰을 쓰세요.<br>📂 유튜브가 막힌 곡은 아래 「내 파일로 반주」(mp3·mp4 등)나 영상 직접 주소로 신청하세요. 내 파일 반주는 내 기기에서 재생되어 내 목소리와 함께 방에 나갑니다. (이어폰 필수)</div><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kt" maxlength="30" placeholder="곡 제목" aria-label="곡 제목" style="max-width:180px"><input id="ku" placeholder="반주 주소 (유튜브 · mp3/mp4 직접 주소)" aria-label="반주 영상 주소"></div><div id="klib" class="kbook" style="margin:6px 0"><h4>🎤 노래방 곡 목록</h4><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kq2" placeholder="🔎 제목 · 곡번호 · 초성 검색 (예: 사랑, 10023, ㅅㄹ)" aria-label="노래 검색" style="min-width:200px"><button class="addhome" id="klibreload" type="button" style="margin:0;padding:4px 10px;font-size:12px">새로고침</button></div><div id="kcats" class="kcats" hidden></div><div id="klibres" class="kres" hidden></div></div>
+    <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><button class="addhome" id="kbtn" type="button" hidden>🎤 노래 신청</button><button class="addhome" id="gfbtn" type="button" hidden title="내 컴퓨터의 음악·영상 파일을 방에 틀어 줍니다 (방장 허용 필요)">🎵 내 파일 틀기</button><button class="addhome" id="vqbtn" type="button" hidden title="유튜브·영상 링크를 방장 재생목록에 올립니다 (방장이 체크해야 재생)">🎬 영상 추가</button><input id="gffile" type="file" accept="audio/*,video/*" hidden><input id="klibdir" type="file" webkitdirectory multiple hidden><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div><div id="vqform" hidden style="flex-basis:100%;background:#1a0f08;border-radius:6px;padding:8px 10px"><div class="chatnote" style="margin:0 0 6px">🎬 영상 추가 — 유튜브·mp4 링크를 넣으면 방장의 재생목록에 올라갑니다. <b>방장이 체크(허용)한 영상만 재생</b>되고, 허용되지 않은 영상은 건너뜁니다. (한 사람 최대 5개)</div><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="vqu" placeholder="영상 링크 (유튜브 · mp4 · m3u8)" aria-label="추가할 영상 링크"><button class="addhome" id="vqgo" type="button" style="margin:0">➕ 추가</button></div><div id="vqmsg" class="chatnote" style="margin:6px 0 0"></div><div id="vqmine"></div></div><div id="kform" hidden style="flex-basis:100%;background:#1a0f08;border-radius:6px;padding:8px 10px"><div class="chatnote" style="margin:0 0 6px">🎤 노래 신청 — 부를 곡과 반주(노래방) 영상을 미리 골라 넣어 두세요. 순서가 되면 방장이 시작하고, 내 마이크가 자동으로 켜집니다. 마이크는 이어폰을 쓰세요.<br>📂 유튜브가 막힌 곡은 아래 「내 파일로 반주」(mp3·mp4 등)나 영상 직접 주소로 신청하세요. 내 파일 반주는 내 기기에서 재생되어 내 목소리와 함께 방에 나갑니다. (이어폰 필수)</div><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kt" maxlength="30" placeholder="곡 제목" aria-label="곡 제목" style="max-width:180px"><input id="ku" placeholder="반주 주소 (유튜브 · mp3/mp4 직접 주소)" aria-label="반주 영상 주소"></div><div id="klib" class="kbook" style="margin:6px 0"><h4>🎤 노래방 곡 목록</h4><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kq2" placeholder="🔎 제목 · 곡번호 · 초성 검색 (예: 사랑, 10023, ㅅㄹ)" aria-label="노래 검색" style="min-width:200px"><button class="addhome" id="klibreload" type="button" style="margin:0;padding:4px 10px;font-size:12px">새로고침</button></div><div id="kcats" class="kcats" hidden></div><div id="klibres" class="kres" hidden></div></div>
 <div class="chatform" style="flex-wrap:wrap;margin:6px 0;align-items:center"><label class="addhome" style="margin:0;cursor:pointer">📂 내 파일로 반주 (mp3·mp4 등)<input id="kfile" type="file" accept="audio/*,video/*" hidden></label><span id="kfname" style="font-size:13px;opacity:.9"></span><button class="addhome" id="kfclr" type="button" style="margin:0;padding:2px 8px;font-size:12px" hidden>✕</button></div>
 <label class="chatnote" style="display:block;margin:6px 0"><input type="checkbox" id="ke" checked> 노래방 에코(울림) 효과</label><div class="chatform" style="margin:0"><button class="addhome" id="kgo" type="button" style="margin:0">🎤 신청하기</button><button class="addhome" id="kprevbtn" type="button" style="margin:0">🔍 영상 미리보기</button><button class="addhome" id="kcancel" type="button" style="margin:0">취소</button></div><div id="kprev" style="margin-top:6px"></div><div class="chatnote" style="margin:6px 0 0">저작권 안내: 영상·가사는 이 사이트가 저장하지 않으며, 유튜브가 허용하는 영상만 재생됩니다. 권리자가 막은 영상은 재생되지 않을 수 있습니다.</div></div></div>
     <div class="debate" id="debate" hidden></div><div id="rxfloat" aria-hidden="true"></div>
@@ -790,6 +800,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <span class="hbl">설정</span>
         <div class="tb">
           <button class="tbtn" data-p="p-vmix" type="button" aria-expanded="false">🎚 음량 ▾</button>
+          <button class="tbtn" data-p="p-rs" type="button" aria-expanded="false">⚙ 방 이름·타이머 ▾</button>
           <button class="tbtn" data-p="p-pw" type="button" aria-expanded="false">🔒 비밀번호 ▾</button>
           <button class="tbtn" data-p="p-inv" type="button" aria-expanded="false">💌 초대 ▾</button>
           <button class="addhome danger" type="button" id="bcstop" title="방을 완전히 없앱니다">💣 방 폭파</button>
@@ -797,6 +808,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       </div>
                 <div class="tp" id="p-music" hidden>
             <label class="addhome" style="margin:0;cursor:pointer">음악 파일<input id="bcfile" type="file" accept="audio/*" multiple hidden></label>
+            <select id="bcloop" aria-label="반복 방식" title="고른 음악 파일을 어떻게 반복할지" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"><option value="all">🔁 전체 반복</option><option value="one">🔂 한 곡 반복</option><option value="off">반복 안 함</option></select>
             <button class="addhome" style="margin:0" type="button" id="bcmic">🎤 마이크</button>
             <button class="addhome" style="margin:0" type="button" id="bcscr">🖥 PC 소리</button>
           </div>
@@ -835,6 +847,16 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
           <label title="마이크를 켠 손님 모두의 목소리 크기 (손님 한 명씩은 아래 요청 목록에서 조절)"><span>🎤 손님 마이크 전체</span><input id="mixguest" type="range" min="0" max="2" step="0.05" value="1"><span id="mixguestv" class="mv">100%</span></label>
         </div>
       </div>
+                <div class="tp" id="p-rs" hidden>
+            <div class="sgrp" style="flex-basis:100%"><input id="rsname" maxlength="20" placeholder="새 방 이름 (최대 20자)" aria-label="새 방 이름" style="width:200px"><button class="addhome" style="margin:0" type="button" id="rsnameok">✏ 이름 변경</button></div>
+            <div class="sgrp" style="flex-basis:100%"><strong>⏱ 방 자동 폭파 타이머</strong>
+              <input id="rshold" type="number" min="1" max="1440" step="1" value="1" aria-label="시간" style="width:76px"><select id="rsunit" aria-label="단위" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"><option value="1">분</option><option value="60" selected>시간</option></select>
+              <button class="addhome rspre" style="margin:0" type="button" data-m="10">10분</button><button class="addhome rspre" style="margin:0" type="button" data-m="60">1시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="360">6시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="1440">24시간</button>
+              <button class="addhome" style="margin:0" type="button" id="rsapply">적용</button></div>
+            <label class="chatnote" style="margin:0;flex-basis:100%;display:block"><input type="checkbox" id="rsalone"> 방장 혼자 있을 때(듣는 사람이 없을 때)도 이 시간이 지나면 자동 폭파</label>
+            <div class="chatnote" id="rsleft" style="margin:0;flex-basis:100%"></div>
+            <div class="chatnote" style="margin:0;flex-basis:100%">방장이 나가서 방이 비면 설정한 시간(최대 24시간) 동안 빈 방으로 남다가 사라집니다. 그 사이에 누가 들어오면 타이머는 사라졌다가, 방이 다시 비면 처음부터 다시 시작합니다. 「💣 방 폭파」는 시간과 상관없이 바로 사라집니다.</div>
+          </div>
                 <div class="tp" id="p-pw" hidden>
             <input id="bcpw2" maxlength="12" placeholder="비밀번호 설정/변경" aria-label="방 비밀번호 설정 또는 변경" style="width:150px">
             <button class="addhome" style="margin:0" type="button" id="pwset">설정</button>
@@ -867,6 +889,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <div id="rvbody"></div>
 </div></div>
 <audio id="audio" preload="none"></audio>
+<div id="rdonly" hidden role="status"><span class="rdn" id="rdonlyn"></span><button class="addhome" type="button" id="rdonlyopen" title="이 방의 화면·채팅까지 같이 보기">🚪 방 열기</button><button class="addhome" type="button" id="rdonlyoff" title="소리 듣기를 끝냅니다">■ 끄기</button></div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -1787,6 +1810,7 @@ function roomHead(){
   $('rvtitle').textContent = '🎵 ' + liveRoom.name + (host && bc && bc.pw ? ' 🔒' : '');
   $('roomtitle').textContent = host ? '👑 내가 방장입니다' : '음악 방에 참여 중';
   $('rstat').style.display = host ? 'none' : '';
+  try { $('rvforce').hidden = !(rmAdm() && !host); } catch(e){}
 }
 // 토론 반응 박스: 큰 화면에서는 채팅창 아래, 작은 창/방 밖에서는 미디어 창 안
 function placeDebate(){
@@ -1981,6 +2005,7 @@ async function mvPoll(){
   if (!liveRoom || liveRoom.id !== id) return;
   { let hh = null; Object.keys(gg || {}).forEach(k => { const m = gg[k]; if (m && m.h && (!hh || m.ts > hh.ts)) hh = m; }); guestSet(hh && hh.g ? {n: hh.g} : null); }
   if (reg && reg.ts !== MV.regTs){ MV.regTs = reg.ts; MV.regAt = Date.now(); }
+  if (reg){ MV.hd = reg.hd; MV.al = reg.al; if (reg.n && String(reg.n) !== liveRoom.name){ liveRoom.name = String(reg.n); roomHead(); } }
   if (!reg || reg.e || Date.now() - (MV.regAt || Date.now()) > 90000){
     if (++MV.gone >= 2){ MV.hostless = true; electStep(id); return; }
   } else {
@@ -1999,11 +2024,12 @@ async function mvPoll(){
 // ---- 방장이 나갔을 때: 방에 남은 사람이 새 방장이 됨 ----
 async function electStep(R){
   if (MV.taking || !liveRoom || liveRoom.id !== R || isHost()) return;
+  if (liveRoom.only){ setBc('방이 닫혔거나 방장이 나가서 소리 듣기를 멈췄습니다.'); setStatus('정지'); stopListen(); loadLive(); return; }
   try {
     const c = await lj('roomclosed_' + R, 'GET');
     if (c && Date.now() - c.ts < 600000){
       MV.hostless = false; MV.gone = 0;
-      setBc('방장이 방을 폭파했습니다. 방이 사라졌습니다.'); setStatus('정지');
+      setBc(c.f ? '관리자가 방을 폭파했습니다. 방이 사라졌습니다.' : '방장이 방을 폭파했습니다. 방이 사라졌습니다.'); setStatus('정지');
       if (lis) stopListen(); else leaveRoom(); loadLive(); return;
     }
   } catch(e){}
@@ -2021,11 +2047,11 @@ async function takeOver(R){
     clearInterval(MV.poll);
     if (lis){ const l = lis; lis = null; clearInterval(l.dtm); clearTimeout(l.rt); try { l.pc.close(); } catch(e){} liveAudio.srcObject = null; liveAudio.style.display = 'none'; lj('sig_' + R + '/o_' + l.lid, 'DELETE').catch(() => {}); lj('sig_' + R + '/a_' + l.lid, 'DELETE').catch(() => {}); }
     const keepVideo = MV.k === 'yt' || MV.k === 'url';
-    if (!(await buildBc(R, name, pw, false, keepVideo))){ leaveRoom(); return; }
+    if (!(await buildBc(R, name, pw, false, keepVideo, {hold: MV.hd, alone: !!MV.al}))){ leaveRoom(); return; }
     MV.hostless = false; MV.gone = 0;
     liveRoom.host = true; $('hostctl').hidden = false; $('leavebtn').hidden = true;
     lisRetry = 0; $('rxdiag').hidden = true; $('lagrow').hidden = true; $('mwre').hidden = true; $('guestTile').hidden = true; lisVidReady = false;
-    $('mediawin').hidden = false; $('mwctl').hidden = false; $('talkbtn').hidden = true; $('camreqbtn').hidden = true; $('kbtn').hidden = false; $('gfbtn').hidden = true; $('kform').hidden = true; talkStop('');
+    $('mediawin').hidden = false; $('mwctl').hidden = false; $('talkbtn').hidden = true; $('camreqbtn').hidden = true; $('kbtn').hidden = false; $('gfbtn').hidden = true; $('vqbtn').hidden = true; $('vqform').hidden = true; $('kform').hidden = true; talkStop('');
     roomHead(); memBeat(); fillInvite(); loadLive();
     if (keepVideo){ MV.timer = setInterval(mvPush, 5000); mvPush(); mwUpdate('▶ 영상 계속 재생 중 (내가 방장)'); }
     else mwUpdate('음악·영상을 새로 골라 주세요 (내가 방장)');
@@ -2075,11 +2101,12 @@ function mwUpdate(text){
   const vis = ['liveAudio', 'bcPreview', 'mwvid', 'mwyt'].some(i => $(i).style.display === 'block');
   $('mwidle').style.display = vis ? 'none' : '';
   if (text != null) $('mwnow').textContent = text;
+  try { if (bc) npTouch(); } catch(e){}
 }
 function mwOpen(host){
   MV.regTs = null; MV.regAt = 0; MV.vwait = 0; MV.vre = 0; $('mwre').hidden = host; $('lagrow').hidden = !!host;
   $('mediawin').hidden = false;
-  $('mwctl').hidden = !host; $('talkbtn').hidden = host; $('camreqbtn').hidden = host; $('gfbtn').hidden = host; $('kbtn').hidden = false; if (!host) $('talkhost').hidden = true;
+  $('mwctl').hidden = !host; $('talkbtn').hidden = host; $('camreqbtn').hidden = host; $('gfbtn').hidden = host; $('vqbtn').hidden = host; if (host) $('vqform').hidden = true; $('kbtn').hidden = false; if (!host) $('talkhost').hidden = true;
   clearInterval(MV.poll); if (!host){ MV.poll = setInterval(mvPoll, 3000); mvPoll(); }
   mwUpdate(host ? '음악을 고르면 여기에 표시됩니다 (아래 🎵 음악 메뉴)' : '방장이 음악을 틀면 여기서 들립니다');
 }
@@ -2138,7 +2165,9 @@ function stopOtherMedia(){
 }
 function enterRoom(id, name){
   stopOtherMedia();
-  liveRoom = {id, name, host: !!(bc && bc.rid === id)}; renderRooms('b:' + id); $('room').onchange();
+  liveRoom = {id, name, host: !!(bc && bc.rid === id)};
+  if (RDONLY.on && !liveRoom.host){ RDONLY.on = false; liveRoom.only = true; mwOpen(false); return; } // 🎧 소리만 듣기: 방 화면·채팅·참가자 기록 없이 소리만
+  renderRooms('b:' + id); $('room').onchange();
   $('roomwrap').hidden = false; $('hostctl').hidden = !liveRoom.host; $('leavebtn').hidden = true; showRoomView(); mwOpen(liveRoom.host);
   memSeen = null; roomHead(); clearInterval(memTimer); memBeat(); memTimer = setInterval(memBeat, 8000);
 }
@@ -2150,7 +2179,7 @@ function leaveRoom(){
 }
 // ---- 방 만들기 ----
 function openMk(show){ $('mkform').hidden = !show; if (show){ $('bctitle').focus(); } }
-async function buildBc(rid, title, pw, wantCam, keepState){
+async function buildBc(rid, title, pw, wantCam, keepState, opts){
   lj('roomclosed_' + rid, 'DELETE').catch(() => {}); lj('roomguest_' + rid, 'DELETE').catch(() => {});
   let ac, stream;
   try { ac = new (window.AudioContext || window.webkitAudioContext)(); ac.resume(); stream = ac.createMediaStreamDestination().stream; }
@@ -2171,7 +2200,7 @@ async function buildBc(rid, title, pw, wantCam, keepState){
       vbase = cv.captureStream(1).getVideoTracks()[0]; stream.addTrack(vbase); timers.push(setInterval(tick, 1000));
     } catch(e){ vbase = null; }
   }
-  const me = {stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
+  const me = {hold: (opts && +opts.hold >= 1) ? Math.min(1440, Math.round(+opts.hold)) : 60, alone: !!(opts && opts.alone), aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
   bc = me;
   me.sid = Math.random().toString(36).slice(2, 12);
   me.reg = async () => {
@@ -2186,10 +2215,10 @@ async function buildBc(rid, title, pw, wantCam, keepState){
     }
     if (bc !== me) return;
     me.regd = true;
-    return lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: nowS(), s: me.sid, p: me.pw ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length}).catch(() => {});
+    return lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: nowS(), s: me.sid, p: me.pw ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length, hd: me.hold, al: me.alone ? 1 : 0, np: npText(), nk: npKind()}).catch(() => {});
   };
   await me.reg(); if (!keepState) mvPut({k: hasCam ? 'cam' : ''});
-  me.timers.push(setInterval(me.reg, 15000), setInterval(bcPoll, 2000));
+  me.timers.push(setInterval(me.reg, 15000), setInterval(bcPoll, 2000), setInterval(bcWatch, 6000));
   return true;
 }
 async function makeMusicRoom(){
@@ -2216,7 +2245,7 @@ function stopBroadcast(noKeep, local){
   try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep) lj('livereg/' + me.rid, 'DELETE').catch(() => {});
-  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + 3600000, lk: me.lock || ''}).catch(() => {});
+  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + Math.min(1440, me.hold || 60) * 60000, hd: me.hold || 60, al: me.alone ? 1 : 0, lk: me.lock || ''}).catch(() => {});
   lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
   leaveRoom(); setBc(''); loadLive();
@@ -2825,7 +2854,8 @@ async function kqTick(){
   try {
     const d = await lj('kq_' + rid, 'GET') || {};
     if (!liveRoom || liveRoom.id !== rid) return;
-    kq.list = Object.keys(d).map(k => Object.assign({k}, d[k])).filter(e => e && e.t && e.u).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    kq.list = Object.keys(d).map(k => Object.assign({k}, d[k])).filter(e => e && e.t && e.u && !e.vid).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    try { vqSync(d); } catch(_){}
     if (isHost() && typeof memList !== 'undefined' && memList.length){
       const now = nowS(), gone = kq.list.filter(e => e.st !== 'now' && now - (e.ts || 0) > 60000 && !memList.some(m => m.k === e.w));
       gone.forEach(e => lj('kq_' + rid + '/' + e.k, 'DELETE').catch(() => {}));
@@ -2943,7 +2973,7 @@ async function listen(bid, name, locked, presetPw){
   if (bc) stopBroadcast(); // 방장이던 방이 있으면 먼저 정리 (유령 방장 방지)
   stopListen(); rUserPause = true; rIntr = false; audio.pause();
   $('now').textContent = name; $('meta').textContent = '음악 방'; setStatus('연결 중…'); enterRoom(bid, name);
-  try { localStorage.setItem('radio_last_room', JSON.stringify({id: bid, name: String(name)})); } catch(e){}
+  if (!(liveRoom && liveRoom.only)){ try { localStorage.setItem('radio_last_room', JSON.stringify({id: bid, name: String(name)})); } catch(e){} }
   return connectListen(bid, name, pw);
 }
 // 듣는 사람: 수신 버퍼를 늘려 화면을 조금 늦게 재생하는 대신 끊김을 줄임 (Chrome/Edge 114+)
@@ -3047,7 +3077,7 @@ async function claimEmptyRoom(R, info){
   if (!cur){ setBc('이미 사라진 방입니다.'); loadLive(); return; }
   if (!cur.e){ loadLive(); listen(R, String(cur.n), !!cur.p, pw); return; }
   stopListen(); audio.pause(); stopBroadcast(true);
-  if (!(await buildBc(R, String(info.n), pw, false))) return;
+  if (!(await buildBc(R, String(info.n), pw, false, undefined, {hold: info.hd, alone: !!info.al}))) return;
   enterRoom(R, String(info.n)); fillInvite(); loadLive();
   setBc('빈 방에 들어와 내가 방장이 되었습니다. 음악 파일·마이크·PC 소리나 영상을 골라 틀어 주세요.');
 }
@@ -3059,14 +3089,14 @@ async function loadLive(){
     const d = await lj('livereg', 'GET') || {}, now = nowS();
     Object.keys(d).forEach(id => { if (!d[id] || (now - d[id].ts > 300000 && !(d[id].e && now < d[id].e))){ lj('livereg/' + id, 'DELETE').catch(() => {}); lj('sig_' + id, 'DELETE').catch(() => {}); lj('roommem_' + id, 'DELETE').catch(() => {}); lj('roommedia_' + id, 'DELETE').catch(() => {}); } });
     const ids = Object.keys(d).filter(id => d[id] && (now - d[id].ts < 60000 || (d[id].e && now < d[id].e)));
-    mhLive = {}; ids.forEach(id => { mhLive[id] = d[id]; }); mhStatus();
+    mhLive = {}; ids.forEach(id => { mhLive[id] = d[id]; }); mhStatus(); try { renderLivePin(); } catch(e){}
     box.innerHTML = '';
     if (!ids.length){ box.innerHTML = '<div class="empty" style="margin:14px 0">' + (INVITE ? '초대받은 음악 방이 아직 열리지 않았거나 이미 닫혔습니다.' : '지금 열려 있는 음악 방이 없습니다.') + '</div>'; return; }
     ids.sort((a, b) => (b === INVITE) - (a === INVITE));
     ids.forEach(id => {
       const b = document.createElement('button'); b.className = 'st'; b.type = 'button'; b.style.flex = '1';
       const n = document.createElement('span'); n.className = 'n';
-      n.textContent = (id === INVITE ? '▶ 초대받은 음악 방 입장: ' : '🎵 ') + String(d[id].n).slice(0, 24) + (d[id].p ? ' 🔒' : '') + (d[id].e ? ' · 빈 방 — 들어가면 내가 방장 (' + Math.max(1, Math.ceil((d[id].e - now) / 60000)) + '분 남음)' : ' · ' + (d[id].c || 0) + '명 듣는 중') + (bc && bc.rid === id ? ' (내 방)' : '');
+      n.textContent = (id === INVITE ? '▶ 초대받은 음악 방 입장: ' : '🎵 ') + String(d[id].n).slice(0, 24) + (d[id].p ? ' 🔒' : '') + (d[id].e ? ' · 빈 방 — 들어가면 내가 방장 (' + fmtMin(Math.max(1, Math.ceil((d[id].e - now) / 60000))) + ' 남음)' : ' · ' + (d[id].c || 0) + '명 듣는 중' + (d[id].np ? ' · ' + String(d[id].np).slice(0, 40) : '')) + (bc && bc.rid === id ? ' (내 방)' : '');
       if (id === INVITE) b.classList.add('on');
       b.append(n);
       if (!(bc && bc.rid === id)) b.onclick = d[id].e ? () => claimEmptyRoom(id, d[id]) : () => listenFav(id, d[id]);
@@ -3083,6 +3113,8 @@ async function loadLive(){
         m.onclick = () => askHost(id, String(d[id].h || '방장'), String(d[id].n));
         row.append(m);
       }
+      if (!(bc && bc.rid === id) && !d[id].e) row.append(rmOnlyBtn(id, d[id]));
+      if (rmAdm()) row.append(rmForceBtn(id, String(d[id].n)));
       box.append(row);
     });
   } catch(e){}
@@ -3135,6 +3167,217 @@ $('mkok').onclick = makeMusicRoom;
 $('mkcancel').onclick = () => openMk(false);
 $('bctitle').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) makeMusicRoom(); });
 $('livereload').onclick = loadLive;
+// ===== ⏱ 방 설정: 이름 변경 · 빈 방 자동 폭파 타이머 · 관리자 강제 폭파 · 메인 라디오 상단 고정 =====
+function fmtMin(m){ m = Math.max(1, Math.round(+m || 1)); const h = Math.floor(m / 60), r = m % 60; return h ? (r ? h + '시간 ' + r + '분' : h + '시간') : r + '분'; }
+function fmtClock(ms){ ms = Math.max(0, Math.ceil(ms / 1000)); const h = Math.floor(ms / 3600), m = Math.floor(ms % 3600 / 60), s = ms % 60, z = n => String(n).padStart(2, '0'); return (h ? h + ':' + z(m) : m) + ':' + z(s); }
+const rmAdm = () => { try { return isAdmin || sessionStorage.getItem('board_admin') === '1'; } catch(e){ return !!isAdmin; } };
+function rsUpdate(){
+  const me = bc, el = $('rsleft'), cd = $('rscd');
+  if (!me){ if (cd) cd.hidden = true; return; }
+  const run = me.alone && me.aloneSince;
+  if (run){ const left = me.hold * 60000 - (Date.now() - me.aloneSince); if (cd){ cd.hidden = false; cd.textContent = '⏱ 자동 폭파까지 ' + fmtClock(left); } }
+  else if (cd) cd.hidden = true;
+  if (el) el.textContent = '현재 설정: ' + fmtMin(me.hold) + (me.alone ? ' · 혼자 있어도 자동 폭파' : ' · 방이 비었을 때만 적용') + (run ? ' — 폭파까지 ' + fmtClock(me.hold * 60000 - (Date.now() - me.aloneSince)) : '');
+}
+function rsFill(){
+  const me = bc; if (!me) return;
+  const m = me.hold || 60;
+  if (m % 60 === 0){ $('rsunit').value = '60'; $('rshold').value = m / 60; } else { $('rsunit').value = '1'; $('rshold').value = m; }
+  $('rsalone').checked = !!me.alone; rsUpdate();
+}
+document.querySelector('[data-p="p-rs"]').addEventListener('click', rsFill);
+document.querySelectorAll('.rspre').forEach(b => { b.onclick = () => { const m = +b.dataset.m; if (m % 60 === 0){ $('rsunit').value = '60'; $('rshold').value = m / 60; } else { $('rsunit').value = '1'; $('rshold').value = m; } }; });
+$('rsapply').onclick = () => {
+  if (!bc) return;
+  let m = Math.round((+$('rshold').value || 0) * (+$('rsunit').value || 1));
+  if (!(m >= 1)){ setBc('1분 이상으로 정해 주세요.'); return; }
+  if (m > 1440){ m = 1440; setBc('최대 24시간까지입니다. 24시간으로 맞췄습니다.'); }
+  bc.hold = m; bc.alone = $('rsalone').checked; bc.aloneSince = 0; bc.reg(); rsFill();
+  setBc('⏱ 타이머를 ' + fmtMin(m) + '로 설정했습니다.' + (bc.alone ? ' (혼자 있어도 시간이 지나면 자동 폭파)' : ' (방이 비었을 때 이 시간 동안 유지)'));
+};
+$('rsnameok').onclick = () => {
+  if (!bc) return;
+  const v = $('rsname').value.trim().slice(0, 20);
+  if (!v){ setBc('새 방 이름을 입력하세요.'); return; }
+  bc.title = v; if (liveRoom && liveRoom.id === bc.rid) liveRoom.name = v;
+  bc.reg(); roomHead(); $('rsname').value = '';
+  try { fetch(`${DB}/chat/live_${bc.rid}.json`, {method: 'POST', body: JSON.stringify({n: '🎵 음악 방', t: '✏ 방 이름이 「' + v + '」(으)로 바뀌었습니다.', ts: Date.now()})}).then(() => { try { if (!(es && esOk)) fetchChat(true); } catch(_){} }).catch(() => {}); } catch(_){}
+  setBc('✏ 방 이름을 「' + v + '」(으)로 바꿨습니다.'); loadLive();
+};
+// 방장 쪽 6초마다: 관리자 강제 폭파 감지 + 자동 폭파 타이머
+function bcWatch(){
+  const me = bc; if (!me) return;
+  lj('roomclosed_' + me.rid, 'GET').then(c => {
+    if (bc !== me) return;
+    if (c && c.f && Date.now() - c.ts < 600000){ setBc('관리자가 이 방을 폭파했습니다.'); stopBroadcast(true); }
+  }).catch(() => {});
+  const n = Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length;
+  if (!me.alone || n > 0) me.aloneSince = 0;
+  else {
+    if (!me.aloneSince) me.aloneSince = Date.now();
+    if (Date.now() - me.aloneSince >= me.hold * 60000){
+      lj('roomclosed_' + me.rid, 'PUT', {ts: Date.now()}).catch(() => {});
+      setBc('⏱ 설정한 시간(' + fmtMin(me.hold) + ') 동안 아무도 없어 방이 자동으로 폭파되었습니다.'); stopBroadcast(true); return;
+    }
+  }
+  rsUpdate();
+}
+// 관리자: 모든 방 강제 폭파
+async function forceBomb(id, name){
+  if (!rmAdm()) return;
+  if (!confirm('관리자 권한으로 「' + name + '」 방을 강제 폭파합니다.\n안에 있는 사람도 모두 방에서 나오게 됩니다. 진행할까요?')) return;
+  try { await lj('roomclosed_' + id, 'PUT', {ts: Date.now(), f: 1}); } catch(e){}
+  ['livereg/', 'sig_', 'roommedia_', 'roommem_', 'talkreq_', 'talkok_', 'kalib_', 'kq_', 'roomguest_'].forEach(k => lj(k + id, 'DELETE').catch(() => {}));
+  if (bc && bc.rid === id) stopBroadcast(true);
+  else if (liveRoom && liveRoom.id === id){ if (lis) stopListen(); else leaveRoom(); }
+  setBc('💣 「' + name + '」 방을 강제 폭파했습니다.'); loadLive();
+}
+function rmForceBtn(id, name){
+  const m = document.createElement('button'); m.className = 'fav'; m.type = 'button';
+  m.style.cssText = 'font-size:13px;white-space:nowrap;padding:0 8px;color:#ff6b6b'; m.textContent = '💣'; m.title = '관리자: 이 방 강제 폭파'; m.setAttribute('aria-label', '관리자 강제 폭파');
+  m.onclick = e => { e.stopPropagation(); forceBomb(id, name); };
+  return m;
+}
+$('rvforce').onclick = () => { if (liveRoom) forceBomb(liveRoom.id, liveRoom.name); };
+function rmAdmLabel(){ $('rmadm').textContent = rmAdm() ? '🔓 관리자 중 (끝내기)' : '🔒 관리자'; }
+$('rmadm').onclick = async () => {
+  if (rmAdm()){ try { sessionStorage.removeItem('board_admin'); } catch(e){} rmAdmLabel(); loadLive(); roomHead(); return; }
+  const pw = prompt('관리자 비밀번호를 입력하세요.'); if (pw === null) return;
+  let ok = false;
+  try { const hh = await pwHash(pw); ok = hh === ADMIN_HASH || hh === '8be22f5b30df095a0d37f7ddd772b77fc4be5e8503665a11172320f0d0f96c84'; } catch(e){ alert('이 주소에서는 확인할 수 없습니다. https:// 주소나 파일로 열어 주세요.'); return; }
+  if (!ok){ alert('비밀번호가 맞지 않습니다.'); return; }
+  try { sessionStorage.setItem('board_admin', '1'); } catch(e){}
+  rmAdmLabel(); loadLive(); roomHead();
+};
+rmAdmLabel();
+setInterval(rsUpdate, 1000);
+// 📌 메인 라디오·TV 목록 맨 위: 음악 방은 검색어와 상관없이 항상 1순위. 방 이름뿐 아니라 방에서 지금 틀고 있는 영상·라디오·음악 이름으로도 검색됨
+const RDONLY = {on: false};
+function npKind(){
+  try {
+    if (rdCast && !audio.paused) return 'r';
+    if (MV.k === 'yt' || MV.k === 'url') return 'v';
+    if (MV.k === 'file') return (MV.f && /^video\//.test(MV.f.type || '')) ? 'v' : 'm';
+    if (bc && bc.cam) return 'v';
+    const t = $('mwnow').textContent || ''; if (t.startsWith('🎵')) return 'm';
+  } catch(e){}
+  return '';
+}
+function npText(){
+  try {
+    const k = npKind();
+    if (k === 'r') return '📻 ' + String($('now').textContent || '').slice(0, 50);
+    if (MV.k === 'yt'){
+      let t = ''; try { t = (PL.cur && plSame(PL.cur)) ? PL.cur.t : ''; } catch(e){}
+      if (!t) try { t = MV.yt.getVideoData().title || ''; } catch(e){}
+      return '▶ ' + String(t || '유튜브 영상').slice(0, 50);
+    }
+    if (MV.k === 'url'){ let t = ''; try { t = (PL.cur && plSame(PL.cur)) ? PL.cur.t : ''; } catch(e){} return '▶ ' + String(t || plName(MV.u)).slice(0, 50); }
+    if (MV.k === 'file' && MV.f) return (k === 'v' ? '🎬 ' : '🎵 ') + String(MV.f.name || '').slice(0, 50);
+    if (k === 'm') return String($('mwnow').textContent || '').slice(0, 50);
+    if (k === 'v') return '📷 카메라·화면 방송';
+  } catch(e){}
+  return '';
+}
+let npLast = 0;
+function npTouch(){ if (!bc || Date.now() - npLast < 3000) return; npLast = Date.now(); try { bc.reg(); } catch(e){} }
+function pinRow(id, d, hit, now, noOnly){
+  const mine = !!(bc && bc.rid === id);
+  const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center'; row.setAttribute('role', 'listitem');
+  const b = document.createElement('button'); b.className = 'st' + (hit ? ' on' : ''); b.type = 'button'; b.style.cssText = 'flex:1;border-left:4px solid var(--amber)';
+  const n = document.createElement('span'); n.className = 'n';
+  n.textContent = '🎵 ' + String(d.n).slice(0, 24) + (d.p ? ' 🔒' : '') + (d.e ? ' · 빈 방 — 들어가면 내가 방장 (' + fmtMin(Math.max(1, Math.ceil((d.e - now) / 60000))) + ' 남음)' : ' · ' + (d.c || 0) + '명 듣는 중' + (d.np ? ' · ' + String(d.np).slice(0, 40) : '')) + (mine ? ' (내 방)' : '');
+  b.append(n);
+  if (!mine) b.onclick = d.e ? () => claimEmptyRoom(id, d) : () => listenFav(id, d);
+  row.append(b);
+  if (!mine && !d.e && !noOnly) row.append(rmOnlyBtn(id, d));
+  if (rmAdm()) row.append(rmForceBtn(id, String(d.n)));
+  return row;
+}
+function rmOnlyBtn(id, d){
+  const m = document.createElement('button'); m.className = 'fav'; m.type = 'button';
+  m.style.cssText = 'font-size:13px;white-space:nowrap;padding:0 8px'; m.textContent = '🎧'; m.title = '방에 들어가지 않고 소리만 듣기'; m.setAttribute('aria-label', '소리만 듣기');
+  m.onclick = e => { e.stopPropagation(); listenOnlyRoom(id, d); };
+  return m;
+}
+function listenOnlyRoom(id, info){
+  if (!(DB && chatAllowed)){ setBc('채팅 서버에 연결된 뒤에 들을 수 있습니다.'); return; }
+  RDONLY.on = true;
+  try { Promise.resolve(listenFav(id, info)).catch(() => {}); } catch(e){}
+  RDONLY.on = false; // listen()은 첫 단계(enterRoom)까지 바로 실행되므로 여기서 꺼도 됨
+}
+function openOnlyRoom(){
+  if (!(liveRoom && liveRoom.only)) return;
+  const id = liveRoom.id; liveRoom.only = false;
+  renderRooms('b:' + id); $('room').onchange();
+  $('roomwrap').hidden = false; $('hostctl').hidden = true; $('leavebtn').hidden = true; showRoomView();
+  memSeen = null; roomHead(); clearInterval(memTimer); memBeat(); memTimer = setInterval(memBeat, 8000);
+  try { localStorage.setItem('radio_last_room', JSON.stringify({id, name: String(liveRoom.name)})); } catch(e){}
+}
+function rdOnlyUi(){
+  const b = $('rdonly'); if (!b) return;
+  const on = !!(liveRoom && liveRoom.only && lis);
+  b.hidden = !on;
+  if (on) $('rdonlyn').textContent = '🎧 소리만 듣는 중 · ' + liveRoom.name + ' · ' + String($('status').textContent || '').replace(/^●\s*/, '');
+}
+$('rdonlyoff').onclick = () => { stopListen(); setStatus('정지'); rdOnlyUi(); };
+$('rdonlyopen').onclick = openOnlyRoom;
+setInterval(rdOnlyUi, 800);
+function renderLivePin(){
+  const draw = (boxId, ids, q, title, noOnly) => {
+    const box = $(boxId); if (!box) return;
+    box.innerHTML = '';
+    if (!ids.length) return;
+    const now = nowS();
+    const hitOf = id => { if (!q) return false; const d = mhLive[id]; return String(d.n || '').toLowerCase().includes(q) || String(d.np || '').toLowerCase().includes(q); };
+    ids = ids.slice().sort((a, b) => (hitOf(b) - hitOf(a)) || ((mhLive[a].e ? 1 : 0) - (mhLive[b].e ? 1 : 0)));
+    const h = document.createElement('div'); h.className = 'chatnote'; h.style.cssText = 'margin:0 0 4px;color:var(--amber);font-weight:700'; h.textContent = title(ids.length);
+    box.append(h);
+    const wrap = document.createElement('div'); wrap.className = 'list'; wrap.style.cssText = 'max-height:none;margin-bottom:8px;border-color:var(--amber)';
+    ids.forEach(id => wrap.append(pinRow(id, mhLive[id], hitOf(id), now, noOnly)));
+    box.append(wrap);
+  };
+  const all = Object.keys(mhLive || {}).filter(id => mhLive[id]);
+  draw('livepin', all, ($('q').value || '').trim().toLowerCase(), n => '📌 음악 방 ' + n + '개 — 열려 있는 방은 항상 맨 위에 나옵니다 (방에서 틀고 있는 영상·라디오 이름으로도 검색됩니다 · 🎧 = 들어가지 않고 소리만 듣기)', false);
+  const vid = all.filter(id => mhLive[id].nk === 'v' && !mhLive[id].e);
+  draw('livepin2', vid, (($('tvq') && $('tvq').value) || '').trim().toLowerCase(), n => '📌 지금 음악 방에서 영상이 나오는 방 ' + n + '개 — 누르면 들어가서 같이 봅니다', true);
+}
+$('q').addEventListener('input', () => { try { renderLivePin(); } catch(e){} });
+try { $('tvq').addEventListener('input', () => { try { renderLivePin(); } catch(e){} }); } catch(e){}
+// ===== 📺 방을 작게 줄이면, 방 영상(유튜브·링크·파일·화면)을 메인 TV 창 위에서 재생 =====
+const TVDOCK = {on: true};
+try { TVDOCK.on = localStorage.getItem('radio_tvdock') !== '0'; } catch(e){}
+function tvVis(el){ if (!el) return false; const cs = getComputedStyle(el); return cs.display !== 'none' && cs.visibility !== 'hidden' && el.offsetWidth > 20 && el.offsetHeight > 20; }
+function tvDockApply(on, r){
+  const sc = $('mwscreen'), rv = $('roomview');
+  if (on){
+    sc.classList.add('tvdocked'); rv.classList.add('tvon');
+    sc.style.left = Math.round(r.left) + 'px'; sc.style.top = Math.round(r.top) + 'px'; sc.style.width = Math.round(r.width) + 'px'; sc.style.height = Math.round(r.height) + 'px';
+  } else if (sc.classList.contains('tvdocked')){
+    sc.classList.remove('tvdocked'); rv.classList.remove('tvon');
+    ['left', 'top', 'width', 'height'].forEach(k => { sc.style[k] = ''; });
+  }
+}
+function tvDock(){
+  const rv = $('roomview'), sc = $('mwscreen'), tv = $('mtvbox'), btn = $('rvdock');
+  if (!rv || !sc || !tv) return;
+  if (btn) btn.textContent = TVDOCK.on ? '📺 TV로 보기: 켜짐' : '📺 TV로 보기: 꺼짐';
+  const mini = !rv.hidden && rv.classList.contains('mini');
+  let on = false, r = null;
+  if (mini && TVDOCK.on && !(document.fullscreenElement || document.webkitFullscreenElement)){
+    r = tv.getBoundingClientRect();
+    const seen = r.width > 120 && r.height > 80 && r.bottom > 60 && r.top < innerHeight - 60 && r.right > 60 && r.left < innerWidth - 60; // TV 창이 화면에 보일 때만
+    on = seen && ['mwyt', 'mwvid', 'liveAudio', 'bcPreview', 'guestTile'].some(id => tvVis($(id)));
+  }
+  tvDockApply(on, r);
+}
+let tvQ = 0;
+const tvSched = () => { if (tvQ) return; tvQ = requestAnimationFrame(() => { tvQ = 0; try { tvDock(); } catch(e){} }); };
+addEventListener('scroll', tvSched, {passive: true, capture: true});
+addEventListener('resize', tvSched);
+document.addEventListener('fullscreenchange', tvSched);
+setInterval(tvSched, 500);
+$('rvdock').onclick = () => { TVDOCK.on = !TVDOCK.on; try { localStorage.setItem('radio_tvdock', TVDOCK.on ? '1' : '0'); } catch(e){} tvSched(); };
 $('bcstop').onclick = async () => {
   if (!isHost()) return;
   if (!confirm('방을 폭파하면 방이 완전히 사라지고, 안에 있는 사람들도 모두 방에서 나오게 됩니다. (그냥 나가면 다른 사람이 방장을 이어받습니다.) 폭파할까요?')) return;
@@ -3158,7 +3401,7 @@ $('rvleave').onclick = () => {
   try { localStorage.removeItem('radio_last_room'); } catch(e){}
   if (!liveRoom){ hideRoomView(); return; }
   if (isHost()){
-    if (!confirm('방을 나가면 지금 방에 있는 사람 중 한 명이 새 방장이 됩니다. (아무도 없어도 방은 1시간 동안 빈 방으로 남아 누구나 들어와 방장이 될 수 있습니다. 방을 아예 없애려면 "💣 방 폭파"를 누르세요.) 나갈까요?')) return;
+    if (!confirm('방을 나가면 지금 방에 있는 사람 중 한 명이 새 방장이 됩니다. (아무도 없어도 방은 ' + fmtMin((bc && bc.hold) || 60) + ' 동안 빈 방으로 남아 누구나 들어와 방장이 될 수 있습니다. 방을 아예 없애려면 "💣 방 폭파"를 누르세요.) 나갈까요?')) return;
     stopBroadcast();
   } else { stopListen(); if (liveRoom) leaveRoom(); setStatus('정지'); }
 };
@@ -3182,7 +3425,12 @@ $('bcfile').onchange = e => {
   if (!bc){ setBc('먼저 "음악 방 만들기"로 방을 만들어 주세요.'); e.target.value = ''; return; }
   const a = $('bcAudio'); let i = 0;
   const play = () => { a.src = URL.createObjectURL(files[i]); a.play().catch(() => {}); mwUpdate('🎵 ' + files[i].name + (files.length > 1 ? ' (' + (i + 1) + '/' + files.length + ')' : '')); };
-  a.onended = () => { i = (i + 1) % files.length; play(); };
+  a.onended = () => {
+    const m = $('bcloop') ? $('bcloop').value : 'all';
+    if (m === 'one'){ a.currentTime = 0; a.play().catch(() => {}); return; }
+    if (m === 'off' && i + 1 >= files.length){ mwUpdate('🎵 재생이 모두 끝났습니다. (반복 안 함)'); return; }
+    i = (i + 1) % files.length; play();
+  };
   a.hidden = false;
   a.addEventListener('playing', () => {
     const cs = a.captureStream ? a.captureStream() : (a.mozCaptureStream ? a.mozCaptureStream() : null);
@@ -3208,7 +3456,7 @@ try {
   }
 } catch(e){}
 // 내 기기의 영상 파일(f)은 새로고침하면 사라지므로 저장하지 않음
-const plSave = () => { try { localStorage.setItem(PL_KEY, JSON.stringify({list: PL.list.filter(x => x.u).map(x => ({u: x.u, t: x.t})), loop: PL.loop, auto: PL.auto})); } catch(e){} };
+const plSave = () => { try { localStorage.setItem(PL_KEY, JSON.stringify({list: PL.list.filter(x => x.u && !x.g).map(x => ({u: x.u, t: x.t})), loop: PL.loop, auto: PL.auto})); } catch(e){} };
 const plMsg = t => { PL.msg = t; try { setBc(t); } catch(_){} plRender(); };
 // 지금 재생 중인 영상이 이 항목인가?
 function plSame(it){
@@ -3271,13 +3519,19 @@ function plPlay(it){
   if (it.f){ hostFile(it.f, true); setTimeout(() => { if (plSame(it)) plMsg('📋 재생목록 ' + i + '/' + PL.list.length + '번째 재생 중'); }, 200); return Promise.resolve(); }
   return hostLink(it.u, true).then(() => { if (plSame(it) || MV.k) plMsg('📋 재생목록 ' + i + '/' + PL.list.length + '번째 재생 중'); });
 }
+// 손님이 추가한 영상은 방장이 체크(허용)해야 재생됨 — 체크 안 된 것은 자동 재생에서 건너뜀
+const plOk = x => !!x && !(x.g && !x.ok);
 function plNext(){
   if (!PL.list.length) return;
   let i = (PL.cur && PL.list.includes(PL.cur)) ? PL.list.indexOf(PL.cur) : PL.list.findIndex(plSame);
-  let n = i + 1;
-  if (n >= PL.list.length){
-    if (PL.loop) n = 0;
-    else { PL.cur = null; plMsg('📋 재생목록이 모두 끝났습니다.'); return; }
+  let n = i + 1, wrapped = false;
+  for (;;){
+    if (n >= PL.list.length){
+      if (PL.loop && !wrapped){ n = 0; wrapped = true; }
+      else { PL.cur = null; plMsg('📋 재생목록이 모두 끝났습니다.'); return; }
+    }
+    if (plOk(PL.list[n])) break;
+    n++;
   }
   plPlay(PL.list[n]);
 }
@@ -3306,13 +3560,13 @@ function plRender(){
   const mkb = (t, title, fn) => { const x = document.createElement('button'); x.type = 'button'; x.className = 'addhome'; x.textContent = t; x.title = title; x.onclick = fn; return x; };
   const mkc = (t, val, fn) => { const l = document.createElement('label'); const c = document.createElement('input'); c.type = 'checkbox'; c.checked = val; c.onchange = () => fn(c.checked); l.append(c, ' ' + t); return l; };
   const h = document.createElement('div'); h.className = 'plh';
-  const ttl = document.createElement('strong'); ttl.textContent = '📋 재생목록 (' + PL.list.length + ')';
+  const ttl = document.createElement('strong'); ttl.textContent = '📋 재생목록 (' + PL.list.length + ')' + (PL.list.filter(x => x.g && !x.ok).length ? ' · 🙋 허용 대기 ' + PL.list.filter(x => x.g && !x.ok).length : '');
   h.append(ttl,
     mkc('끝나면 다음 영상 자동 재생', PL.auto, v => { PL.auto = v; plSave(); }),
     mkc('🔁 반복', PL.loop, v => { PL.loop = v; plSave(); }),
-    mkb('▶ 처음부터', '목록 첫 영상부터 재생', () => { if (PL.list.length) plPlay(PL.list[0]); }),
+    mkb('▶ 처음부터', '목록 첫 영상부터 재생', () => { const f = PL.list.find(plOk); if (f) plPlay(f); }),
     mkb('⏭ 다음', '다음 영상으로 건너뛰기', () => { PL.last = Date.now(); plNext(); }),
-    mkb('🗑 전체 삭제', '목록을 모두 지웁니다 (재생 중인 영상은 그대로)', () => { if (PL.list.length && confirm('재생목록을 모두 지울까요?')){ PL.list = []; PL.cur = null; PL.msg = ''; plSave(); plRender(); } }));
+    mkb('🗑 전체 삭제', '목록을 모두 지웁니다 (재생 중인 영상은 그대로)', () => { if (PL.list.length && confirm('재생목록을 모두 지울까요?')){ PL.list.filter(x => x.g).forEach(x => vqDel(x.g)); PL.list = []; PL.cur = null; PL.msg = ''; plSave(); plRender(); } }));
   b.append(h);
   if (PL.msg){ const m = document.createElement('div'); m.className = 'plm'; m.style.cssText = 'color:var(--amber);opacity:1;padding:2px 0 6px'; m.textContent = PL.msg; b.append(m); }
   if (!PL.list.length){
@@ -3324,16 +3578,69 @@ function plRender(){
   PL.list.forEach((it, i) => {
     const r = document.createElement('div'); r.className = 'plr' + (it === PL.cur ? ' on' : '');
     const n = document.createElement('span'); n.className = 'pln'; n.textContent = (i + 1) + '.';
-    const t = document.createElement('span'); t.className = 'plt'; t.textContent = (it === PL.cur ? '▶ ' : '') + (it.f ? '🎬 ' : '') + it.t; t.title = it.f ? '내 기기의 파일: ' + it.t : it.u;
+    const t = document.createElement('span'); t.className = 'plt'; t.textContent = (it === PL.cur ? '▶ ' : '') + (it.f ? '🎬 ' : '') + (it.g ? '🙋' + it.by + ' · ' : '') + it.t + (it.g && !it.ok ? ' (허용 전 · 건너뜀)' : ''); if (it.g && !it.ok) t.style.opacity = '.6'; t.title = it.f ? '내 기기의 파일: ' + it.t : it.u;
     const mv = d => () => { const j = i + d; if (j < 0 || j >= PL.list.length) return; [PL.list[i], PL.list[j]] = [PL.list[j], PL.list[i]]; plSave(); plRender(); };
+    const gk = it.g ? mkc('허용', !!it.ok, v => { it.ok = v; plSave(); try { lj('kq_' + liveRoom.id + '/' + it.g, 'PATCH', {ok: v ? 1 : 0}).catch(() => {}); } catch(_){} plRender(); }) : null;
+    if (gk){ gk.title = '체크한 영상만 재생됩니다 (손님이 추가한 영상)'; gk.style.cssText = 'display:inline-flex;align-items:center;gap:3px;font-size:12px;flex-shrink:0'; }
     r.append(n, t,
+      ...(gk ? [gk] : []),
       mkb('▶', '이 영상부터 재생', () => plPlay(it)),
       mkb('▲', '위로', mv(-1)), mkb('▼', '아래로', mv(1)),
-      mkb('✕', '목록에서 빼기', () => { PL.list.splice(i, 1); if (PL.cur === it) PL.cur = null; plSave(); plRender(); }));
+      mkb('✕', '목록에서 빼기', () => { if (it.g) vqDel(it.g); PL.list.splice(i, 1); if (PL.cur === it) PL.cur = null; plSave(); plRender(); }));
     box.append(r);
   });
   b.append(box);
 }
+// ---- 🎬 손님 영상 추가: 손님이 올린 링크는 kq_ 경로에 vid 표시로 저장 → 방장 재생목록에 「허용 전」으로 들어옴 ----
+const VQ = {mine: [], sig: ''};
+function vqDel(k){ try { if (liveRoom) lj('kq_' + liveRoom.id + '/' + k, 'DELETE').catch(() => {}); } catch(_){} }
+function vqSync(d){
+  const all = Object.keys(d || {}).map(k => Object.assign({k}, d[k])).filter(e => e && e.vid && typeof e.u === 'string' && /^https?:\/\//i.test(e.u)).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  VQ.mine = all.filter(e => e.w === myId);
+  if (!isHost()){ vqRenderMine(); return; }
+  const keys = new Set(all.map(e => e.k));
+  PL.list = PL.list.filter(x => !x.g || keys.has(x.g) || x === PL.cur);   // 손님이 지운 영상은 목록에서도 빼기 (재생 중인 것은 유지)
+  let fresh = 0;
+  all.forEach(e => {
+    const ex = PL.list.find(x => x.g === e.k);
+    if (ex){ ex.ok = !!e.ok; return; }
+    if (PL.list.length >= 100) return;
+    const id = ytId(e.u);
+    const it = {u: e.u, t: String(e.t || '').slice(0, 120) || (id ? '유튜브 ' + id : plName(e.u)), g: e.k, by: String(e.n || '손님').slice(0, 12), ok: !!e.ok};
+    PL.list.push(it); fresh++;
+    if (id && !e.t) fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(it.u)).then(r => r.ok ? r.json() : null)
+      .then(j => { if (j && j.title){ it.t = String(j.title).slice(0, 120); plRender(); } }).catch(() => {});
+  });
+  const sig = PL.list.map(x => (x.g || '') + (x.ok ? '1' : '0')).join(',');
+  if (sig !== VQ.sig || fresh){ VQ.sig = sig; plRender(); }
+  if (fresh) setBc('🙋 손님이 영상 ' + fresh + '개를 추가했습니다. 재생목록에서 「허용」을 체크하면 재생됩니다.');
+}
+function vqRenderMine(){
+  const b = $('vqmine'); if (!b) return; b.innerHTML = '';
+  VQ.mine.forEach(e => {
+    const r = document.createElement('div'); r.style.cssText = 'display:flex;gap:6px;align-items:center;padding:3px 0;font-size:12px;border-top:1px dashed #b99a5b33;margin-top:4px';
+    const t = document.createElement('span'); t.style.cssText = 'flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'; t.textContent = (e.ok ? '✅ 허용됨 · ' : '⏳ 방장 확인 대기 · ') + (e.t || e.u); t.title = e.u;
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'addhome'; x.style.cssText = 'margin:0;padding:1px 7px;font-size:12px'; x.textContent = '✕'; x.onclick = () => { vqDel(e.k); VQ.mine = VQ.mine.filter(m => m.k !== e.k); vqRenderMine(); };
+    r.append(t, x); b.append(r);
+  });
+}
+$('vqbtn').onclick = () => { $('vqform').hidden = !$('vqform').hidden; if (!$('vqform').hidden) vqRenderMine(); };
+$('vqgo').onclick = async () => {
+  const msg = t => { $('vqmsg').textContent = t; };
+  if (!liveRoom || !DB || isHost()){ msg('방에 들어온 손님만 추가할 수 있습니다. (방장은 재생목록에 직접 추가하세요)'); return; }
+  const urls = $('vqu').value.split(/[\s,]+/).filter(Boolean);
+  if (!urls.length){ msg('영상 링크를 붙여넣어 주세요.'); return; }
+  let n = 0, bad = 0, full = false;
+  for (const raw of urls){
+    if (VQ.mine.length + n >= 5){ full = true; break; }
+    const id = /^https?:\/\//i.test(raw) ? ytId(raw) : '';
+    if (!(/^https?:\/\//i.test(raw) && (id || KURL_OK.test(raw)))){ bad++; continue; }
+    try { await lj('kq_' + liveRoom.id, 'POST', {vid: 1, n: myNick(), w: myId, ts: nowS(), u: id ? 'https://www.youtube.com/watch?v=' + id : raw.slice(0, 500), t: id ? '' : plName(raw).slice(0, 60), ok: 0}); n++; }
+    catch(e){ msg('추가하지 못했습니다. 데이터베이스 규칙을 확인하세요.'); return; }
+  }
+  if (n){ $('vqu').value = ''; try { kqTick(); } catch(_){} }
+  msg((n ? '✅ ' + n + '개를 올렸습니다. 방장이 허용(체크)하면 재생됩니다.' : '영상을 올리지 못했습니다.') + (bad ? ' · 유튜브·mp4 링크가 아닌 ' + bad + '개는 건너뜀' : '') + (full ? ' · 한 사람 최대 5개까지입니다.' : ''));
+};
 $('plfile').onchange = e => { const fs = e.target.files; if (fs && fs.length) plAddFiles(fs); e.target.value = ''; };
 $('vadd').onclick = () => plAdd($('vurl').value);
 plRender();
@@ -5257,6 +5564,7 @@ rdSync();
 // ===== 📻 방장: 라디오를 음악 방 사람들에게도 송출 (강의 중에는 강의 소리에 섞어서 송출) =====
 let rdCast = false, rdCastStream = null, rdCastTrk = null, rdCastSrc = '', rdCastNodes = null, rdCastDest = null;
 function rdCastUi(){
+  try { if (bc) npTouch(); } catch(e){}
   const b = $('rdcast'); if (!b) return;
   b.textContent = rdCast ? '📻 송출 중지' : '📻 방에 송출';
   b.style.borderColor = rdCast ? 'var(--amber)' : ''; b.style.color = rdCast ? 'var(--amber)' : '';
