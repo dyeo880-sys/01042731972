@@ -895,7 +895,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <div id="rvbody"></div>
 </div></div>
 <audio id="audio" preload="none"></audio>
-<div id="rdonly" hidden role="status"><span class="rdn" id="rdonlyn"></span><button class="addhome" type="button" id="rdmute" title="음소거 / 소리 켜기" style="min-width:34px">🔊</button><input type="range" id="rdvol" min="0" max="100" step="1" value="30" aria-label="음량" title="음량" style="width:90px;accent-color:var(--brass);flex-shrink:0"><button class="addhome" type="button" id="rdonlyopen" title="이 방의 화면·채팅까지 같이 보기">🚪 방 열기</button><button class="addhome" type="button" id="rdonlyoff" title="소리 듣기를 끝냅니다">■ 끄기</button></div>
+<div id="rdonly" hidden role="status"><span class="rdn" id="rdonlyn"></span><button class="addhome" type="button" id="rdmute" title="음소거 / 소리 켜기" style="min-width:34px">🔊</button><input type="range" id="rdovol" min="0" max="100" step="1" value="30" aria-label="음량" title="음량" style="width:90px;accent-color:var(--brass);flex-shrink:0"><button class="addhome" type="button" id="rdonlyopen" title="이 방의 화면·채팅까지 같이 보기">🚪 방 열기</button><button class="addhome" type="button" id="rdonlyoff" title="소리 듣기를 끝냅니다">■ 끄기</button></div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -1099,7 +1099,7 @@ try {
 } catch(e){}
 $('next').onclick = () => { if (view.length) playView((curView + 1) % view.length); };
 $('prev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length); };
-$('vol').oninput = e => audio.volume = +e.target.value;
+$('vol').oninput = e => mvolSet(+e.target.value);
 audio.volume = 0.8;
 
 
@@ -3796,7 +3796,8 @@ plRender();
 const MVOL = {v: 0.3, mute: false}, MVOL_KEY = 'radio_media_vol';
 try { const q = parseFloat(localStorage.getItem(MVOL_KEY)); if (q >= 0 && q <= 1) MVOL.v = q; } catch(e){}
 function mvolUI(){
-  try { const q = $('rdvol'); if (q){ q.value = Math.round((MVOL.mute ? 0 : MVOL.v) * 100); $('rdmute').textContent = (MVOL.mute || MVOL.v === 0) ? '🔇' : (MVOL.v < 0.5 ? '🔉' : '🔊'); } } catch(_){}
+  try { const t = MVOL.mute ? 0 : MVOL.v; $('vol').value = t; $('rdvol').value = t; } catch(_){}
+  try { const q = $('rdovol'); if (q){ q.value = Math.round((MVOL.mute ? 0 : MVOL.v) * 100); $('rdmute').textContent = (MVOL.mute || MVOL.v === 0) ? '🔇' : (MVOL.v < 0.5 ? '🔉' : '🔊'); } } catch(_){}
   const r = $('mwvol'); if (!r) return;
   const pct = Math.round((MVOL.mute ? 0 : MVOL.v) * 100);
   r.value = pct; $('mwvolv').textContent = pct + '%';
@@ -3804,6 +3805,7 @@ function mvolUI(){
   try { if (window.lisUpd) window.lisUpd(); } catch(_){}
 }
 function mvolApply(){
+  try { audio.volume = MVOL.v; } catch(_){}
   try { liveAudio.volume = MVOL.v; liveAudio.muted = MVOL.mute; } catch(_){}
   try { mwvid.volume = MVOL.v; mwvid.muted = MVOL.mute; } catch(_){}
   try { if (MV.yt && MV.yt.setVolume){ MV.yt.setVolume(Math.round(MVOL.v * 100)); if (MVOL.mute) MV.yt.mute(); else MV.yt.unMute(); } } catch(_){}
@@ -3822,7 +3824,7 @@ function mvolMute(){
 }
 $('mwvol').addEventListener('input', e => mvolSet(+e.target.value / 100));
 $('mwmute').onclick = mvolMute;
-$('rdvol').addEventListener('input', e => mvolSet(+e.target.value / 100));
+$('rdovol').addEventListener('input', e => mvolSet(+e.target.value / 100));
 $('rdmute').onclick = mvolMute;
 mvolApply();
 // ---- 영상 검색 (방장이 옆에서 찾아서 클릭하면 바로 재생) ----
@@ -5707,8 +5709,7 @@ $('rdstop').onclick = () => {
 };
 $('rdnext').onclick = () => { if (view.length) playView((curView + 1) % view.length, true); };
 $('rdprev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length, true); };
-$('rdvol').oninput = e => { audio.volume = +e.target.value; $('vol').value = e.target.value; };
-$('vol').addEventListener('input', () => { $('rdvol').value = $('vol').value; });
+$('rdvol').oninput = e => mvolSet(+e.target.value);
 ['playing', 'pause', 'waiting', 'error'].forEach(ev => audio.addEventListener(ev, rdSync));
 new MutationObserver(rdSync).observe($('now'), {childList: true, characterData: true, subtree: true});
 rdSync();
