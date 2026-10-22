@@ -78,6 +78,7 @@ button,select,input{font:inherit}
 .chat input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 #roomview{position:fixed;inset:0;z-index:60;overflow:auto;background:radial-gradient(ellipse at top,#6b4a2e,#1d120b 70%);padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 #roomview[hidden]{display:none}
+body.onlybox #roomview[hidden]{display:block!important;position:fixed;left:-10000px;top:0;right:auto;bottom:auto;width:480px;height:360px;overflow:hidden;pointer-events:none}
 #mediawin{background:var(--panel);border:1px solid var(--brass);border-radius:8px;padding:10px 12px;margin-bottom:12px}
 #mediawin[hidden]{display:none}
 .mwhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
@@ -2112,7 +2113,7 @@ async function mvApply(s){
         if (!(window.YT && YT.Player) || MV.k !== 'yt' || !liveRoom){ MV.k = ''; return; }
         $('mwyt').innerHTML = '<div id="mwytp"></div>'; mvShow('yt');
         MV.yt = new YT.Player('mwytp', {width: '100%', height: '100%', videoId: s.u, playerVars: {autoplay: s.p ? 1 : 0, playsinline: 1, rel: 0, start: Math.floor(want)},
-          events: {onReady: () => { try { mvolApply(); } catch(_){} }, onError: e => ytErr(e && e.data), onStateChange: ev => { mvPush(); try { if (ev && ev.data === 0){ if (isHost()) plVidState(ev); else if (MV.hostless){ MV.yt.seekTo(0, true); MV.yt.playVideo(); } } } catch(_){} }}});
+          events: {onReady: e => { try { mvolApply(); } catch(_){} try { if (s.p) e.target.playVideo(); } catch(_){} setTimeout(() => { try { if (liveRoom && liveRoom.only && MV.yt && MV.yt.getPlayerState && ![1, 3].includes(MV.yt.getPlayerState())){ MV.yt.playVideo(); setTimeout(() => { try { if (liveRoom && liveRoom.only && MV.yt && ![1, 3].includes(MV.yt.getPlayerState())) setBc('브라우저가 자동 재생을 막았을 수 있습니다. 🎧를 한 번 더 눌러 주세요.'); } catch(_){} }, 2500); } } catch(_){} }, 2500); }, onError: e => ytErr(e && e.data), onStateChange: ev => { mvPush(); try { if (ev && ev.data === 0){ if (isHost()) plVidState(ev); else if (MV.hostless){ MV.yt.seekTo(0, true); MV.yt.playVideo(); } } } catch(_){} }}});
       } else {
         attachUrl(s.u); mvShow('vid');
         mwvid.onerror = () => setBc('방장이 튼 영상 주소를 재생할 수 없습니다.');
@@ -2198,12 +2199,13 @@ function stopOtherMedia(){
 function enterRoom(id, name){
   stopOtherMedia();
   liveRoom = {id, name, host: !!(bc && bc.rid === id)};
-  if (RDONLY.on && !liveRoom.host){ RDONLY.on = false; liveRoom.only = true; mwOpen(false); return; } // 🎧 소리만 듣기: 방 화면·채팅·참가자 기록 없이 소리만
+  if (RDONLY.on && !liveRoom.host){ RDONLY.on = false; liveRoom.only = true; document.body.classList.add('onlybox'); mwOpen(false); return; } // 🎧 소리만 듣기: 방 화면·채팅·참가자 기록 없이 소리만
   renderRooms('b:' + id); $('room').onchange();
   $('roomwrap').hidden = false; $('hostctl').hidden = !liveRoom.host; $('leavebtn').hidden = true; showRoomView(); mwOpen(liveRoom.host);
   memSeen = null; roomHead(); clearInterval(memTimer); memBeat(); memTimer = setInterval(memBeat, 8000);
 }
 function leaveRoom(){
+  document.body.classList.remove('onlybox');
   const was = liveRoom; liveRoom = null; memSeen = null; clearInterval(memTimer); memList = []; openMem = ''; try { kq.list = []; kq.libNow = ''; $('kqbox').hidden = true; } catch(e){} try { rxApply(); } catch(e){}
   if (was && DB) lj('roommem_' + was.id + '/' + myId, 'DELETE').catch(() => {});
   mwClose(); $('roomwrap').hidden = true; $('members').innerHTML = ''; $('bccount').textContent = ''; hideRoomView();
@@ -3132,7 +3134,7 @@ async function loadLive(){
     ids.forEach(id => {
       const b = document.createElement('button'); b.className = 'st'; b.type = 'button'; b.style.flex = '1';
       const n = document.createElement('span'); n.className = 'n';
-      n.textContent = (id === INVITE ? '▶ 초대받은 음악 방 입장: ' : '🎵 ') + String(d[id].n).slice(0, 24) + (d[id].p ? ' 🔒' : '') + (d[id].e ? ' · 빈 방 — 들어가면 내가 방장' + (d[id].v ? ' · ▶ 영상 계속 재생 중' : '') + ' (' + fmtMin(Math.max(1, Math.ceil((d[id].e - now) / 60000))) + ' 남음)' : ' · ' + (d[id].c || 0) + '명 듣는 중' + (d[id].np ? ' · ' + String(d[id].np).slice(0, 40) : '')) + (bc && bc.rid === id ? ' (내 방)' : '');
+      n.textContent = (id === INVITE ? '▶ 초대받은 음악 방 입장: ' : '🎵 ') + String(d[id].n).slice(0, 24) + (d[id].p ? ' 🔒' : '') + '' + (bc && bc.rid === id ? ' (내 방)' : '');
       if (id === INVITE) b.classList.add('on');
       b.append(n);
       if (!(bc && bc.rid === id)) b.onclick = d[id].e ? () => claimEmptyRoom(id, d[id]) : () => listenFav(id, d[id]);
@@ -3323,7 +3325,7 @@ function pinRow(id, d, hit, now, noOnly){
   const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center'; row.setAttribute('role', 'listitem');
   const b = document.createElement('button'); b.className = 'st' + (hit ? ' on' : ''); b.type = 'button'; b.style.cssText = 'flex:1;border-left:4px solid var(--amber)';
   const n = document.createElement('span'); n.className = 'n';
-  n.textContent = '🎵 ' + String(d.n).slice(0, 24) + (d.p ? ' 🔒' : '') + (d.e ? ' · 빈 방 — 들어가면 내가 방장' + (d.v ? ' · ▶ 영상 계속 재생 중' : '') + ' (' + fmtMin(Math.max(1, Math.ceil((d.e - now) / 60000))) + ' 남음)' : ' · ' + (d.c || 0) + '명 듣는 중' + (d.np ? ' · ' + String(d.np).slice(0, 40) : '')) + (mine ? ' (내 방)' : '');
+  n.textContent = '🎵 ' + String(d.n).slice(0, 24) + (d.p ? ' 🔒' : '') + '' + (mine ? ' (내 방)' : '');
   b.append(n);
   if (!mine) b.onclick = d.e ? () => claimEmptyRoom(id, d) : () => listenFav(id, d);
   row.append(b);
@@ -3352,6 +3354,7 @@ async function listenOnlyVirtual(id, info){
   if (bc) stopBroadcast();
   stopListen(); rUserPause = true; rIntr = false; audio.pause(); stopOtherMedia();
   liveRoom = {id, name: String(info.n), host: false, only: true, virt: true, pw};
+  document.body.classList.add('onlybox');
   mwOpen(false);
   const el = Math.max(0, (nowS() - (+v.st || nowS())) / 1000), pos = (+v.d > 5) ? el % +v.d : 0;
   await mvApply({k: v.k, u: v.u, p: 1, t: pos, ts: nowS()});
@@ -3368,7 +3371,7 @@ function listenOnlyRoom(id, info){
 }
 function openOnlyRoom(){
   if (!(liveRoom && liveRoom.only)) return;
-  const id = liveRoom.id; liveRoom.only = false;
+  const id = liveRoom.id; liveRoom.only = false; document.body.classList.remove('onlybox');
   renderRooms('b:' + id); $('room').onchange();
   $('roomwrap').hidden = false; $('hostctl').hidden = true; $('leavebtn').hidden = true; showRoomView();
   memSeen = null; roomHead(); clearInterval(memTimer); memBeat(); memTimer = setInterval(memBeat, 8000);
@@ -5750,7 +5753,7 @@ function mhStatus(){
   document.querySelectorAll('#mhlist .mhc').forEach(el => {
     const f = mh[+el.dataset.i]; if (!f) return;
     const id = mhLiveId(f), info = id ? mhLive[id] : null;
-    el.querySelector('.mhs').textContent = !info ? '⚪ 지금 닫힘' : info.e ? '🟡 빈 방 (들어가면 내가 방장)' : '🟢 열림 · ' + (info.c || 0) + '명' + (info.p ? ' 🔒' : '');
+    el.querySelector('.mhs').textContent = !info ? '⚪ 지금 닫힘' : info.e ? '🟢 열림' : '🟢 열림 · ' + (info.c || 0) + '명' + (info.p ? ' 🔒' : '');
     el.querySelector('.mhgo').disabled = !info;
   });
 }
