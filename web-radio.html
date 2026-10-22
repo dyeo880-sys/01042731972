@@ -895,7 +895,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <div id="rvbody"></div>
 </div></div>
 <audio id="audio" preload="none"></audio>
-<div id="rdonly" hidden role="status"><span class="rdn" id="rdonlyn"></span><button class="addhome" type="button" id="rdmute" title="음소거 / 소리 켜기" style="min-width:34px">🔊</button><input type="range" id="rdovol" min="0" max="100" step="1" value="30" aria-label="음량" title="음량" style="width:90px;accent-color:var(--brass);flex-shrink:0"><button class="addhome" type="button" id="rdonlyopen" title="이 방의 화면·채팅까지 같이 보기">🚪 방 열기</button><button class="addhome" type="button" id="rdonlyoff" title="소리 듣기를 끝냅니다">■ 끄기</button></div>
+<div id="rdonly" hidden role="status"><span class="rdn" id="rdonlyn"></span><button class="addhome" type="button" id="rdmute" title="음소거 / 소리 켜기" style="min-width:34px">🔊</button><input type="range" id="rdvol" min="0" max="100" step="1" value="30" aria-label="음량" title="음량" style="width:90px;accent-color:var(--brass);flex-shrink:0"><button class="addhome" type="button" id="rdonlyopen" title="이 방의 화면·채팅까지 같이 보기">🚪 방 열기</button><button class="addhome" type="button" id="rdonlyoff" title="소리 듣기를 끝냅니다">■ 끄기</button></div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -971,7 +971,7 @@ function render(){
       b.insertBefore(im, b.firstChild); }
     b.querySelector('.n').textContent = s.name.trim() || '(이름 없음)';
     b.querySelector('.t').textContent = (s.tags || '').split(',').slice(0,2).join(', ');
-    b.onclick = () => { endOnlyListen(); playView(i); };
+    b.onclick = () => playView(i);
     const f = document.createElement('button');
     f.className = 'fav' + (favs.includes(s.stationuuid) ? ' on' : '');
     f.textContent = favs.includes(s.stationuuid) ? '★' : '☆';
@@ -1001,8 +1001,6 @@ function radioMutedStart(){
     addEventListener('pointerdown', un, true); addEventListener('keydown', un, true);
   }).catch(() => { audio.muted = false; armResume(); });
 }
-// 메인에서 '소리만 듣기' 중인 음악 방은, 사용자가 라디오를 직접 고르면 끈다 (방 안에 들어가 있는 경우는 그대로)
-function endOnlyListen(){ try { if (liveRoom && liveRoom.only) $('rdonlyoff').onclick(); } catch(e){} }
 function playView(i, keepRoom, restore){
   const s = view[i]; if (!s) return;
   try { if (mtv.on && !restore) mtvQuiet(); } catch(e){}
@@ -1099,9 +1097,9 @@ try {
     ms.setActionHandler('previoustrack', () => { if (view.length) playView((curView - 1 + view.length, !!liveRoom) % view.length); });
   }
 } catch(e){}
-$('next').onclick = () => { endOnlyListen(); if (view.length) playView((curView + 1) % view.length); };
-$('prev').onclick = () => { endOnlyListen(); if (view.length) playView((curView - 1 + view.length) % view.length); };
-$('vol').oninput = e => mvolSet(+e.target.value);
+$('next').onclick = () => { if (view.length) playView((curView + 1) % view.length); };
+$('prev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length); };
+$('vol').oninput = e => audio.volume = +e.target.value;
 audio.volume = 0.8;
 
 
@@ -3070,7 +3068,7 @@ async function connectListen(bid, name, pw){
     let ms = e.streams[0];
     if (!ms){ ms = (liveAudio.srcObject instanceof MediaStream) ? liveAudio.srcObject : new MediaStream(); if (!ms.getTracks().includes(e.track)) ms.addTrack(e.track); }
     if (liveAudio.srcObject !== ms) liveAudio.srcObject = ms;
-    liveAudio.play().catch(err => { if (err && err.name === 'AbortError') return; liveAudio.controls = true; liveAudio.style.display = 'block'; setStatus('재생 버튼을 눌러 주세요'); mwUpdate(); }); setStatus('● 음악 방 듣는 중'); mwUpdate('● 방송 듣는 중');
+    liveAudio.play().catch(err => { if (err && err.name === 'AbortError') return; liveAudio.controls = true; liveAudio.style.display = 'block'; setStatus('재생 버튼을 눌러 주세요'); mwUpdate(); if (liveRoom && liveRoom.only){ setStatus('🔇 화면을 한 번 누르면 소리가 나옵니다'); const go = () => { try { if (lis && liveAudio.paused) liveAudio.play().catch(() => {}); } catch(_){} }; addEventListener('pointerdown', go, {once: true, capture: true}); addEventListener('keydown', go, {once: true, capture: true}); } }); setStatus('● 음악 방 듣는 중'); mwUpdate('● 방송 듣는 중');
   };
   pc.onconnectionstatechange = () => {
     if (!lis || lis.pc !== pc) return;
@@ -3345,33 +3343,27 @@ function pinRow(id, d, hit, now, noOnly){
   b.append(ic, n, t);
   b.title = mine ? '내가 열고 있는 방입니다' : '누르면 소리만 들립니다 (방에는 들어가지 않음)';
   b.onclick = () => {
-    if (mine) return;
-    if (d.e) roomExtendWeek(id, d); // 메인 목록에서 빈 방을 누르면 폭파 기간을 일주일 늘림
-    if (playing){ try { $('rdonlyoff').onclick(); } catch(e){} setTimeout(() => { try { renderLivePin(); } catch(e){} }, 300); return; }  // 같은 방 다시 누르면 정지
-    if (inThis){ setBc('이미 들어가 있는 방입니다.'); return; }
-    listenOnlyRoom(id, d);
-    setTimeout(() => { try { renderLivePin(); } catch(e){} }, 1500);
+    if (bc && bc.rid === id) return;                       // 내가 연 방
+    const cr = (liveRoom && liveRoom.id === id) ? liveRoom : null;   // 클릭하는 순간의 실제 상태 (그려질 때 상태 아님)
+    if (cr && cr.only){                                      // 이미 소리만 듣는 중: 끊기지 않게 소리만 살려 줌 (정지하지 않음)
+      try { if (liveAudio.srcObject && liveAudio.paused) liveAudio.play().catch(() => {}); } catch(e){}
+      return;
+    }
+    if (cr){ setBc('이미 들어가 있는 방입니다.'); return; }
+    listenOnlyRoom(id, d);                                   // 방송국처럼 한 번 누르면 바로 시작
+    setTimeout(() => { try { renderLivePin(); } catch(e){} }, 400);
+    setTimeout(() => { try { renderLivePin(); } catch(e){} }, 1800);
   };
   row.append(b);
   if (!mine){
     const go = document.createElement('button'); go.type = 'button'; go.className = 'fav mrgo'; go.textContent = '🎵 음방';
     go.title = '이 음악 방에 들어가기'; go.setAttribute('aria-label', d.n + ' 음악 방에 들어가기');
-    go.onclick = e => { e.stopPropagation(); if (inThis && !playing) return; if (playing) openOnlyRoom(); else if (d.e) claimEmptyRoom(id, d); else listenFav(id, d); };
+    go.onclick = e => { e.stopPropagation(); const cr = (liveRoom && liveRoom.id === id) ? liveRoom : null; if (cr && cr.only) openOnlyRoom(); else if (cr) return; else if (d.e) claimEmptyRoom(id, d); else listenFav(id, d); };
     row.append(go);
   }
   row.append(mrStar(id, d));
   if (rmAdm()) row.append(rmForceBtn(id, String(d.n)));
   return row;
-}
-// 빈 방(방장 없음)을 메인 목록에서 누르면 자동 폭파 시각을 지금부터 7일 뒤로 연장 (이미 더 길게 남아 있으면 그대로 둠)
-function roomExtendWeek(id, d){
-  try {
-    if (!DB || !chatAllowed || !d || !d.e) return;
-    const now = nowS(), ne = now + 7 * 24 * 3600000;
-    if (d.e >= ne || d.e <= now) return;
-    d.e = ne;
-    lj('livereg/' + id, 'PATCH', {e: ne}).catch(() => {});
-  } catch(_){}
 }
 function mrStar(id, d){
   const star = document.createElement('button'); star.className = 'fav'; star.type = 'button';
@@ -3438,7 +3430,6 @@ async function listenOnlyVirtual(id, info){
   try { rdOnlyUi(); } catch(_){}
 }
 function listenOnlyRoom(id, info){
-  try { mvolEnsure(); } catch(_){}
   if (!(DB && chatAllowed)){ setBc('채팅 서버에 연결된 뒤에 들을 수 있습니다.'); return; }
   if (info && info.e){ listenOnlyVirtual(id, info); return; }
   RDONLY.on = true;
@@ -3491,6 +3482,8 @@ function renderLivePin(){
 }
 $('q').addEventListener('input', () => { try { renderLivePin(); } catch(e){} });
 try { $('mode').addEventListener('change', () => { try { renderLivePin(); } catch(e){} }); } catch(e){}
+let pinKey = '';
+setInterval(() => { const k = liveRoom ? liveRoom.id + (liveRoom.only ? 'o' : 'f') : ''; if (k !== pinKey){ pinKey = k; try { renderLivePin(); } catch(e){} } }, 700);
 try { $('tvq').addEventListener('input', () => { try { renderLivePin(); } catch(e){} }); } catch(e){}
 // ===== 📺 방을 작게 줄이면, 방 영상(유튜브·링크·파일·화면)을 메인 TV 창 위에서 재생 =====
 const TVDOCK = {on: true};
@@ -3807,11 +3800,10 @@ $('plfile').onchange = e => { const fs = e.target.files; if (fs && fs.length) pl
 $('vadd').onclick = () => plAdd($('vurl').value);
 plRender();
 // ---- 통합 볼륨: 유튜브 · 링크/파일 영상 · 방 소리를 슬라이더 하나로 (시작은 30%로 낮게, 값 기억) ----
-const MVOL = {v: 0.5, mute: false}, MVOL_KEY = 'radio_media_vol2'; // (옛 값 radio_media_vol 은 잘못 저장된 0에 가까운 값이 남아 있을 수 있어 새 키 사용)
-try { const q = parseFloat(localStorage.getItem(MVOL_KEY)); if (q >= 0.02 && q <= 1) MVOL.v = q; } catch(e){}
+const MVOL = {v: 0.3, mute: false}, MVOL_KEY = 'radio_media_vol';
+try { const q = parseFloat(localStorage.getItem(MVOL_KEY)); if (q >= 0 && q <= 1) MVOL.v = q; } catch(e){}
 function mvolUI(){
-  try { const t = MVOL.mute ? 0 : MVOL.v; $('vol').value = t; $('rdvol').value = t; } catch(_){}
-  try { const q = $('rdovol'); if (q){ q.value = Math.round((MVOL.mute ? 0 : MVOL.v) * 100); $('rdmute').textContent = (MVOL.mute || MVOL.v === 0) ? '🔇' : (MVOL.v < 0.5 ? '🔉' : '🔊'); } } catch(_){}
+  try { const q = $('rdvol'); if (q){ q.value = Math.round((MVOL.mute ? 0 : MVOL.v) * 100); $('rdmute').textContent = (MVOL.mute || MVOL.v === 0) ? '🔇' : (MVOL.v < 0.5 ? '🔉' : '🔊'); } } catch(_){}
   const r = $('mwvol'); if (!r) return;
   const pct = Math.round((MVOL.mute ? 0 : MVOL.v) * 100);
   r.value = pct; $('mwvolv').textContent = pct + '%';
@@ -3819,7 +3811,6 @@ function mvolUI(){
   try { if (window.lisUpd) window.lisUpd(); } catch(_){}
 }
 function mvolApply(){
-  try { audio.volume = MVOL.v; } catch(_){}
   try { liveAudio.volume = MVOL.v; liveAudio.muted = MVOL.mute; } catch(_){}
   try { mwvid.volume = MVOL.v; mwvid.muted = MVOL.mute; } catch(_){}
   try { if (MV.yt && MV.yt.setVolume){ MV.yt.setVolume(Math.round(MVOL.v * 100)); if (MVOL.mute) MV.yt.mute(); else MV.yt.unMute(); } } catch(_){}
@@ -3838,12 +3829,9 @@ function mvolMute(){
 }
 $('mwvol').addEventListener('input', e => mvolSet(+e.target.value / 100));
 $('mwmute').onclick = mvolMute;
-$('rdovol').addEventListener('input', e => mvolSet(+e.target.value / 100));
+$('rdvol').addEventListener('input', e => mvolSet(+e.target.value / 100));
 $('rdmute').onclick = mvolMute;
 mvolApply();
-// 음방 소리가 새로 시작될 때마다 통합 볼륨을 다시 적용 (거의 0으로 남은 값이면 기본값으로 복구)
-function mvolEnsure(){ try { if (!MVOL.mute && MVOL.v < 0.02) MVOL.v = 0.3; } catch(_){} try { mvolApply(); } catch(_){} }
-['loadedmetadata', 'playing'].forEach(ev => { try { liveAudio.addEventListener(ev, mvolEnsure); mwvid.addEventListener(ev, mvolEnsure); } catch(_){} });
 // ---- 영상 검색 (방장이 옆에서 찾아서 클릭하면 바로 재생) ----
 function vResMsg(t){ const v = $('vres'); v.hidden = false; v.innerHTML = ''; const d = document.createElement('div'); d.className = 'vm'; d.textContent = t; v.append(d); }
 const kload = n => { try { return localStorage.getItem('radio_key_' + n) || ''; } catch(e){ return ''; } };
@@ -5699,7 +5687,7 @@ function rdRender(){
     b.innerHTML = '<span class="n"></span><span class="t"></span>';
     b.querySelector('.n').textContent = s.name.trim() || '(이름 없음)';
     b.querySelector('.t').textContent = (s.tags || '').split(',').slice(0, 2).join(', ');
-    b.onclick = () => { endOnlyListen(); playView(i, true); };
+    b.onclick = () => playView(i, true);
     frag.append(b);
   });
   box.append(frag);
@@ -5714,7 +5702,6 @@ $('rdtoggle').onclick = () => {
 $('rdcountry').onchange = e => { $('country').value = e.target.value; $('country').dispatchEvent(new Event('change')); };
 $('rdq').oninput = e => { $('q').value = e.target.value; $('q').dispatchEvent(new Event('input')); };
 $('rdplay').onclick = () => {
-  if (audio.paused || !(audio.src || hls)) endOnlyListen();
   const has = !!(audio.src || hls); // 방송국 목록이 바뀌어 curView가 -1이어도 재생 중이면 정지가 되도록
   if (!has){ if (view.length) playView(0, true); return; }
   if (audio.paused){ rUserPause = false; rIntr = false; audio.play().catch(() => {}); }
@@ -5725,9 +5712,10 @@ $('rdstop').onclick = () => {
   if (rdCast) rdCastOff('📻 라디오를 정지해서 방 송출도 멈췄습니다.');
   audio.pause(); lastOff(1); rdSync();
 };
-$('rdnext').onclick = () => { endOnlyListen(); if (view.length) playView((curView + 1) % view.length, true); };
-$('rdprev').onclick = () => { endOnlyListen(); if (view.length) playView((curView - 1 + view.length) % view.length, true); };
-$('rdvol').oninput = e => mvolSet(+e.target.value);
+$('rdnext').onclick = () => { if (view.length) playView((curView + 1) % view.length, true); };
+$('rdprev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length, true); };
+$('rdvol').oninput = e => { audio.volume = +e.target.value; $('vol').value = e.target.value; };
+$('vol').addEventListener('input', () => { $('rdvol').value = $('vol').value; });
 ['playing', 'pause', 'waiting', 'error'].forEach(ev => audio.addEventListener(ev, rdSync));
 new MutationObserver(rdSync).observe($('now'), {childList: true, characterData: true, subtree: true});
 rdSync();
