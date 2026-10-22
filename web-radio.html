@@ -2036,7 +2036,7 @@ async function mvPoll(){
     return;
   } else {
     MV.gone = 0;
-    if (MV.hostless){ MV.hostless = false; setBc('새 방장에게 다시 연결합니다.'); reconnectListen(); }
+    if (MV.hostless){ MV.hostless = false; setBc('새 방장에게 다시 연결합니다.'); if (liveRoom.virt && !lis){ liveRoom.virt = false; connectListen(id, liveRoom.name, liveRoom.pw || ''); } else reconnectListen(); }
   }
   if (MV.hostless) return;
   MV.last = s;
@@ -2051,15 +2051,11 @@ async function mvPoll(){
 async function electStep(R){
   if (MV.taking || !liveRoom || liveRoom.id !== R || isHost()) return;
   if (liveRoom.only){
-    let closed = null; try { closed = await lj('roomclosed_' + R, 'GET'); } catch(e){}
-    const keepable = (MV.k === 'yt' || MV.k === 'url') && !(closed && Date.now() - closed.ts < 600000);
-    if (!keepable){ setBc('방이 닫혔거나 방장이 나가서 소리 듣기를 멈췄습니다.'); setStatus('정지'); stopListen(); loadLive(); return; }
-    let dd = {}; try { dd = await lj('roommem_' + R, 'GET') || {}; } catch(e){ return; }
-    const nw = nowS(), others = Object.keys(dd).filter(k => k !== myId && dd[k] && nw - dd[k].ts < 25000);
-    if (others.length) return;                 // 방에 남은 다른 사람이 새 방장이 될 때까지 영상은 그대로 재생
-    if (!liveRoom || liveRoom.id !== R || !liveRoom.only) return;
-    openOnlyRoom(); takeOver(R);               // 아무도 안 남았으면 내가 방을 이어받아 영상을 계속 틀어 줌
-    return;
+    let closed = null, rg = null, rgOk = true; try { closed = await lj('roomclosed_' + R, 'GET'); } catch(e){}
+    try { rg = await lj('livereg/' + R, 'GET'); } catch(e){ rgOk = false; }
+    const keepable = (MV.k === 'yt' || MV.k === 'url') && !(closed && Date.now() - closed.ts < 600000) && !(rgOk && !rg);
+    if (!keepable){ setBc('방이 닫혔거나 방장이 나가서 소리 듣기를 멈췄습니다.'); setStatus('정지'); if (lis) stopListen(); else leaveRoom(); loadLive(); return; }
+    return;                                    // 소리만 듣는 사람은 방 화면을 열지 않고, 새 방장이 생길 때까지(또는 방이 사라질 때까지) 영상을 계속 재생
   }
   try {
     const c = await lj('roomclosed_' + R, 'GET');
@@ -3153,7 +3149,7 @@ async function loadLive(){
         m.onclick = () => askHost(id, String(d[id].h || '방장'), String(d[id].n));
         row.append(m);
       }
-      if (!(bc && bc.rid === id) && !d[id].e) row.append(rmOnlyBtn(id, d[id]));
+      if (!(bc && bc.rid === id) && (!d[id].e || d[id].v)) row.append(rmOnlyBtn(id, d[id]));
       if (rmAdm()) row.append(rmForceBtn(id, String(d[id].n)));
       box.append(row);
     });
@@ -3331,7 +3327,7 @@ function pinRow(id, d, hit, now, noOnly){
   b.append(n);
   if (!mine) b.onclick = d.e ? () => claimEmptyRoom(id, d) : () => listenFav(id, d);
   row.append(b);
-  if (!mine && !d.e && !noOnly) row.append(rmOnlyBtn(id, d));
+  if (!mine && (!d.e || d.v) && !noOnly) row.append(rmOnlyBtn(id, d));
   if (rmAdm()) row.append(rmForceBtn(id, String(d.n)));
   return row;
 }
@@ -3341,8 +3337,31 @@ function rmOnlyBtn(id, d){
   m.onclick = e => { e.stopPropagation(); listenOnlyRoom(id, d); };
   return m;
 }
+// 방장 없는 빈 방(영상 계속 재생 중)을 들어가지 않고 소리만 듣기: 나갈 때 남긴 시작 시각으로 지금 위치를 계산해 이 기기에서만 재생
+async function listenOnlyVirtual(id, info){
+  let pw = '';
+  if (info.p){
+    const fv = mhFind(id, String(info.n)); pw = (fv && fv.pw) || prompt('이 음악 방은 비밀번호가 필요합니다.') || ''; if (!pw) return;
+    if (info.lk && lockOf(pw, id) !== info.lk){ setBc('비밀번호가 맞지 않습니다.'); return; }
+  }
+  let cur = null; try { cur = await lj('livereg/' + id, 'GET'); } catch(e){ return; }
+  if (!cur){ setBc('이미 사라진 방입니다.'); loadLive(); return; }
+  if (!cur.e){ RDONLY.on = true; try { Promise.resolve(listenFav(id, cur)).catch(() => {}); } catch(e){} RDONLY.on = false; return; }  // 그 사이 새 방장이 생김
+  const v = cur.v;
+  if (!(v && v.u)){ setBc('이 빈 방에는 이어서 재생 중인 영상이 없습니다.'); return; }
+  if (bc) stopBroadcast();
+  stopListen(); rUserPause = true; rIntr = false; audio.pause(); stopOtherMedia();
+  liveRoom = {id, name: String(info.n), host: false, only: true, virt: true, pw};
+  mwOpen(false);
+  const el = Math.max(0, (nowS() - (+v.st || nowS())) / 1000), pos = (+v.d > 5) ? el % +v.d : 0;
+  await mvApply({k: v.k, u: v.u, p: 1, t: pos, ts: nowS()});
+  MV.hostless = true; MV.gone = 2;
+  $('now').textContent = String(info.n); $('meta').textContent = '음악 방'; setStatus('▶ 영상 계속 재생 중 (소리만)');
+  try { rdOnlyUi(); } catch(_){}
+}
 function listenOnlyRoom(id, info){
   if (!(DB && chatAllowed)){ setBc('채팅 서버에 연결된 뒤에 들을 수 있습니다.'); return; }
+  if (info && info.e){ listenOnlyVirtual(id, info); return; }
   RDONLY.on = true;
   try { Promise.resolve(listenFav(id, info)).catch(() => {}); } catch(e){}
   RDONLY.on = false; // listen()은 첫 단계(enterRoom)까지 바로 실행되므로 여기서 꺼도 됨
@@ -3357,11 +3376,11 @@ function openOnlyRoom(){
 }
 function rdOnlyUi(){
   const b = $('rdonly'); if (!b) return;
-  const on = !!(liveRoom && liveRoom.only && lis);
+  const on = !!(liveRoom && liveRoom.only && (lis || liveRoom.virt));
   b.hidden = !on;
   if (on) $('rdonlyn').textContent = '🎧 소리만 듣는 중 · ' + liveRoom.name + ' · ' + String($('status').textContent || '').replace(/^●\s*/, '');
 }
-$('rdonlyoff').onclick = () => { stopListen(); setStatus('정지'); rdOnlyUi(); };
+$('rdonlyoff').onclick = () => { if (liveRoom && liveRoom.virt) leaveRoom(); else stopListen(); setStatus('정지'); rdOnlyUi(); };
 $('rdonlyopen').onclick = openOnlyRoom;
 setInterval(rdOnlyUi, 800);
 function renderLivePin(){
