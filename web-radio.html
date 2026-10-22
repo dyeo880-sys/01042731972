@@ -3438,6 +3438,7 @@ async function listenOnlyVirtual(id, info){
   try { rdOnlyUi(); } catch(_){}
 }
 function listenOnlyRoom(id, info){
+  try { mvolEnsure(); } catch(_){}
   if (!(DB && chatAllowed)){ setBc('채팅 서버에 연결된 뒤에 들을 수 있습니다.'); return; }
   if (info && info.e){ listenOnlyVirtual(id, info); return; }
   RDONLY.on = true;
@@ -3806,8 +3807,8 @@ $('plfile').onchange = e => { const fs = e.target.files; if (fs && fs.length) pl
 $('vadd').onclick = () => plAdd($('vurl').value);
 plRender();
 // ---- 통합 볼륨: 유튜브 · 링크/파일 영상 · 방 소리를 슬라이더 하나로 (시작은 30%로 낮게, 값 기억) ----
-const MVOL = {v: 0.3, mute: false}, MVOL_KEY = 'radio_media_vol';
-try { const q = parseFloat(localStorage.getItem(MVOL_KEY)); if (q >= 0 && q <= 1) MVOL.v = q; } catch(e){}
+const MVOL = {v: 0.5, mute: false}, MVOL_KEY = 'radio_media_vol2'; // (옛 값 radio_media_vol 은 잘못 저장된 0에 가까운 값이 남아 있을 수 있어 새 키 사용)
+try { const q = parseFloat(localStorage.getItem(MVOL_KEY)); if (q >= 0.02 && q <= 1) MVOL.v = q; } catch(e){}
 function mvolUI(){
   try { const t = MVOL.mute ? 0 : MVOL.v; $('vol').value = t; $('rdvol').value = t; } catch(_){}
   try { const q = $('rdovol'); if (q){ q.value = Math.round((MVOL.mute ? 0 : MVOL.v) * 100); $('rdmute').textContent = (MVOL.mute || MVOL.v === 0) ? '🔇' : (MVOL.v < 0.5 ? '🔉' : '🔊'); } } catch(_){}
@@ -3840,6 +3841,9 @@ $('mwmute').onclick = mvolMute;
 $('rdovol').addEventListener('input', e => mvolSet(+e.target.value / 100));
 $('rdmute').onclick = mvolMute;
 mvolApply();
+// 음방 소리가 새로 시작될 때마다 통합 볼륨을 다시 적용 (거의 0으로 남은 값이면 기본값으로 복구)
+function mvolEnsure(){ try { if (!MVOL.mute && MVOL.v < 0.02) MVOL.v = 0.3; } catch(_){} try { mvolApply(); } catch(_){} }
+['loadedmetadata', 'playing'].forEach(ev => { try { liveAudio.addEventListener(ev, mvolEnsure); mwvid.addEventListener(ev, mvolEnsure); } catch(_){} });
 // ---- 영상 검색 (방장이 옆에서 찾아서 클릭하면 바로 재생) ----
 function vResMsg(t){ const v = $('vres'); v.hidden = false; v.innerHTML = ''; const d = document.createElement('div'); d.className = 'vm'; d.textContent = t; v.append(d); }
 const kload = n => { try { return localStorage.getItem('radio_key_' + n) || ''; } catch(e){ return ''; } };
