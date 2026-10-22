@@ -1961,7 +1961,7 @@ function ytErr(code){
 // ===== 방장이 나가도 영상이 '계속 재생 중'인 것처럼 이어지게 하기 =====
 // 유튜브·링크 영상은 각자 브라우저에서 재생되므로, 나갈 때 "몇 시에 처음부터 틀었는지"를 방 정보에 남겨 두고
 // 다음에 들어온 사람이 (지금 시각 - 시작 시각) % 영상 길이 위치부터 이어서 틀어 줍니다.
-function mvKeepSnap(){
+function mvKeepSnap0(){
   try {
     if (!bc || bc.keep === false) return null;
     if (MV.k !== 'yt' && MV.k !== 'url') return null;
@@ -1982,6 +1982,20 @@ function mvKeepSnap(){
     return snap;
   } catch(e){ return null; }
 }
+// 기본으로 켜져 있는 '방장이 나가도 계속 재생': 순간적으로 멈춤·준비 중이어도 마지막 재생 기록을 버리지 않습니다
+// (방장이 ■ 끄기를 누르거나, 다른 소스로 바꾼 뒤 5분이 지나면 기록을 비웁니다)
+function mvKeepSnap(){
+  const s = mvKeepSnap0();
+  try {
+    if (!bc) return s;
+    if (s){ bc.lastSnap = s; bc.lastSnapAt = Date.now(); return s; }
+    if (bc.keep === false || !bc.lastSnap) return null;
+    if (MV.k === 'yt' || MV.k === 'url') return bc.lastSnap;
+    if (!MV.k && Date.now() - (bc.lastSnapAt || 0) < 300000) return bc.lastSnap;
+  } catch(e){}
+  return s;
+}
+try { document.getElementById('vstop').addEventListener('click', () => { if (bc){ bc.lastSnap = null; bc.lastSnapAt = 0; } }); } catch(e){}
 // 목록 스냅샷에서 "지금 몇 번째 영상의 몇 초 지점인지" 계산 (영상 길이를 아는 곳까지는 정확히, 모르는 영상은 그 영상 처음부터)
 function vplLocate(v){
   const pl = v && v.pl; if (!Array.isArray(pl) || pl.length < 2) return null;
