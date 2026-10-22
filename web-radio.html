@@ -1012,7 +1012,7 @@ function playView(i, keepRoom, restore){
   const s = view[i]; if (!s) return;
   try { if (mtv.on && !restore) mtvQuiet(); } catch(e){}
   curView = i;
-  if (!keepRoom){ stopListen(); try { localStorage.removeItem('radio_last_room'); } catch(e){} }
+  if (!keepRoom){ stopListen(); try { if (liveRoom && liveRoom.virt && !liveRoom.host) leaveRoom(); } catch(e){} try { localStorage.removeItem('radio_last_room'); } catch(e){} }   // 라디오를 틀면 음방 소리(방장 없는 빈 방 포함)는 끔
   cur = stations.indexOf(s);
   lastSaveStation(s);
   const url = s.url_resolved || s.url;
@@ -1913,7 +1913,18 @@ function mvCur(){
   if (MV.k === 'yt' && MV.yt && MV.yt.getCurrentTime) return {t: MV.yt.getCurrentTime(), p: MV.yt.getPlayerState() === 1 ? 1 : 0};
   return {t: mwvid.currentTime || 0, p: (!mwvid.paused && !mwvid.ended) ? 1 : 0};
 }
-function mvPush(){ if (!bc || (MV.k !== 'yt' && MV.k !== 'url')) return; mvPut(Object.assign({k: MV.k, u: MV.u}, mvCur())); }
+function mvPush(){
+  if (!bc || (MV.k !== 'yt' && MV.k !== 'url')) return;
+  const c = mvCur();
+  try {   // 나갈 때 플레이어에서 값을 못 읽어도 이어 틀 수 있게, 시작 시각·영상 길이를 미리 기억해 둠
+    if (c.p){
+      MV.keepU = MV.u; MV.keepAt = Date.now(); MV.keepSt = Math.round(nowS() - c.t * 1000);
+      let d = 0; if (MV.k === 'yt' && MV.yt && MV.yt.getDuration) d = MV.yt.getDuration() || 0; else if (isFinite(mwvid.duration)) d = mwvid.duration || 0;
+      if (d > 5) MV.keepD = Math.round(d);
+    }
+  } catch(_){}
+  mvPut(Object.assign({k: MV.k, u: MV.u}, c));
+}
 ['play', 'pause', 'seeked'].forEach(ev => mwvid.addEventListener(ev, () => { if (bc && MV.k === 'url') mvPush(); }));
 // 방장: 링크 재생
 function ytErr(code){
@@ -1935,11 +1946,13 @@ function mvKeepSnap(){
   try {
     if (!bc || bc.keep === false) return null;
     if (MV.k !== 'yt' && MV.k !== 'url') return null;
-    const c = mvCur(); if (!c.p) return null;                       // 방장이 일시정지해 둔 영상은 이어 틀지 않음
+    const c = mvCur(), same = MV.keepU === MV.u, fresh = same && MV.keepSt && Date.now() - (MV.keepAt || 0) < 15000;
+    if (!c.p && !fresh) return null;                                 // 방장이 일시정지해 둔 영상은 이어 틀지 않음
     let d = 0;
-    if (MV.k === 'yt' && MV.yt && MV.yt.getDuration) d = MV.yt.getDuration() || 0;
-    else if (MV.k === 'url' && isFinite(mwvid.duration)) d = mwvid.duration || 0;
-    return {k: MV.k, u: String(MV.u || '').slice(0, 500), d: Math.round(d), st: Math.round(nowS() - c.t * 1000)};
+    try { if (MV.k === 'yt' && MV.yt && MV.yt.getDuration) d = MV.yt.getDuration() || 0; else if (MV.k === 'url' && isFinite(mwvid.duration)) d = mwvid.duration || 0; } catch(_){}
+    if (!(d > 5) && same) d = MV.keepD || 0;
+    const st = (c.p && c.t > 0.5) ? Math.round(nowS() - c.t * 1000) : (fresh ? MV.keepSt : Math.round(nowS() - c.t * 1000));
+    return {k: MV.k, u: String(MV.u || '').slice(0, 500), d: Math.round(d), st};
   } catch(e){ return null; }
 }
 async function resumeVirtual(v){
@@ -3434,6 +3447,17 @@ async function listenOnlyVirtual(id, info){
   const el = Math.max(0, (nowS() - (+v.st || nowS())) / 1000), pos = (+v.d > 5) ? el % +v.d : 0;
   await mvApply({k: v.k, u: v.u, p: 1, t: pos, ts: nowS()});
   MV.hostless = true; MV.gone = 2;
+  if (!(+v.d > 5)){   // 영상 길이를 모르면 플레이어가 길이를 알려 줄 때 지금 위치(시작 후 경과시간 % 길이)로 이동
+    let n = 0; const iv = setInterval(() => {
+      try {
+        if (!liveRoom || !liveRoom.virt || ++n > 40){ clearInterval(iv); return; }
+        const dur = (MV.k === 'yt' && MV.yt && MV.yt.getDuration) ? MV.yt.getDuration() : (isFinite(mwvid.duration) ? mwvid.duration : 0);
+        if (!(dur > 5)) return; clearInterval(iv);
+        const tgt = (Math.max(0, (nowS() - (+v.st || nowS())) / 1000)) % dur, now = MV.k === 'yt' ? MV.yt.getCurrentTime() : mwvid.currentTime;
+        if (Math.abs(now - tgt) > 3){ if (MV.k === 'yt') MV.yt.seekTo(tgt, true); else mwvid.currentTime = tgt; }
+      } catch(e){ clearInterval(iv); }
+    }, 1000);
+  }
   $('now').textContent = String(info.n); $('meta').textContent = '음악 방'; setStatus('▶ 영상 계속 재생 중 (소리만)');
   try { rdOnlyUi(); } catch(_){}
 }
