@@ -971,7 +971,7 @@ function render(){
       b.insertBefore(im, b.firstChild); }
     b.querySelector('.n').textContent = s.name.trim() || '(이름 없음)';
     b.querySelector('.t').textContent = (s.tags || '').split(',').slice(0,2).join(', ');
-    b.onclick = () => playView(i);
+    b.onclick = () => { endOnlyListen(); playView(i); };
     const f = document.createElement('button');
     f.className = 'fav' + (favs.includes(s.stationuuid) ? ' on' : '');
     f.textContent = favs.includes(s.stationuuid) ? '★' : '☆';
@@ -1001,6 +1001,8 @@ function radioMutedStart(){
     addEventListener('pointerdown', un, true); addEventListener('keydown', un, true);
   }).catch(() => { audio.muted = false; armResume(); });
 }
+// 메인에서 '소리만 듣기' 중인 음악 방은, 사용자가 라디오를 직접 고르면 끈다 (방 안에 들어가 있는 경우는 그대로)
+function endOnlyListen(){ try { if (liveRoom && liveRoom.only) $('rdonlyoff').onclick(); } catch(e){} }
 function playView(i, keepRoom, restore){
   const s = view[i]; if (!s) return;
   try { if (mtv.on && !restore) mtvQuiet(); } catch(e){}
@@ -1097,8 +1099,8 @@ try {
     ms.setActionHandler('previoustrack', () => { if (view.length) playView((curView - 1 + view.length, !!liveRoom) % view.length); });
   }
 } catch(e){}
-$('next').onclick = () => { if (view.length) playView((curView + 1) % view.length); };
-$('prev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length); };
+$('next').onclick = () => { endOnlyListen(); if (view.length) playView((curView + 1) % view.length); };
+$('prev').onclick = () => { endOnlyListen(); if (view.length) playView((curView - 1 + view.length) % view.length); };
 $('vol').oninput = e => mvolSet(+e.target.value);
 audio.volume = 0.8;
 
@@ -3344,6 +3346,7 @@ function pinRow(id, d, hit, now, noOnly){
   b.title = mine ? '내가 열고 있는 방입니다' : '누르면 소리만 들립니다 (방에는 들어가지 않음)';
   b.onclick = () => {
     if (mine) return;
+    if (d.e) roomExtendWeek(id, d); // 메인 목록에서 빈 방을 누르면 폭파 기간을 일주일 늘림
     if (playing){ try { $('rdonlyoff').onclick(); } catch(e){} setTimeout(() => { try { renderLivePin(); } catch(e){} }, 300); return; }  // 같은 방 다시 누르면 정지
     if (inThis){ setBc('이미 들어가 있는 방입니다.'); return; }
     listenOnlyRoom(id, d);
@@ -3359,6 +3362,16 @@ function pinRow(id, d, hit, now, noOnly){
   row.append(mrStar(id, d));
   if (rmAdm()) row.append(rmForceBtn(id, String(d.n)));
   return row;
+}
+// 빈 방(방장 없음)을 메인 목록에서 누르면 자동 폭파 시각을 지금부터 7일 뒤로 연장 (이미 더 길게 남아 있으면 그대로 둠)
+function roomExtendWeek(id, d){
+  try {
+    if (!DB || !chatAllowed || !d || !d.e) return;
+    const now = nowS(), ne = now + 7 * 24 * 3600000;
+    if (d.e >= ne || d.e <= now) return;
+    d.e = ne;
+    lj('livereg/' + id, 'PATCH', {e: ne}).catch(() => {});
+  } catch(_){}
 }
 function mrStar(id, d){
   const star = document.createElement('button'); star.className = 'fav'; star.type = 'button';
@@ -5682,7 +5695,7 @@ function rdRender(){
     b.innerHTML = '<span class="n"></span><span class="t"></span>';
     b.querySelector('.n').textContent = s.name.trim() || '(이름 없음)';
     b.querySelector('.t').textContent = (s.tags || '').split(',').slice(0, 2).join(', ');
-    b.onclick = () => playView(i, true);
+    b.onclick = () => { endOnlyListen(); playView(i, true); };
     frag.append(b);
   });
   box.append(frag);
@@ -5697,6 +5710,7 @@ $('rdtoggle').onclick = () => {
 $('rdcountry').onchange = e => { $('country').value = e.target.value; $('country').dispatchEvent(new Event('change')); };
 $('rdq').oninput = e => { $('q').value = e.target.value; $('q').dispatchEvent(new Event('input')); };
 $('rdplay').onclick = () => {
+  if (audio.paused || !(audio.src || hls)) endOnlyListen();
   const has = !!(audio.src || hls); // 방송국 목록이 바뀌어 curView가 -1이어도 재생 중이면 정지가 되도록
   if (!has){ if (view.length) playView(0, true); return; }
   if (audio.paused){ rUserPause = false; rIntr = false; audio.play().catch(() => {}); }
@@ -5707,8 +5721,8 @@ $('rdstop').onclick = () => {
   if (rdCast) rdCastOff('📻 라디오를 정지해서 방 송출도 멈췄습니다.');
   audio.pause(); lastOff(1); rdSync();
 };
-$('rdnext').onclick = () => { if (view.length) playView((curView + 1) % view.length, true); };
-$('rdprev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length, true); };
+$('rdnext').onclick = () => { endOnlyListen(); if (view.length) playView((curView + 1) % view.length, true); };
+$('rdprev').onclick = () => { endOnlyListen(); if (view.length) playView((curView - 1 + view.length) % view.length, true); };
 $('rdvol').oninput = e => mvolSet(+e.target.value);
 ['playing', 'pause', 'waiting', 'error'].forEach(ev => audio.addEventListener(ev, rdSync));
 new MutationObserver(rdSync).observe($('now'), {childList: true, characterData: true, subtree: true});
