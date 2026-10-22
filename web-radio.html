@@ -851,6 +851,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <div class="rdrow"><strong>📻 라디오</strong><span id="rdnow">방송국을 고르세요</span>
         <button class="addhome" type="button" id="rdprev" title="이전 방송국" aria-label="이전 방송국">⏮</button>
         <button class="addhome" type="button" id="rdplay" title="재생/정지" aria-label="라디오 재생 또는 정지">▶</button>
+        <button class="addhome" type="button" id="rdstop" title="라디오 완전 정지" aria-label="라디오 정지">■ 정지</button>
         <button class="addhome" type="button" id="rdnext" title="다음 방송국" aria-label="다음 방송국">⏭</button>
         <label>볼륨 <input type="range" id="rdvol" min="0" max="1" step="0.01" value="0.8" aria-label="라디오 볼륨"></label>
         <button class="addhome" type="button" id="rdtoggle" aria-expanded="false">📻 방송국 고르기 ▾</button>
@@ -1015,7 +1016,7 @@ audio.addEventListener('error', () => { if (!hls) setStatus('재생할 수 없�
 
 let rUserPause = false; // 사용자가 직접 멈췄는지 (전화·문자 같은 시스템 끊김과 구분)
 $('play').onclick = () => {
-  if (curView < 0){ if (view.length) playView(0); return; }
+  if (!(audio.src || hls)){ if (view.length) playView(0); return; }
   if (audio.paused){ rUserPause = false; audio.play().catch(()=>{}); } else { rUserPause = true; audio.pause(); lastOff(1); }
 };
 // ===== 전화·문자·알림으로 소리가 끊기면 끝난 뒤 자동으로 이어 틀기 =====
@@ -5234,7 +5235,17 @@ $('rdtoggle').onclick = () => {
 };
 $('rdcountry').onchange = e => { $('country').value = e.target.value; $('country').dispatchEvent(new Event('change')); };
 $('rdq').oninput = e => { $('q').value = e.target.value; $('q').dispatchEvent(new Event('input')); };
-$('rdplay').onclick = () => { if (curView < 0){ if (view.length) playView(0, true); return; } audio.paused ? audio.play().catch(() => {}) : (audio.pause(), lastOff(1)); };
+$('rdplay').onclick = () => {
+  const has = !!(audio.src || hls); // 방송국 목록이 바뀌어 curView가 -1이어도 재생 중이면 정지가 되도록
+  if (!has){ if (view.length) playView(0, true); return; }
+  if (audio.paused){ rUserPause = false; rIntr = false; audio.play().catch(() => {}); }
+  else { rUserPause = true; rIntr = false; clearInterval(rIntrT); audio.pause(); lastOff(1); } // 내가 멈춘 것 → 자동 이어듣기 금지
+};
+$('rdstop').onclick = () => {
+  rUserPause = true; rIntr = false; clearInterval(rIntrT);
+  if (rdCast) rdCastOff('📻 라디오를 정지해서 방 송출도 멈췄습니다.');
+  audio.pause(); lastOff(1); rdSync();
+};
 $('rdnext').onclick = () => { if (view.length) playView((curView + 1) % view.length, true); };
 $('rdprev').onclick = () => { if (view.length) playView((curView - 1 + view.length) % view.length, true); };
 $('rdvol').oninput = e => { audio.volume = +e.target.value; $('vol').value = e.target.value; };
