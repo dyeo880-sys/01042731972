@@ -758,6 +758,25 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div id="dl_list"></div>
     <div class="acts" style="justify-content:center"><button class="btn" id="dl_more" type="button" hidden>더 보기</button></div>
   </section>
+  <section class="chat" id="pbsec" aria-label="공용 방송">
+    <div class="chathead"><strong>📻 공용 방송</strong></div>
+    <div class="note" style="margin:0 0 10px">누구나 유튜브 링크를 올릴 수 있는 게시판형 방송입니다. 올라온 영상 전체가 하나의 방송이 되어 순서대로 계속 반복되고, 접속한 모든 사람이 <b>같은 곡의 같은 위치</b>를 함께 듣습니다. 불법·저작권 침해·광고성 링크는 올리지 마세요. 문제가 있는 링크는 관리자가 삭제합니다.</div>
+    <div class="bar">
+      <input id="pb_url" class="grow" type="url" placeholder="유튜브 영상 링크 붙여넣기 (youtube.com/watch?v=… , youtu.be/…)" aria-label="유튜브 링크">
+      <button class="btn pri" id="pb_add" type="button">＋ 올리기</button>
+    </div>
+    <div class="bmsg" id="pb_msg" role="status"></div>
+    <div id="pb_ytw" style="position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;margin:8px 0"><div id="pb_ytp"></div></div>
+    <div class="acts" style="align-items:center">
+      <button class="btn pri" id="pb_play" type="button">▶ 방송 듣기</button>
+      <label style="display:flex;gap:6px;align-items:center;font-size:13px">🔊 <input id="pb_vol" type="range" min="0" max="100" value="70" aria-label="공용 방송 볼륨" style="width:120px"></label>
+      <button class="btn" id="pb_adm" type="button">🔒 관리자</button>
+      <button class="btn" id="pb_reset" type="button" hidden>⏮ 방송 처음부터</button>
+    </div>
+    <div class="note" id="pb_now" style="margin:8px 0" role="status"></div>
+    <div class="note" id="pb_count" style="margin:0 0 8px"></div>
+    <div id="pb_list"></div>
+  </section>
   <footer class="foot"><a href="https://blog.naver.com/fb1234" target="_blank" rel="noopener noreferrer">이진주방산업</a>
     <div><button id="addhome" class="addhome">바탕화면에 바로가기 만들기</button></div>
     <div class="addmsg" id="addmsg" role="status"></div>
@@ -6415,7 +6434,7 @@ setInterval(() => { if (!document.hidden) load(); }, 60000);
 
 // ===== 옆 메뉴: 라디오가 중심, 나머지는 오른쪽 버튼으로 열기 =====
 (function(){
-  const L = [['tvsec', '📺', 'TV'], ['krinfo', '🚦', '교통·날씨'], ['musicroom', '🎵', '음악 방'], ['myhome', '🏠', '마이홈'], ['chatsec', '💬', '채팅'], ['boardsec', '🍚', '맛집'], ['promosec', '📣', '동네홍보'], ['dlvreg', '🛵', '배달등록'], ['dlvsec', '🔎', '배달찾기']];
+  const L = [['tvsec', '📺', 'TV'], ['krinfo', '🚦', '교통·날씨'], ['musicroom', '🎵', '음악 방'], ['myhome', '🏠', '마이홈'], ['chatsec', '💬', '채팅'], ['boardsec', '🍚', '맛집'], ['promosec', '📣', '동네홍보'], ['dlvreg', '🛵', '배달등록'], ['dlvsec', '🔎', '배달찾기'], ['pbsec', '📻', '공용방송']];
   const rail = document.createElement('nav'); rail.id = 'siderail'; rail.setAttribute('aria-label', '메뉴');
   let cur = '';
   const mark = () => rail.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === cur));
@@ -6439,6 +6458,201 @@ setInterval(() => { if (!document.hidden) load(); }, 60000);
   $('rptoggle').onclick = () => { const o = $('rpopts'); o.hidden = !o.hidden; $('rptoggle').textContent = o.hidden ? '⚙ 확인·설정 ▾' : '⚙ 확인·설정 ▴'; $('rptoggle').setAttribute('aria-expanded', String(!o.hidden)); };
 })();
 </script>
+<script>
+// ===== 📻 공용 방송: 누구나 유튜브 링크를 올리면 목록 전체가 하나의 방송으로 반복되고, 모두가 같은 위치를 듣습니다 (Firebase /bcast) =====
+(function(){
+try {
+const $ = id => document.getElementById('pb_' + id);
+if (!$('url')) return;
+const BASE = DB + '/bcast';
+const MAXITEMS = 200, MAXDUR = 3 * 3600, COOLDOWN = 30000;
+let items = [], t0 = 0, off = 0, isAdm = false, on = false, yt = null, ready = false, curId = '', errId = '', lastSync = 0, loaded = false;
+try { isAdm = sessionStorage.getItem('board_admin') === '1'; } catch(e){}
+const msg = t => { $('msg').textContent = t || ''; };
+const fmt = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60, z = n => String(n).padStart(2, '0'); return (h ? h + ':' + z(m) : m) + ':' + z(x); };
+const vid = u => { const m = String(u || '').trim().match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/); return m ? m[1] : ''; };
+if (!DB){ $('list').innerHTML = '<div class="empty">Firebase 주소(FIREBASE_URL)가 없어 공용 방송을 쓸 수 없습니다.</div>'; $('add').disabled = true; $('play').disabled = true; return; }
+
+// 서버 시계: 모든 기기가 같은 시각을 쓰도록 Firebase 서버 시각과의 차이를 구합니다
+async function syncClock(){
+  try {
+    const a = Date.now();
+    const r = await fetch(BASE + '/clock.json', {method: 'PUT', body: JSON.stringify({'.sv': 'timestamp'})});
+    const sv = await r.json(); const b = Date.now();
+    if (typeof sv === 'number') off = sv - (a + b) / 2;
+  } catch(e){}
+}
+const now = () => Date.now() + off;
+
+async function load(){
+  try {
+    if (!loaded) await syncClock();
+    const r = await fetch(BASE + '.json'); if (!r.ok) throw new Error('http');
+    const j = (await r.json()) || {};
+    items = Object.entries(j.items || {}).map(([id, v]) => Object.assign({id}, v)).filter(v => v && v.v && v.d > 0)
+      .sort((a, b) => ((a.ts || 0) - (b.ts || 0)) || (a.id < b.id ? -1 : 1));
+    t0 = (j.meta && j.meta.t0) || 0;
+    if (!t0){ t0 = Math.round(now()); fetch(BASE + '/meta/t0.json', {method: 'PUT', body: JSON.stringify(t0)}).catch(() => {}); }
+    loaded = true; render(); tick();
+  } catch(e){
+    if (!loaded) $('list').innerHTML = '<div class="empty">공용 방송 서버에 연결하지 못했습니다. 인터넷 연결과 Firebase 규칙(bcast 읽기·쓰기 허용)을 확인하세요.</div>';
+  }
+}
+
+// 지금이 몇 번째 영상의 몇 초 지점인지 시계로 계산
+function where(){
+  const tot = items.reduce((s, v) => s + v.d, 0); if (!tot) return null;
+  let p = ((now() - t0) / 1000) % tot; if (p < 0) p += tot;
+  for (let i = 0; i < items.length; i++){ if (p < items[i].d) return {i, o: p, tot}; p -= items[i].d; }
+  return {i: 0, o: 0, tot};
+}
+
+function render(){
+  const box = $('list'); box.innerHTML = '';
+  $('count').textContent = items.length ? '📻 올라온 영상 ' + items.length + '개 · 전체 한 바퀴 ' + fmt(items.reduce((s, v) => s + v.d, 0)) : '';
+  if (!items.length){ box.innerHTML = '<div class="empty">아직 올라온 영상이 없습니다. 첫 링크를 올려 보세요!</div>'; return; }
+  items.forEach((it, i) => {
+    const row = document.createElement('div'); row.dataset.id = it.id;
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;padding:7px 8px;border-bottom:1px solid #00000055;border-left:4px solid transparent';
+    const n = document.createElement('span'); n.style.cssText = 'min-width:26px;color:var(--brass);font-size:12px'; n.textContent = (i + 1);
+    const mid = document.createElement('div'); mid.style.cssText = 'flex:1;min-width:0';
+    const t = document.createElement('div'); t.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap'; t.textContent = it.t || ('영상 ' + it.v); t.title = it.t || '';
+    const s = document.createElement('div'); s.style.cssText = 'font-size:11px;opacity:.7'; s.textContent = fmt(it.d) + ' · ' + String(it.n || '익명').slice(0, 20);
+    mid.append(t, s); row.append(n, mid);
+    if (isAdm || (typeof UID !== 'undefined' && it.k === UID)){
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'btn red'; x.textContent = isAdm ? '삭제 (관리자)' : '삭제';
+      x.onclick = () => del(it); row.append(x);
+    }
+    box.append(row);
+  });
+  $('reset').hidden = !isAdm; $('adm').textContent = isAdm ? '🔓 관리자 중 (끝내기)' : '🔒 관리자';
+}
+
+function tick(){
+  const w = where();
+  if (!w){ $('now').textContent = on ? '재생할 영상이 없습니다.' : ''; return; }
+  const it = items[w.i], nx = items[(w.i + 1) % items.length];
+  $('now').textContent = (on ? '🎧 ' : '📻 ') + '지금 방송: ' + (it.t || it.v) + ' (' + fmt(w.o) + ' / ' + fmt(it.d) + ')' + (items.length > 1 ? ' · 다음: ' + (nx.t || nx.v) : '');
+  $('list').querySelectorAll('[data-id]').forEach(r => { r.style.borderLeftColor = r.dataset.id === it.id ? 'var(--amber)' : 'transparent'; r.style.background = r.dataset.id === it.id ? '#ffcf7a22' : ''; });
+  if (!on || !ready) return;
+  if (curId !== it.id){ curId = it.id; errId = ''; lastSync = Date.now(); try { yt.loadVideoById({videoId: it.v, startSeconds: w.o}); } catch(e){} return; }
+  if (errId === it.id) return;
+  if (Date.now() - lastSync > 5000){
+    lastSync = Date.now();
+    try {
+      const st = yt.getPlayerState();
+      if (st === 1 || st === 3){ if (Math.abs(yt.getCurrentTime() - w.o) > 3) yt.seekTo(w.o, true); }
+      else yt.loadVideoById({videoId: it.v, startSeconds: w.o});
+    } catch(e){}
+  }
+}
+
+async function start(){
+  try { if (typeof audio !== 'undefined') audio.pause(); } catch(e){}
+  try { await loadYT(); } catch(e){}
+  if (!(window.YT && YT.Player)){ msg('유튜브 플레이어를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'); return; }
+  on = true; curId = ''; errId = ''; $('play').textContent = '⏹ 듣기 끝내기';
+  if (!yt){
+    ready = false;
+    yt = new YT.Player('pb_ytp', {width: '100%', height: '100%', playerVars: {autoplay: 1, playsinline: 1, controls: 0, rel: 0, disablekb: 1, modestbranding: 1}, events: {
+      onReady: () => { ready = true; try { yt.setVolume(+$('vol').value); } catch(e){} tick(); },
+      onError: () => { errId = curId; msg('이 영상은 재생할 수 없어 다음 영상이 시작될 때까지 기다립니다. (관리자에게 삭제를 요청하세요)'); }
+    }});
+  } else tick();
+}
+function stop(){
+  on = false; curId = ''; $('play').textContent = '▶ 방송 듣기';
+  try { yt && ready && yt.stopVideo(); } catch(e){}
+  tick();
+}
+$('play').onclick = () => { on ? stop() : start(); };
+$('vol').oninput = () => { try { yt && ready && yt.setVolume(+$('vol').value); } catch(e){} };
+try { if (typeof audio !== 'undefined') audio.addEventListener('play', () => { if (on) stop(); }); } catch(e){}   // 라디오를 켜면 공용 방송은 멈춤
+
+// 올릴 때 영상 길이·제목을 읽고, 퍼가기가 막혔거나 생방송인 영상은 걸러냅니다
+function probe(id){
+  return new Promise(res => {
+    const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-9999px;top:0;width:200px;height:200px';
+    const d = document.createElement('div'); box.append(d); document.body.append(box);
+    let p = null, done = false, iv = 0;
+    const fin = r => { if (done) return; done = true; clearInterval(iv); clearTimeout(to); try { p && p.destroy(); } catch(e){} box.remove(); res(r); };
+    const to = setTimeout(() => fin({err: 'nodur'}), 15000);
+    p = new YT.Player(d, {width: 200, height: 200, videoId: id, playerVars: {autoplay: 0, controls: 0, playsinline: 1}, events: {
+      onReady: e => {
+        try { e.target.mute(); e.target.playVideo(); } catch(_){}
+        iv = setInterval(() => {
+          try {
+            const vd = (p.getVideoData && p.getVideoData()) || {};
+            if (vd.isLive) return fin({err: 'live'});
+            const du = p.getDuration();
+            if (du > 0) fin({d: Math.floor(du), title: vd.title || ''});
+          } catch(_){}
+        }, 400);
+      },
+      onError: () => fin({err: 'embed'})
+    }});
+  });
+}
+
+let busy = false;
+async function add(){
+  if (busy) return;
+  const id = vid($('url').value);
+  if (!id){ msg('유튜브 영상 링크를 넣어 주세요. (youtube.com/watch?v=… 또는 youtu.be/… 형식)'); return; }
+  if (items.some(v => v.v === id)){ msg('이미 올라와 있는 영상입니다.'); return; }
+  if (items.length >= MAXITEMS){ msg('목록이 가득 찼습니다. (최대 ' + MAXITEMS + '개) 관리자가 정리한 뒤 올려 주세요.'); return; }
+  let last = 0; try { last = +localStorage.getItem('pb_last') || 0; } catch(e){}
+  if (Date.now() - last < COOLDOWN){ msg('도배 방지를 위해 ' + Math.ceil((COOLDOWN - (Date.now() - last)) / 1000) + '초 뒤에 다시 올릴 수 있습니다.'); return; }
+  busy = true; $('add').disabled = true; msg('영상 길이를 확인하는 중입니다… (최대 15초)');
+  try {
+    await loadYT();
+    if (!(window.YT && YT.Player)){ msg('유튜브 플레이어를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'); return; }
+    const r = await probe(id);
+    if (r.err === 'embed'){ msg('이 영상은 퍼가기(외부 재생)가 막혀 있거나 비공개·삭제된 영상이라 올릴 수 없습니다.'); return; }
+    if (r.err === 'live'){ msg('생방송 링크는 길이가 없어 올릴 수 없습니다. 끝난 영상이나 일반 영상 링크를 올려 주세요.'); return; }
+    if (r.err){ msg('영상 길이를 읽지 못했습니다. 잠시 후 다시 시도하거나 다른 링크를 올려 주세요.'); return; }
+    if (r.d < 5){ msg('너무 짧은 영상은 올릴 수 없습니다. (5초 이상)'); return; }
+    if (r.d > MAXDUR){ msg('너무 긴 영상은 올릴 수 없습니다. (최대 3시간)'); return; }
+    let nick = ''; try { nick = (document.getElementById('nick').value || '').trim().slice(0, 20); } catch(e){}
+    const w = await fetch(BASE + '/items.json', {method: 'POST', body: JSON.stringify({v: id, t: (r.title || ('영상 ' + id)).slice(0, 100), d: r.d, n: nick, k: (typeof UID !== 'undefined' ? UID : ''), ts: {'.sv': 'timestamp'}})});
+    if (!w.ok) throw new Error('write');
+    try { localStorage.setItem('pb_last', String(Date.now())); } catch(e){}
+    $('url').value = ''; msg('✅ 올렸습니다. 방송 목록 맨 끝에 들어갑니다.'); await load();
+  } catch(e){ msg('올리지 못했습니다. Firebase 규칙(bcast 쓰기 허용)을 확인하세요.'); }
+  finally { busy = false; $('add').disabled = false; }
+}
+$('add').onclick = add;
+$('url').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) add(); });
+
+async function del(it){
+  if (!(isAdm || (typeof UID !== 'undefined' && it.k === UID))) return;
+  if (!confirm('「' + (it.t || it.v) + '」을(를) 방송 목록에서 삭제할까요?')) return;
+  try { await fetch(BASE + '/items/' + it.id + '.json', {method: 'DELETE'}); } catch(e){ msg('삭제하지 못했습니다.'); return; }
+  await load();
+}
+
+$('adm').onclick = async () => {
+  if (isAdm){ isAdm = false; try { sessionStorage.removeItem('board_admin'); } catch(e){} render(); return; }
+  const pw = prompt('관리자 비밀번호를 입력하세요.'); if (pw === null) return;
+  let ok = false;
+  try { ok = (await pwHash(pw)) === ADMIN_HASH; } catch(e){ alert('이 주소에서는 확인할 수 없습니다. https:// 주소나 파일로 열어 주세요.'); return; }
+  if (!ok){ alert('비밀번호가 맞지 않습니다.'); return; }
+  isAdm = true; try { sessionStorage.setItem('board_admin', '1'); } catch(e){}
+  render();
+};
+$('reset').onclick = async () => {
+  if (!isAdm) return;
+  if (!confirm('방송을 지금 시각 기준으로 첫 번째 영상부터 다시 시작할까요?')) return;
+  await syncClock();
+  try { await fetch(BASE + '/meta/t0.json', {method: 'PUT', body: JSON.stringify(Math.round(now()))}); } catch(e){ msg('처음부터 시작하지 못했습니다.'); return; }
+  await load();
+};
+
+load(); setInterval(tick, 1000); setInterval(() => { if (!document.hidden) load(); }, 30000);
+} catch(e){ console.warn('공용 방송을 시작하지 못했습니다:', e); }
+})();
+</script>
+
 <script>
 // ===== 📞 전화·알림 등으로 라디오가 끊기면, 끝난 뒤 자동으로 이어서 재생 =====
 // 내가 누른 일시정지(앱 코드가 audio.pause() 호출)와, 전화 등 시스템이 멈춘 것을 구분한다.
