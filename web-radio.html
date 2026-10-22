@@ -140,6 +140,7 @@ body.hidebad .vr.bad{display:none}
 .rpbar .addhome{margin:0;padding:4px 10px;font-size:13px}
 #rpmsg{opacity:.85}
 .st.good .n::before{content:'● ';color:#6fd36f;font-size:10px}
+#rdonly{display:none!important}
 .mricon{width:28px;height:28px;flex:none;border-radius:4px;background:linear-gradient(135deg,#4a3a72,#1c1233);display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1}
 .st.mroom.closed{opacity:.5}
 .mrgo{font-size:13px;white-space:nowrap;padding:5px 10px;margin:0 4px;border:1px solid var(--brass);border-radius:6px;color:var(--amber);background:#241610}
@@ -854,6 +855,12 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       </div>
                 <div class="tp" id="p-rs" hidden>
             <div class="sgrp" style="flex-basis:100%"><input id="rsname" maxlength="20" placeholder="새 방 이름 (최대 20자)" aria-label="새 방 이름" style="width:200px"><button class="addhome" style="margin:0" type="button" id="rsnameok">✏ 이름 변경</button></div>
+            <div class="sgrp" style="flex-basis:100%"><strong>⏰ 멘트 예약</strong>
+              <textarea id="anlinks" rows="3" maxlength="600" placeholder="멘트로 나올 유튜브 링크 (줄마다 1개, 최대 5개 · 여러 개면 돌아가며 나옵니다 · mp3 직접 링크도 가능)" aria-label="멘트 링크" style="width:100%;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"></textarea>
+              <label class="chatnote" style="margin:0">매 <input id="annum" type="number" min="1" max="1440" value="10" aria-label="분" style="width:70px;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"> 분마다</label>
+              <label class="chatnote" style="margin:0">멘트 중 음악 볼륨 <select id="anduck" aria-label="음악 볼륨" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"><option value="10">10%</option><option value="25" selected>25%</option><option value="50">50%</option></select></label>
+              <button class="addhome" style="margin:0" type="button" id="anapply">저장·적용</button><button class="addhome" style="margin:0" type="button" id="antest">▶ 지금 테스트</button><button class="addhome" style="margin:0" type="button" id="anoff">끄기</button>
+              <div class="chatnote" id="anmsg" style="margin:0;flex-basis:100%">음악은 그대로 흐르고, 멘트 소리가 나오는 동안만 음악이 줄었다가 돌아옵니다. 시각은 시계 기준입니다 (10분이면 :00 :10 :20 …). 방장이 나가도 방이 남아 있는 동안은 계속 나옵니다.</div></div>
             <div class="sgrp" style="flex-basis:100%"><strong>⏱ 방 자동 폭파 타이머</strong>
               <input id="rshold" type="number" min="1" max="43200" step="1" value="1" aria-label="시간" style="width:76px"><select id="rsunit" aria-label="단위" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"><option value="1">분</option><option value="60" selected>시간</option><option value="1440">일</option></select>
               <button class="addhome rspre" style="margin:0" type="button" data-m="10">10분</button><button class="addhome rspre" style="margin:0" type="button" data-m="60">1시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="360">6시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="1440">24시간</button><button class="addhome rspre" style="margin:0" type="button" data-m="4320">3일</button><button class="addhome rspre" style="margin:0" type="button" data-m="5760">4일</button><button class="addhome rspre" style="margin:0" type="button" data-m="14400">10일</button><button class="addhome rspre" style="margin:0" type="button" data-m="10080">7일</button><button class="addhome rspre" style="margin:0" type="button" data-m="43200">30일</button>
@@ -1045,6 +1052,7 @@ audio.addEventListener('error', () => { if (!hls) setStatus('재생할 수 없�
 
 let rUserPause = false; // 사용자가 직접 멈췄는지 (전화·문자 같은 시스템 끊김과 구분)
 $('play').onclick = () => {
+  if (liveRoom && liveRoom.only){ try { $('rdonlyoff').onclick(); } catch(e){} $('play').textContent = '▶'; return; }   // 음방 소리만 듣는 중이면 정지
   if (!(audio.src || hls)){ if (view.length) playView(0); return; }
   if (audio.paused){ rUserPause = false; audio.play().catch(()=>{}); } else { rUserPause = true; audio.pause(); lastOff(1); }
 };
@@ -2034,7 +2042,7 @@ async function mvPoll(){
   if (!liveRoom || liveRoom.id !== id) return;
   { let hh = null; Object.keys(gg || {}).forEach(k => { const m = gg[k]; if (m && m.h && (!hh || m.ts > hh.ts)) hh = m; }); guestSet(hh && hh.g ? {n: hh.g} : null); }
   if (reg && reg.ts !== MV.regTs){ MV.regTs = reg.ts; MV.regAt = Date.now(); }
-  if (reg){ MV.hd = reg.hd; MV.hs = reg.hs; MV.al = reg.al; if (reg.n && String(reg.n) !== liveRoom.name){ liveRoom.name = String(reg.n); roomHead(); } }
+  if (reg){ MV.hd = reg.hd; MV.hs = reg.hs; MV.al = reg.al; MV.an = reg.an; if (reg.n && String(reg.n) !== liveRoom.name){ liveRoom.name = String(reg.n); roomHead(); } }
   if (!reg || reg.e || Date.now() - (MV.regAt || Date.now()) > 90000){
     // 방장이 나간 것으로 보이는 동안에는 지금 재생 중인 영상을 멈추지 않고 그대로 둠 (새 방장이 정해질 때까지)
     if (++MV.gone >= 2){ MV.hostless = true; electStep(id); }
@@ -2084,7 +2092,7 @@ async function takeOver(R){
     clearInterval(MV.poll);
     if (lis){ const l = lis; lis = null; clearInterval(l.dtm); clearTimeout(l.rt); try { l.pc.close(); } catch(e){} liveAudio.srcObject = null; liveAudio.style.display = 'none'; lj('sig_' + R + '/o_' + l.lid, 'DELETE').catch(() => {}); lj('sig_' + R + '/a_' + l.lid, 'DELETE').catch(() => {}); }
     const keepVideo = MV.k === 'yt' || MV.k === 'url';
-    if (!(await buildBc(R, name, pw, false, keepVideo, {hold: MV.hd, holdSet: !!MV.hs, alone: !!MV.al}))){ leaveRoom(); return; }
+    if (!(await buildBc(R, name, pw, false, keepVideo, {hold: MV.hd, holdSet: !!MV.hs, alone: !!MV.al, an: MV.an}))){ leaveRoom(); return; }
     MV.hostless = false; MV.gone = 0;
     liveRoom.host = true; $('hostctl').hidden = false; $('leavebtn').hidden = true;
     lisRetry = 0; $('rxdiag').hidden = true; $('lagrow').hidden = true; $('mwre').hidden = true; $('guestTile').hidden = true; lisVidReady = false;
@@ -2238,7 +2246,7 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
       vbase = cv.captureStream(1).getVideoTracks()[0]; stream.addTrack(vbase); timers.push(setInterval(tick, 1000));
     } catch(e){ vbase = null; }
   }
-  const me = {holdSet: !!(opts && opts.holdSet && +opts.hold >= 1), hold: (opts && opts.holdSet && +opts.hold >= 1) ? Math.min(43200, Math.round(+opts.hold)) : 10080, alone: !!(opts && opts.alone), aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
+  const me = {holdSet: !!(opts && opts.holdSet && +opts.hold >= 1), hold: (opts && opts.holdSet && +opts.hold >= 1) ? Math.min(43200, Math.round(+opts.hold)) : 10080, alone: !!(opts && opts.alone), an: (opts && opts.an) || null, aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
   bc = me;
   me.sid = Math.random().toString(36).slice(2, 12);
   me.reg = async () => {
@@ -2253,7 +2261,7 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
     }
     if (bc !== me) return;
     me.regd = true;
-    return lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: nowS(), s: me.sid, p: me.pw ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length, hd: me.hold, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, np: npText(), nk: npKind()}).catch(() => {});
+    return lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: nowS(), s: me.sid, p: me.pw ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length, hd: me.hold, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, an: me.an || null, np: npText(), nk: npKind()}).catch(() => {});
   };
   await me.reg(); if (!keepState) mvPut({k: hasCam ? 'cam' : ''});
   me.timers.push(setInterval(me.reg, 15000), setInterval(bcPoll, 2000), setInterval(bcWatch, 6000));
@@ -2284,7 +2292,7 @@ function stopBroadcast(noKeep, local){
   try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep) lj('livereg/' + me.rid, 'DELETE').catch(() => {});
-  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + Math.min(43200, me.hold || 10080) * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, lk: me.lock || '', v: snap}).catch(() => {});
+  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + Math.min(43200, me.hold || 10080) * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap}).catch(() => {});
   lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
   leaveRoom(); setBc(''); loadLive();
@@ -3116,7 +3124,7 @@ async function claimEmptyRoom(R, info){
   if (!cur){ setBc('이미 사라진 방입니다.'); loadLive(); return; }
   if (!cur.e){ loadLive(); listen(R, String(cur.n), !!cur.p, pw); return; }
   stopListen(); audio.pause(); stopBroadcast(true);
-  if (!(await buildBc(R, String(info.n), pw, false, undefined, {hold: cur.hd || info.hd, holdSet: !!(cur.hs || info.hs), alone: !!info.al}))) return;
+  if (!(await buildBc(R, String(info.n), pw, false, undefined, {hold: cur.hd || info.hd, holdSet: !!(cur.hs || info.hs), alone: !!info.al, an: cur.an || info.an}))) return;
   enterRoom(R, String(info.n)); fillInvite(); loadLive();
   let resumed = false;
   if (cur.v && cur.v.u){ try { resumed = await resumeVirtual(cur.v); } catch(e){} }
@@ -3483,7 +3491,87 @@ function renderLivePin(){
 $('q').addEventListener('input', () => { try { renderLivePin(); } catch(e){} });
 try { $('mode').addEventListener('change', () => { try { renderLivePin(); } catch(e){} }); } catch(e){}
 let pinKey = '';
-setInterval(() => { const k = liveRoom ? liveRoom.id + (liveRoom.only ? 'o' : 'f') : ''; if (k !== pinKey){ pinKey = k; try { renderLivePin(); } catch(e){} } }, 700);
+setInterval(() => { const k = liveRoom ? liveRoom.id + (liveRoom.only ? 'o' : 'f') : ''; if (k !== pinKey){ const was = pinKey; pinKey = k; try { renderLivePin(); } catch(e){}
+  if (k){ try { mvolSet(+$('vol').value); } catch(e){} }                                   // 방 소리 시작: 위쪽 볼륨 값 그대로 적용
+  try { if (k.slice(-1) === 'o') $('play').textContent = '⏸'; else if (was.slice(-1) === 'o' && audio.paused) $('play').textContent = '▶'; } catch(e){} } }, 700);
+$('vol').addEventListener('input', e => { if (liveRoom){ try { mvolSet(+e.target.value); } catch(_){} } });   // 위쪽 볼륨 = 음방 소리 볼륨
+// ===== ⏰ 멘트 예약: 음악은 그대로, 정해진 시각마다 유튜브(또는 mp3) 링크 소리를 겹쳐 틀고 그동안만 음악을 줄임 =====
+// 방 정보(livereg)에 설정이 저장되어 방장이 없어도, 방에 있는 모든 기기가 같은 시계로 계산해 같은 시각에 재생합니다.
+const ANN = {slot: -1, n: 0, on: false, pull: 0, cfg: null, rid: '', fill: ''};
+function annGet(){
+  if (!liveRoom) return null;
+  const c = (bc && bc.rid === liveRoom.id) ? bc.an : ANN.cfg;
+  return c && c.l && c.l.length && c.n ? c : null;
+}
+function annVol(f){
+  const v = MVOL.v * f;
+  try { if (MV.yt && MV.yt.setVolume) MV.yt.setVolume(Math.round(v * 100)); } catch(_){}
+  try { mwvid.volume = v; } catch(_){}
+  try { liveAudio.volume = v; } catch(_){}
+}
+function annFade(from, to, ms){
+  clearInterval(ANN.fd); const t0 = Date.now();
+  ANN.fd = setInterval(() => { const k = Math.min(1, (Date.now() - t0) / ms); annVol(from + (to - from) * k); if (k >= 1){ clearInterval(ANN.fd); if (to >= 1) mvolApply(); } }, 100);
+}
+function annPlay(c, slot){
+  if (ANN.on || MVOL.mute || MVOL.v === 0) return;
+  const u = String(c.l[Math.abs(slot) % c.l.length]), duck = Math.max(0.05, Math.min(1, (+c.d || 25) / 100));
+  ANN.on = true; let ended = false, began = false, p = null, box = null, tm = null;
+  const end = () => {
+    if (ended) return; ended = true; clearTimeout(tm);
+    try { if (p && p.destroy) p.destroy(); else if (p){ p.pause(); p.src = ''; } } catch(_){}
+    try { if (box) box.remove(); } catch(_){}
+    if (began) annFade(duck, 1, 900); ANN.on = false;
+  };
+  const start = () => { if (began || ended) return; began = true; annFade(1, duck, 600); };   // 멘트 소리가 실제로 시작될 때 음악을 줄임
+  tm = setTimeout(end, 180000);
+  setTimeout(() => { if (!began) end(); }, 15000);                                            // 15초 안에 시작 못 하면(막힘·오류) 포기
+  const id = ytId(u);
+  if (id){
+    Promise.resolve(loadYT()).then(() => {
+      if (ended) return;
+      if (!(window.YT && YT.Player)){ end(); return; }
+      box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-10000px;top:0;width:320px;height:180px;overflow:hidden;pointer-events:none';
+      const h = document.createElement('div'); box.append(h); document.body.append(box);
+      p = new YT.Player(h, {width: 320, height: 180, videoId: id, playerVars: {autoplay: 1, playsinline: 1, controls: 0, rel: 0},
+        events: {onReady: e => { try { e.target.setVolume(Math.round(MVOL.v * 100)); e.target.playVideo(); } catch(_){} },
+                 onStateChange: e => { if (e.data === 1) start(); else if (e.data === 0) end(); },
+                 onError: end}});
+    }).catch(end);
+  } else {
+    p = new Audio(); p.volume = Math.min(1, MVOL.v); p.onplaying = start; p.onended = end; p.onerror = end; p.src = u; p.play().catch(end);
+  }
+}
+function annNext(n){ const t = Math.ceil(nowS() / (n * 60000)) * n * 60000; return new Date(t).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}); }
+function annRead(){
+  const l = $('anlinks').value.split(/\n+/).map(x => x.trim()).filter(x => /^https?:\/\//i.test(x)).slice(0, 5);
+  const n = Math.max(1, Math.min(1440, Math.round(+$('annum').value || 0)));
+  return {l, n, d: +$('anduck').value || 25};
+}
+$('anapply').onclick = () => {
+  if (!bc){ setBc('방장만 멘트 예약을 설정할 수 있습니다.'); return; }
+  const c = annRead();
+  if (!c.l.length){ $('anmsg').textContent = '멘트 링크를 한 줄에 하나씩 넣어 주세요 (http:// 또는 https:// 로 시작).'; return; }
+  bc.an = c; ANN.slot = -1; try { bc.reg(); } catch(e){}
+  $('anmsg').textContent = '✅ 저장했습니다 — 매 ' + c.n + '분마다 멘트가 나옵니다. 다음 멘트: ' + annNext(c.n) + ' (방장이 나가도 이어집니다)';
+};
+$('anoff').onclick = () => { if (!bc) return; bc.an = null; try { bc.reg(); } catch(e){} $('anmsg').textContent = '멘트 예약을 껐습니다.'; };
+$('antest').onclick = () => { const c = annRead(); if (!c.l.length){ $('anmsg').textContent = '멘트 링크를 먼저 넣어 주세요.'; return; } annPlay(c, 0); $('anmsg').textContent = '테스트: 내 기기에서만 멘트를 틉니다. (소리가 안 나면 15초 뒤 자동으로 포기합니다)'; };
+setInterval(() => {
+  try {
+    if (!liveRoom){ ANN.slot = -1; ANN.cfg = null; ANN.rid = ''; return; }
+    if (ANN.rid !== liveRoom.id){ ANN.rid = liveRoom.id; ANN.cfg = null; ANN.pull = 0; ANN.slot = -1; }
+    const mine = !!(bc && bc.rid === liveRoom.id);
+    if (mine && ANN.fill !== bc.rid){ ANN.fill = bc.rid; if (bc.an){ $('anlinks').value = bc.an.l.join('\n'); $('annum').value = bc.an.n; $('anduck').value = String(bc.an.d || 25); } }
+    if (!mine && Date.now() - ANN.pull > 30000){ ANN.pull = Date.now(); lj('livereg/' + liveRoom.id, 'GET').then(r => { ANN.cfg = (r && r.an) || null; }).catch(() => {}); }
+    const c = annGet(); if (!c){ ANN.slot = -1; return; }
+    if (c.n !== ANN.n){ ANN.n = c.n; ANN.slot = -1; }
+    const slot = Math.floor(nowS() / (c.n * 60000));
+    if (ANN.slot < 0){ ANN.slot = slot; return; }                  // 막 들어왔을 때는 지난 시각을 건너뛰고 다음 시각부터
+    if (slot !== ANN.slot){ ANN.slot = slot; annPlay(c, slot); }
+  } catch(e){}
+}, 1000);
+
 try { $('tvq').addEventListener('input', () => { try { renderLivePin(); } catch(e){} }); } catch(e){}
 // ===== 📺 방을 작게 줄이면, 방 영상(유튜브·링크·파일·화면)을 메인 TV 창 위에서 재생 =====
 const TVDOCK = {on: true};
