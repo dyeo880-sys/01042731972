@@ -517,6 +517,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     </span>
   </div>
   <div class="count" id="count"></div>
+  <div id="pbpin"></div>
   <div id="livepin"></div>
   <div class="list" id="list" role="list"></div>
   <section class="chat" id="tvsec" aria-label="TV 보기">
@@ -759,17 +760,16 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="acts" style="justify-content:center"><button class="btn" id="dl_more" type="button" hidden>더 보기</button></div>
   </section>
   <section class="chat" id="pbsec" aria-label="공용 방송">
-    <div class="chathead"><strong>📻 공용 방송</strong></div>
+    <div class="chathead"><strong>📻 추억의 라디오 방송국</strong></div>
     <div class="note" style="margin:0 0 10px">누구나 유튜브 링크를 올릴 수 있는 게시판형 방송입니다. 올라온 영상 전체가 하나의 방송이 되어 순서대로 계속 반복되고, 접속한 모든 사람이 <b>같은 곡의 같은 위치</b>를 함께 듣습니다. 불법·저작권 침해·광고성 링크는 올리지 마세요. 문제가 있는 링크는 관리자가 삭제합니다.</div>
     <div class="bar">
       <input id="pb_url" class="grow" type="url" placeholder="유튜브 영상 링크 붙여넣기 (youtube.com/watch?v=… , youtu.be/…)" aria-label="유튜브 링크">
       <button class="btn pri" id="pb_add" type="button">＋ 올리기</button>
     </div>
     <div class="bmsg" id="pb_msg" role="status"></div>
-    <div id="pb_ytw" style="position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden;margin:8px 0"><div id="pb_ytp"></div></div>
-    <div class="acts" style="align-items:center">
+        <div class="acts" style="align-items:center">
       <button class="btn pri" id="pb_play" type="button">▶ 방송 듣기</button>
-      <label style="display:flex;gap:6px;align-items:center;font-size:13px">🔊 <input id="pb_vol" type="range" min="0" max="100" value="70" aria-label="공용 방송 볼륨" style="width:120px"></label>
+      <label style="display:flex;gap:6px;align-items:center;font-size:13px">🔊 <input id="pb_vol" type="range" min="0" max="100" value="80" aria-label="추억의 라디오 방송국 볼륨" style="width:120px"></label>
       <button class="btn" id="pb_adm" type="button">🔒 관리자</button>
       <button class="btn" id="pb_reset" type="button" hidden>⏮ 방송 처음부터</button>
     </div>
@@ -6434,7 +6434,7 @@ setInterval(() => { if (!document.hidden) load(); }, 60000);
 
 // ===== 옆 메뉴: 라디오가 중심, 나머지는 오른쪽 버튼으로 열기 =====
 (function(){
-  const L = [['tvsec', '📺', 'TV'], ['krinfo', '🚦', '교통·날씨'], ['musicroom', '🎵', '음악 방'], ['myhome', '🏠', '마이홈'], ['chatsec', '💬', '채팅'], ['boardsec', '🍚', '맛집'], ['promosec', '📣', '동네홍보'], ['dlvreg', '🛵', '배달등록'], ['dlvsec', '🔎', '배달찾기'], ['pbsec', '📻', '공용방송']];
+  const L = [['tvsec', '📺', 'TV'], ['krinfo', '🚦', '교통·날씨'], ['musicroom', '🎵', '음악 방'], ['myhome', '🏠', '마이홈'], ['chatsec', '💬', '채팅'], ['boardsec', '🍚', '맛집'], ['promosec', '📣', '동네홍보'], ['dlvreg', '🛵', '배달등록'], ['dlvsec', '🔎', '배달찾기'], ['pbsec', '📻', '추억라디오']];
   const rail = document.createElement('nav'); rail.id = 'siderail'; rail.setAttribute('aria-label', '메뉴');
   let cur = '';
   const mark = () => rail.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === cur));
@@ -6466,7 +6466,9 @@ const $ = id => document.getElementById('pb_' + id);
 if (!$('url')) return;
 const BASE = DB + '/bcast';
 const MAXITEMS = 200, MAXDUR = 3 * 3600, COOLDOWN = 30000;
-let items = [], t0 = 0, off = 0, isAdm = false, on = false, yt = null, ready = false, curId = '', errId = '', lastSync = 0, loaded = false;
+let items = [], t0 = 0, off = 0, isAdm = false, on = false, yt = null, ready = false, curId = '', errId = '', lastSync = 0, loaded = false, curTitle = '';
+const NAME = '추억의 라디오 방송국';
+const gid = id => document.getElementById(id);
 try { isAdm = sessionStorage.getItem('board_admin') === '1'; } catch(e){}
 const msg = t => { $('msg').textContent = t || ''; };
 const fmt = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60, z = n => String(n).padStart(2, '0'); return (h ? h + ':' + z(m) : m) + ':' + z(x); };
@@ -6509,6 +6511,7 @@ function where(){
 
 function render(){
   const box = $('list'); box.innerHTML = '';
+  try { renderPin(); } catch(e){}
   $('count').textContent = items.length ? '📻 올라온 영상 ' + items.length + '개 · 전체 한 바퀴 ' + fmt(items.reduce((s, v) => s + v.d, 0)) : '';
   if (!items.length){ box.innerHTML = '<div class="empty">아직 올라온 영상이 없습니다. 첫 링크를 올려 보세요!</div>'; return; }
   items.forEach((it, i) => {
@@ -6528,11 +6531,43 @@ function render(){
   $('reset').hidden = !isAdm; $('adm').textContent = isAdm ? '🔓 관리자 중 (끝내기)' : '🔒 관리자';
 }
 
+// ===== 메인 라디오 목록에 방송국처럼 한 줄로 표시 =====
+let pinB = null, pinT = null;
+function renderPin(){
+  const pin = gid('pbpin'); if (!pin) return;
+  const q = ((gid('q') || {}).value || '').trim().toLowerCase();
+  const fav = !!(gid('mode') && gid('mode').value === 'fav');
+  const show = !fav && (!q || (NAME + ' 라디오 방송국 공용 방송 추억').toLowerCase().includes(q) || curTitle.toLowerCase().includes(q));
+  if (!show){ pin.innerHTML = ''; pinB = null; pinT = null; return; }
+  if (pinB && pin.contains(pinB)){ pinUpdate(); return; }
+  pin.innerHTML = '';
+  const h = document.createElement('div'); h.className = 'chatnote'; h.style.cssText = 'margin:0 0 4px;color:var(--amber);font-weight:700';
+  h.textContent = '📻 ' + NAME + ' — 누구나 링크를 올리는 공용 방송 · 눌러서 듣기';
+  const wrap = document.createElement('div'); wrap.className = 'list'; wrap.style.cssText = 'max-height:none;margin-bottom:8px;border-color:var(--amber)';
+  const row = document.createElement('div'); row.style.cssText = 'display:flex;align-items:center'; row.setAttribute('role', 'listitem');
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'st mroom good'; b.style.flex = '1';
+  const ic = document.createElement('span'); ic.className = 'mricon'; ic.textContent = '📻'; ic.setAttribute('aria-hidden', 'true');
+  const n = document.createElement('span'); n.className = 'n'; n.textContent = NAME;
+  const t = document.createElement('span'); t.className = 't';
+  b.append(ic, n, t); b.title = '누르면 모두가 함께 듣는 방송이 시작됩니다';
+  b.onclick = () => { on ? stop() : start(); };
+  const add = document.createElement('button'); add.type = 'button'; add.className = 'addhome'; add.style.cssText = 'margin:0 8px 0 4px;white-space:nowrap'; add.textContent = '＋ 링크 올리기';
+  add.onclick = () => { try { foldSet('pbsec', false); } catch(e){} };
+  row.append(b, add); wrap.append(row); pin.append(h, wrap);
+  pinB = b; pinT = t; pinUpdate();
+}
+function pinUpdate(){
+  if (!pinB || !pinT) return;
+  pinB.classList.toggle('on', on);
+  pinT.textContent = on ? ('🎧 ' + (curTitle || '재생 중')).slice(0, 40) : (items.length ? items.length + '곡 · 눌러서 듣기' : (loaded ? '링크를 올려 주세요' : '불러오는 중'));
+}
+
 function tick(){
   const w = where();
-  if (!w){ $('now').textContent = on ? '재생할 영상이 없습니다.' : ''; return; }
+  if (!w){ curTitle = ''; $('now').textContent = on ? '재생할 영상이 없습니다.' : ''; pinUpdate(); return; }
   const it = items[w.i], nx = items[(w.i + 1) % items.length];
   $('now').textContent = (on ? '🎧 ' : '📻 ') + '지금 방송: ' + (it.t || it.v) + ' (' + fmt(w.o) + ' / ' + fmt(it.d) + ')' + (items.length > 1 ? ' · 다음: ' + (nx.t || nx.v) : '');
+  curTitle = it.t || it.v; pinUpdate();
   $('list').querySelectorAll('[data-id]').forEach(r => { r.style.borderLeftColor = r.dataset.id === it.id ? 'var(--amber)' : 'transparent'; r.style.background = r.dataset.id === it.id ? '#ffcf7a22' : ''; });
   if (!on || !ready) return;
   if (curId !== it.id){ curId = it.id; errId = ''; lastSync = Date.now(); try { yt.loadVideoById({videoId: it.v, startSeconds: w.o}); } catch(e){} return; }
@@ -6549,25 +6584,32 @@ function tick(){
 
 async function start(){
   try { if (typeof audio !== 'undefined') audio.pause(); } catch(e){}
+  try { const o = gid('rdonly'); if (o && !o.hidden) gid('rdonlyoff').click(); } catch(e){}   // 음방 소리만 듣는 중이면 끔
   try { await loadYT(); } catch(e){}
   if (!(window.YT && YT.Player)){ msg('유튜브 플레이어를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'); return; }
-  on = true; curId = ''; errId = ''; $('play').textContent = '⏹ 듣기 끝내기';
+  on = true; curId = ''; errId = ''; $('play').textContent = '⏹ 듣기 끝내기'; pinUpdate();
   if (!yt){
     ready = false;
+    if (!gid('pb_ytp')){   // 소리만 나오는 라디오처럼: 화면 밖에 플레이어를 두어 창을 닫아도 계속 재생
+      const w = document.createElement('div'); w.id = 'pb_ytw'; w.style.cssText = 'position:fixed;left:-9999px;top:0;width:320px;height:200px;overflow:hidden';
+      const d = document.createElement('div'); d.id = 'pb_ytp'; w.append(d); document.body.append(w);
+    }
     yt = new YT.Player('pb_ytp', {width: '100%', height: '100%', playerVars: {autoplay: 1, playsinline: 1, controls: 0, rel: 0, disablekb: 1, modestbranding: 1}, events: {
-      onReady: () => { ready = true; try { yt.setVolume(+$('vol').value); } catch(e){} tick(); },
+      onReady: () => { ready = true; try { const mv = gid('vol'); const v = mv ? Math.round(+mv.value * 100) : +$('vol').value; $('vol').value = v; yt.setVolume(v); } catch(e){} tick(); },
       onError: () => { errId = curId; msg('이 영상은 재생할 수 없어 다음 영상이 시작될 때까지 기다립니다. (관리자에게 삭제를 요청하세요)'); }
     }});
   } else tick();
 }
 function stop(){
-  on = false; curId = ''; $('play').textContent = '▶ 방송 듣기';
+  on = false; curId = ''; $('play').textContent = '▶ 방송 듣기'; pinUpdate();
   try { yt && ready && yt.stopVideo(); } catch(e){}
   tick();
 }
 $('play').onclick = () => { on ? stop() : start(); };
 $('vol').oninput = () => { try { yt && ready && yt.setVolume(+$('vol').value); } catch(e){} };
-try { if (typeof audio !== 'undefined') audio.addEventListener('play', () => { if (on) stop(); }); } catch(e){}   // 라디오를 켜면 공용 방송은 멈춤
+try { if (typeof audio !== 'undefined') audio.addEventListener('play', () => { if (on) stop(); }); } catch(e){}
+try { gid('vol').addEventListener('input', e => { if (on && ready){ const v = Math.round(+e.target.value * 100); $('vol').value = v; try { yt.setVolume(v); } catch(_){} } }); } catch(e){}   // 위쪽 볼륨 슬라이더와 연동
+try { gid('q').addEventListener('input', () => { try { renderPin(); } catch(e){} }); gid('mode').addEventListener('change', () => { try { renderPin(); } catch(e){} }); } catch(e){}   // 라디오를 켜면 공용 방송은 멈춤
 
 // 올릴 때 영상 길이·제목을 읽고, 퍼가기가 막혔거나 생방송인 영상은 걸러냅니다
 function probe(id){
@@ -6648,6 +6690,7 @@ $('reset').onclick = async () => {
   await load();
 };
 
+try { renderPin(); } catch(e){}
 load(); setInterval(tick, 1000); setInterval(() => { if (!document.hidden) load(); }, 30000);
 } catch(e){ console.warn('공용 방송을 시작하지 못했습니다:', e); }
 })();
