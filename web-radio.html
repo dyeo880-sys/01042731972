@@ -770,6 +770,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <div class="acts" style="align-items:center">
       <button class="btn pri" id="pb_play" type="button">▶ 방송 듣기</button>
       <label style="display:flex;gap:6px;align-items:center;font-size:13px">🔊 <input id="pb_vol" type="range" min="0" max="100" value="80" aria-label="추억의 라디오 방송국 볼륨" style="width:120px"></label>
+      <button class="btn" id="pb_back" type="button" hidden>📻 방송으로 돌아가기</button>
       <button class="btn" id="pb_adm" type="button">🔒 관리자</button>
       <button class="btn" id="pb_reset" type="button" hidden>⏮ 방송 처음부터</button>
     </div>
@@ -6488,7 +6489,7 @@ const $ = id => document.getElementById('pb_' + id);
 if (!$('url')) return;
 const BASE = DB + '/bcast';
 const MAXITEMS = 200, MAXDUR = 3 * 3600, COOLDOWN = 30000;
-let items = [], t0 = 0, off = 0, isAdm = false, on = false, yt = null, ready = false, curId = '', errId = '', lastSync = 0, loaded = false, curTitle = '';
+let items = [], t0 = 0, off = 0, isAdm = false, on = false, yt = null, ready = false, curId = '', errId = '', lastSync = 0, loaded = false, curTitle = '', solo = '';
 const NAME = '추억의 라디오 방송국';
 const gid = id => document.getElementById(id);
 try { isAdm = sessionStorage.getItem('board_admin') === '1'; } catch(e){}
@@ -6548,6 +6549,8 @@ function render(){
       const x = document.createElement('button'); x.type = 'button'; x.className = 'btn red'; x.textContent = isAdm ? '삭제 (관리자)' : '삭제';
       x.onclick = () => del(it); row.append(x);
     }
+    row.style.cursor = 'pointer'; row.title = '눌러서 이 곡만 내 기기에서 듣기 (다른 사람 방송은 그대로)';
+    row.onclick = e => { if (e.target.closest('button')) return; pick(it); };
     box.append(row);
   });
   $('reset').hidden = !isAdm; $('adm').textContent = isAdm ? '🔓 관리자 중 (끝내기)' : '🔒 관리자';
@@ -6584,13 +6587,33 @@ function pinUpdate(){
   pinT.textContent = on ? ('🎧 ' + (curTitle || '재생 중')).slice(0, 40) : (items.length ? items.length + '곡 · 눌러서 듣기' : (loaded ? '링크를 올려 주세요' : '불러오는 중'));
 }
 
+function pick(it){
+  solo = it.id; curId = ''; errId = '';
+  if (!on) start(); else tick();
+}
+$('back').onclick = () => { solo = ''; curId = ''; errId = ''; msg(''); tick(); };
 function tick(){
   const w = where();
   if (!w){ curTitle = ''; $('now').textContent = on ? '재생할 영상이 없습니다.' : ''; pinUpdate(); return; }
   const it = items[w.i], nx = items[(w.i + 1) % items.length];
   $('now').textContent = (on ? '🎧 ' : '📻 ') + '지금 방송: ' + (it.t || it.v) + ' (' + fmt(w.o) + ' / ' + fmt(it.d) + ')' + (items.length > 1 ? ' · 다음: ' + (nx.t || nx.v) : '');
   curTitle = it.t || it.v; pinUpdate();
+  $('back').hidden = !solo;
   $('list').querySelectorAll('[data-id]').forEach(r => { r.style.borderLeftColor = r.dataset.id === it.id ? 'var(--amber)' : 'transparent'; r.style.background = r.dataset.id === it.id ? '#ffcf7a22' : ''; });
+  if (solo){   // 내가 고른 곡만 이 기기에서 처음부터 듣기 (끝나면 방송으로 돌아감)
+    const si = items.find(v => v.id === solo);
+    if (!si){ solo = ''; $('back').hidden = true; }
+    else {
+      $('now').textContent = '🎧 내가 고른 곡: ' + (si.t || si.v) + ' — 끝나면 방송으로 돌아갑니다';
+      curTitle = '내가 고른 곡 · ' + (si.t || si.v); pinUpdate();
+      $('list').querySelectorAll('[data-id]').forEach(r => { if (r.dataset.id === si.id){ r.style.borderLeftColor = '#6fd36f'; r.style.background = '#6fd36f22'; } });
+      if (!on || !ready) return;
+      const key = 's:' + si.id;
+      if (curId !== key){ curId = key; errId = ''; lastSync = Date.now(); try { yt.loadVideoById({videoId: si.v, startSeconds: 0}); } catch(e){} return; }
+      if (Date.now() - lastSync > 3000){ lastSync = Date.now(); try { if (yt.getPlayerState() === 0){ solo = ''; curId = ''; $('back').hidden = true; msg(''); } } catch(e){} }
+      return;
+    }
+  }
   if (!on || !ready) return;
   if (curId !== it.id){ curId = it.id; errId = ''; lastSync = Date.now(); try { yt.loadVideoById({videoId: it.v, startSeconds: w.o}); } catch(e){} return; }
   if (errId === it.id) return;
@@ -6618,12 +6641,12 @@ async function start(){
     }
     yt = new YT.Player('pb_ytp', {width: '100%', height: '100%', playerVars: {autoplay: 1, playsinline: 1, controls: 0, rel: 0, disablekb: 1, modestbranding: 1}, events: {
       onReady: () => { ready = true; try { const mv = gid('vol'); const v = mv ? Math.round(+mv.value * 100) : +$('vol').value; $('vol').value = v; yt.setVolume(v); } catch(e){} tick(); },
-      onError: () => { errId = curId; msg('이 영상은 재생할 수 없어 다음 영상이 시작될 때까지 기다립니다. (관리자에게 삭제를 요청하세요)'); }
+      onError: () => { if (solo){ solo = ''; curId = ''; msg('고른 곡을 재생할 수 없어 방송으로 돌아갑니다.'); return; } errId = curId; msg('이 영상은 재생할 수 없어 다음 영상이 시작될 때까지 기다립니다. (관리자에게 삭제를 요청하세요)'); }
     }});
   } else tick();
 }
 function stop(){
-  on = false; curId = ''; $('play').textContent = '▶ 방송 듣기'; pinUpdate();
+  on = false; curId = ''; solo = ''; $('play').textContent = '▶ 방송 듣기'; pinUpdate();
   try { yt && ready && yt.stopVideo(); } catch(e){}
   tick();
 }
