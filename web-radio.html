@@ -3531,7 +3531,12 @@ async function listenOnlyVirtual(id, info){
   if (!cur.e){ RDONLY.on = true; try { Promise.resolve(listenFav(id, cur)).catch(() => {}); } catch(e){} RDONLY.on = false; return; }  // 그 사이 새 방장이 생김
   kpTouch(id);
   const v = cur.v;
-  if (!(v && v.u)){ setBc('이 빈 방에는 이어서 재생 중인 영상이 없습니다.'); return; }
+  if (!(v && v.u)){
+    // 틀 음악이 없는 빈 방을 눌러도 소리가 나도록 「추억의 라디오 방송국」을 대신 들려 줍니다
+    if (window.pbStart && window.pbHasItems && window.pbHasItems()){ setBc('이 방은 이어서 틀 음악이 없어 「추억의 라디오 방송국」을 대신 들려드립니다.'); window.pbStart(); }
+    else setBc('이 빈 방에는 이어서 재생 중인 영상이 없습니다.');
+    return;
+  }
   if (bc) stopBroadcast();
   stopListen(); rUserPause = true; rIntr = false; audio.pause(); stopOtherMedia();
   liveRoom = {id, name: String(info.n), host: false, only: true, virt: true, pw};
@@ -6619,6 +6624,7 @@ function stop(){
   try { yt && ready && yt.stopVideo(); } catch(e){}
   tick();
 }
+window.pbStart = () => { if (!on) start(); }; window.pbHasItems = () => items.length > 0;
 $('play').onclick = () => { on ? stop() : start(); };
 $('vol').oninput = () => { try { yt && ready && yt.setVolume(+$('vol').value); } catch(e){} };
 try { if (typeof audio !== 'undefined') audio.addEventListener('play', () => { if (on) stop(); }); } catch(e){}
