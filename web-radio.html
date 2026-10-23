@@ -457,6 +457,24 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 .krow .go{color:#ffe36e;font-size:12px;white-space:nowrap}
 .krow.sel{background:#ff4fd833}
 .khead{color:#c9b8ff;font-size:12px;margin:2px 0 4px}
+
+/* 🔗 링크 게시판 */
+#lbsec .lbform{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+#lbsec .lbform input{background:#1a0f08;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:7px 10px;min-width:0}
+#lbsec #lb_t{flex:1 1 160px}#lbsec #lb_u{flex:2 1 240px}
+#lbsec .lbpri{background:#b99a5b;color:#2a1a08;font-weight:700;border:0;border-radius:6px;padding:7px 14px;cursor:pointer}
+#lbsec .lbmsg{font-size:13px;color:var(--amber);min-height:18px;margin:2px 0 6px}
+#lbsec table{width:100%;border-collapse:collapse;font-size:14px}
+#lbsec th{color:var(--amber);font-weight:600;text-align:left;border-bottom:1px solid #b99a5b66;padding:6px 6px;white-space:nowrap}
+#lbsec td{border-bottom:1px solid #b99a5b22;padding:7px 6px;vertical-align:middle}
+#lbsec td.no,#lbsec td.dt,#lbsec td.nm,#lbsec td.du{white-space:nowrap;opacity:.8;font-size:12px}
+#lbsec td.ti a{color:var(--ink);text-decoration:none;word-break:break-all}
+#lbsec td.ti a:hover{text-decoration:underline}
+#lbsec td.ac{white-space:nowrap;text-align:right}
+#lbsec .lbb{background:var(--panel);color:var(--amber);border:1px solid var(--brass);border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer;margin-left:3px}
+#lbsec .lbpg{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+#lbsec .lbpg .lbb.on{background:#b99a5b;color:#2a1a08;font-weight:700}
+@media(max-width:560px){#lbsec th.dt,#lbsec td.dt,#lbsec th.no,#lbsec td.no{display:none}}
 </style>
 </head>
 <body>
@@ -598,6 +616,30 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     </div>
     <div class="chatnote" id="bcstat"></div>
     <div class="chatnote">방을 만든 사람의 기기에서 직접 소리를 보내는 방식이라 듣는 사람은 최대 8명(카메라를 켜면 4명)까지 연결됩니다. 방을 여는 동안 이 페이지를 닫지 마세요. 손님은 "🎤 마이크 요청"·"📷 카메라 요청"을 누르고 방장이 허용하면 켜집니다(마이크 동시 4명, 카메라 1명). 방장은 언제든 강제로 끌 수 있습니다. 손님도 「🎵 내 파일 틀기」로 내 컴퓨터의 음악·영상 파일을 방에 틀 수 있습니다(방장이 허용하거나 「손님 파일 재생 자동 허용」을 켜 두면 바로 나갑니다).</div>
+  </section>
+  <section class="chat" id="lbsec" aria-label="링크 게시판">
+    <div class="chathead"><strong>🔗 링크 게시판</strong></div>
+    <div class="note" style="margin:0 0 10px">유튜브·음원(mp3 등) 링크를 게시판처럼 올리는 곳입니다. 서버에 저장되어 <b>어느 컴퓨터에서든 같은 글</b>이 보이고, 올릴 때 길이를 읽어 <b>올린 순서대로 전체가 계속 반복되는 방송</b>이 됩니다. 아무도 없어도 시계 기준으로 순서가 이어지며, 접속한 모든 사람이 <b>같은 곡의 같은 위치</b>를 듣습니다. 올린 글은 본인(같은 브라우저)이나 관리자만 지울 수 있습니다. 불법·저작권 침해·광고성 링크는 올리지 마세요.</div>
+    <div class="lbform">
+      <input id="lb_t" maxlength="60" placeholder="제목 (비우면 유튜브 제목을 자동으로 가져옵니다)" aria-label="제목">
+      <input id="lb_u" type="url" placeholder="링크 붙여넣기 (https://…)" aria-label="링크">
+      <button class="lbpri" id="lb_add" type="button">＋ 글 올리기</button>
+    </div>
+    <div class="lbform">
+      <input id="lb_q" placeholder="제목·작성자 검색" aria-label="검색" style="flex:1 1 200px">
+      <button class="lbb" id="lb_reload" type="button" style="padding:6px 12px">새로고침</button>
+      <button class="lbb" id="lb_adm" type="button" style="padding:6px 12px">🔒 관리자</button>
+    </div>
+    <div class="lbmsg" id="lb_msg" role="status"></div>
+    <div class="lbform" style="align-items:center">
+      <button class="lbpri" id="lb_play" type="button">▶ 방송 듣기</button>
+      <label style="display:flex;gap:6px;align-items:center;font-size:13px">🔊 <input id="lb_vol" type="range" min="0" max="100" value="80" aria-label="링크 게시판 방송 볼륨" style="width:120px"></label>
+      <button class="lbb" id="lb_reset" type="button" hidden style="padding:6px 12px">⏮ 방송 처음부터</button>
+    </div>
+    <div class="note" id="lb_now" style="margin:4px 0" role="status"></div>
+    <div class="note" id="lb_count" style="margin:0 0 8px"></div>
+    <div id="lb_list"></div>
+    <div class="lbpg" id="lb_pg"></div>
   </section>
   <section class="chat" id="chatsec" aria-label="채팅">
     <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"></div>
@@ -3805,17 +3847,59 @@ $('vgo').onclick = () => hostLink($('vurl').value);
 $('vurl').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) hostLink($('vurl').value); });
 $('vstop').onclick = hostVideoOff;
 // ---- 재생목록: 링크·검색 결과·내 영상 파일을 순서대로 담아 두면 영상이 끝날 때 다음 영상을 자동 재생 ----
-const PL = {list: [], cur: null, auto: true, loop: false, one: false, last: 0, cap: null, msg: ''};
+const PL = {ts: 0, cloud: '', list: [], cur: null, auto: true, loop: false, one: false, last: 0, cap: null, msg: ''};
 const PL_KEY = 'radio_playlist';
 try {
   const sv = JSON.parse(localStorage.getItem(PL_KEY) || 'null');
   if (sv && Array.isArray(sv.list)){
     PL.list = sv.list.filter(x => x && typeof x.u === 'string' && /^https?:\/\//i.test(x.u)).slice(0, 100).map(x => ({u: x.u, t: String(x.t || x.u).slice(0, 120), d: +x.d || 0}));
-    PL.loop = !!sv.loop; PL.one = !!sv.one; PL.auto = sv.auto !== false;
+    PL.loop = !!sv.loop; PL.one = !!sv.one; PL.auto = sv.auto !== false; PL.ts = +sv.ts || 0;
   }
 } catch(e){}
 // 내 기기의 영상 파일(f)은 새로고침하면 사라지므로 저장하지 않음
-const plSave = () => { try { localStorage.setItem(PL_KEY, JSON.stringify({list: PL.list.filter(x => x.u && !x.g).map(x => ({u: x.u, t: x.t, d: +x.d || 0})), loop: PL.loop, one: PL.one, auto: PL.auto})); } catch(e){} };
+// ☁ 서버(Firebase) 동기화: 「동기화 코드」를 입력한 컴퓨터끼리 같은 재생목록을 공유합니다.
+let PL_CODE = ''; try { PL_CODE = localStorage.getItem('radio_pl_code') || ''; } catch(e){}
+const plCloudOk = () => !!(typeof DB !== 'undefined' && DB && PL_CODE);
+const plUrl = () => DB + '/playlists/' + encodeURIComponent(PL_CODE) + '.json';
+const plPack = () => ({ts: PL.ts || 0, list: PL.list.filter(x => x.u && !x.g).map(x => ({u: x.u, t: x.t, d: +x.d || 0})), loop: PL.loop, one: PL.one, auto: PL.auto});
+let plPushT = 0;
+function plCloudPush(){ clearTimeout(plPushT); if (!plCloudOk()) return; plPushT = setTimeout(async () => {
+  try { const r = await fetch(plUrl(), {method: 'PUT', body: JSON.stringify(plPack())}); PL.cloud = r.ok ? '☁ 서버에 저장됨' : '⚠ 서버 저장 실패 (' + r.status + ') — Firebase 규칙을 확인하세요'; }
+  catch(e){ PL.cloud = '⚠ 서버에 연결하지 못했습니다'; }
+  try { plRender(); } catch(_){}
+}, 700); }
+const plSave = () => { PL.ts = Date.now(); try { localStorage.setItem(PL_KEY, JSON.stringify(plPack())); } catch(e){} plCloudPush(); };
+// 서버 목록 가져오기: 서버 쪽이 더 최근이면 그 목록으로 바꾸고, 내 쪽이 더 최근이면 서버에 올림
+async function plPull(){
+  if (!plCloudOk()) return;
+  try {
+    const r = await fetch(plUrl()); if (!r.ok) throw new Error(r.status);
+    const sv = await r.json();
+    if (sv && Array.isArray(sv.list) && (+sv.ts || 0) > (PL.ts || 0)){
+      const keep = PL.list.filter(x => x.g || x.f);
+      const cur = PL.cur && PL.cur.u;
+      PL.list = sv.list.filter(x => x && typeof x.u === 'string' && /^https?:\/\//i.test(x.u)).slice(0, 100).map(x => ({u: x.u, t: String(x.t || x.u).slice(0, 120), d: +x.d || 0})).concat(keep);
+      PL.loop = !!sv.loop; PL.one = !!sv.one; PL.auto = sv.auto !== false; PL.ts = +sv.ts;
+      if (cur) PL.cur = PL.list.find(x => x.u === cur) || PL.cur;
+      try { localStorage.setItem(PL_KEY, JSON.stringify(plPack())); } catch(e){}
+      PL.cloud = '☁ 서버 목록을 불러왔습니다';
+    } else if (!sv || (+sv.ts || 0) < (PL.ts || 0) || (!sv.list && PL.list.length)){
+      if (PL.list.length){ if (!PL.ts) PL.ts = Date.now(); await fetch(plUrl(), {method: 'PUT', body: JSON.stringify(plPack())}); PL.cloud = '☁ 내 목록을 서버에 올렸습니다'; }
+      else PL.cloud = '☁ 동기화 중 (서버 목록 없음)';
+    } else PL.cloud = '☁ 동기화 중 (최신 상태)';
+  } catch(e){ PL.cloud = '⚠ 서버에 연결하지 못했습니다 — Firebase 주소/규칙을 확인하세요'; }
+  try { plRender(); } catch(_){}
+}
+function plSetCode(){
+  const v = prompt('동기화 코드를 입력하세요 (영문·숫자·_- 4~40자).\n여러 컴퓨터에서 같은 코드를 입력하면 같은 재생목록이 서버에 저장·공유됩니다.\n※ 코드를 아는 사람은 누구나 이 목록을 볼 수 있으니 남이 추측하기 어려운 코드를 쓰세요.\n(비워 두고 확인 = 동기화 끄기)', PL_CODE);
+  if (v === null) return;
+  const c = v.trim();
+  if (c && !/^[\w-]{4,40}$/.test(c)){ alert('코드는 영문·숫자·_ - 만 4~40자로 입력하세요.'); return; }
+  PL_CODE = c; try { c ? localStorage.setItem('radio_pl_code', c) : localStorage.removeItem('radio_pl_code'); } catch(e){}
+  PL.cloud = c ? '☁ 연결 중…' : ''; plRender(); if (c) plPull();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) plPull(); });
+setTimeout(plPull, 1500);
 const plMsg = t => { PL.msg = t; try { setBc(t); } catch(_){} plRender(); };
 // 지금 재생 중인 영상이 이 항목인가?
 function plSame(it){
@@ -3939,8 +4023,10 @@ function plRender(){
     mkc('🔂 영상 한 개 반복', PL.one, v => { PL.one = v; plSave(); }),
     mkb('▶ 처음부터', '목록 첫 영상부터 재생', () => { const f = PL.list.find(plOk); if (f) plPlay(f); }),
     mkb('⏭ 다음', '다음 영상으로 건너뛰기', () => { PL.last = Date.now(); plNext(); }),
+    mkb(PL_CODE ? '☁ 동기화 켜짐 (' + PL_CODE + ')' : '☁ 다른 컴퓨터와 동기화', '동기화 코드를 입력하면 재생목록이 서버에 저장되어 다른 컴퓨터에서도 보입니다', plSetCode),
     mkb('🗑 전체 삭제', '목록을 모두 지웁니다 (재생 중인 영상은 그대로)', () => { if (PL.list.length && confirm('재생목록을 모두 지울까요?')){ PL.list.filter(x => x.g).forEach(x => vqDel(x.g)); PL.list = []; PL.cur = null; PL.msg = ''; plSave(); plRender(); } }));
   b.append(h);
+  if (PL.cloud){ const cm = document.createElement('div'); cm.className = 'plm'; cm.textContent = PL.cloud; b.append(cm); }
   if (PL.msg){ const m = document.createElement('div'); m.className = 'plm'; m.style.cssText = 'color:var(--amber);opacity:1;padding:2px 0 6px'; m.textContent = PL.msg; b.append(m); }
   if (!PL.list.length){
     const e = document.createElement('div'); e.className = 'plm';
@@ -6457,7 +6543,7 @@ setInterval(() => { if (!document.hidden) load(); }, 60000);
 
 // ===== 옆 메뉴: 라디오가 중심, 나머지는 오른쪽 버튼으로 열기 =====
 (function(){
-  const L = [['tvsec', '📺', 'TV'], ['krinfo', '🚦', '교통·날씨'], ['musicroom', '🎵', '음악 방'], ['myhome', '🏠', '마이홈'], ['chatsec', '💬', '채팅'], ['boardsec', '🍚', '맛집'], ['promosec', '📣', '동네홍보'], ['dlvreg', '🛵', '배달등록'], ['dlvsec', '🔎', '배달찾기'], ['pbsec', '📻', '추억라디오']];
+  const L = [['tvsec', '📺', 'TV'], ['krinfo', '🚦', '교통·날씨'], ['musicroom', '🎵', '음악 방'], ['lbsec', '🔗', '링크게시판'], ['myhome', '🏠', '마이홈'], ['chatsec', '💬', '채팅'], ['boardsec', '🍚', '맛집'], ['promosec', '📣', '동네홍보'], ['dlvreg', '🛵', '배달등록'], ['dlvsec', '🔎', '배달찾기'], ['pbsec', '📻', '추억라디오']];
   const rail = document.createElement('nav'); rail.id = 'siderail'; rail.setAttribute('aria-label', '메뉴');
   let cur = '';
   const mark = () => rail.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.id === cur));
@@ -6479,6 +6565,250 @@ setInterval(() => { if (!document.hidden) load(); }, 60000);
   addEventListener('keydown', e => { if (e.key === 'Escape' && cur && $('roomview').hidden) foldSet(cur, true); });
   if (INVITE) foldSet('musicroom', false);
   $('rptoggle').onclick = () => { const o = $('rpopts'); o.hidden = !o.hidden; $('rptoggle').textContent = o.hidden ? '⚙ 확인·설정 ▾' : '⚙ 확인·설정 ▴'; $('rptoggle').setAttribute('aria-expanded', String(!o.hidden)); };
+})();
+</script>
+<script>
+// ===== 🔗 링크 게시판: 링크를 글처럼 올리면 길이가 기록되어, 올린 순서대로 전체가 시계 기준으로 계속 반복되는 방송이 됩니다 (Firebase /linkboard) =====
+(function(){
+try {
+const g = id => document.getElementById(id);
+const PER = 10, MAXDUR = 3 * 3600;
+let posts = [], items = [], page = 1, q = '', adm = false, off = 0, t0 = 0, clockOk = false;
+let on = false, yt = null, ready = false, curId = '', lastSync = 0, errId = '', au = null, busy = false;
+try { adm = sessionStorage.getItem('board_admin') === '1'; } catch(e){}
+const base = () => String(DB || '').replace(/\/+$/, '') + '/linkboard';
+const now = () => Date.now() + off;
+const msg = (t, bad) => { const m = g('lb_msg'); m.textContent = t || ''; m.style.color = bad ? '#e88' : ''; };
+const nick = () => ((g('nick') && g('nick').value.trim()) || '손님').slice(0, 12);
+const ytid = u => { const m = String(u).match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/); return m ? m[1] : ''; };
+const z2 = n => String(n).padStart(2, '0');
+const fmt = ts => { const d = new Date(+ts || 0); return d.getFullYear() + '.' + z2(d.getMonth() + 1) + '.' + z2(d.getDate()) + ' ' + z2(d.getHours()) + ':' + z2(d.getMinutes()); };
+const dur = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + z2(m) : m) + ':' + z2(x); };
+const mine = p => { try { return !!UID && p.k === UID; } catch(e){ return false; } };
+
+// 서버 시계: 모든 기기가 같은 시각을 쓰도록 Firebase 서버 시각과의 차이를 구함
+async function syncClock(){
+  try {
+    const a = Date.now();
+    const r = await fetch(base() + '/_meta/clock.json', {method: 'PUT', body: JSON.stringify({'.sv': 'timestamp'})});
+    const sv = await r.json(); const b = Date.now();
+    if (typeof sv === 'number'){ off = sv - (a + b) / 2; clockOk = true; }
+  } catch(e){}
+}
+
+async function load(quiet){
+  if (!String(DB || '')){ g('lb_list').innerHTML = '<div class="empty">서버(Firebase) 주소가 설정되지 않았습니다.</div>'; return; }
+  if (!quiet) msg('불러오는 중…');
+  try {
+    if (!clockOk) await syncClock();
+    const r = await fetch(base() + '.json?orderBy="$key"&limitToLast=300');
+    if (!r.ok) throw new Error(r.status);
+    const o = await r.json() || {};
+    t0 = (o._meta && +o._meta.t0) || 0;
+    if (!t0){ t0 = Math.round(now()); fetch(base() + '/_meta/t0.json', {method: 'PUT', body: JSON.stringify(t0)}).catch(() => {}); }
+    posts = Object.keys(o).filter(k => k !== '_meta').map(id => Object.assign({id}, o[id])).filter(x => x && typeof x.u === 'string');
+    posts.sort((a, b) => ((b.ts || 0) - (a.ts || 0)) || (a.id < b.id ? 1 : -1));
+    items = posts.filter(x => +x.d > 0).slice().sort((a, b) => ((a.ts || 0) - (b.ts || 0)) || (a.id < b.id ? -1 : 1));
+    if (!quiet) msg('');
+  } catch(e){ if (!quiet || !posts.length){ msg('게시판 서버에 연결하지 못했습니다. Firebase 규칙에서 linkboard 읽기·쓰기를 허용했는지 확인하세요.', true); posts = []; items = []; } }
+  render(); tick();
+}
+
+// 지금이 몇 번째 곡의 몇 초 지점인지 시계로 계산 (올린 순서대로, 전체가 끝나면 처음부터 반복)
+function where(){
+  const tot = items.reduce((s, v) => s + (+v.d || 0), 0); if (!tot || !t0) return null;
+  let p = ((now() - t0) / 1000) % tot; if (p < 0) p += tot;
+  for (let i = 0; i < items.length; i++){ if (p < items[i].d) return {i, o: p, tot}; p -= items[i].d; }
+  return {i: 0, o: 0, tot};
+}
+
+function render(){
+  const list = g('lb_list'), pg = g('lb_pg'); list.innerHTML = ''; pg.innerHTML = '';
+  g('lb_reset').hidden = !adm;
+  g('lb_count').textContent = items.length ? '📻 방송에 들어간 곡 ' + items.length + '개 · 전체 한 바퀴 ' + dur(items.reduce((s, v) => s + (+v.d || 0), 0)) + (posts.length > items.length ? ' · 길이를 읽지 못해 방송 제외 ' + (posts.length - items.length) + '개' : '') : '';
+  const k = q.trim().toLowerCase();
+  const rows = k ? posts.filter(p => String(p.t || '').toLowerCase().includes(k) || String(p.n || '').toLowerCase().includes(k)) : posts;
+  if (!rows.length){ const e = document.createElement('div'); e.className = 'empty'; e.textContent = k ? '검색 결과가 없습니다.' : '아직 글이 없습니다. 위에서 첫 링크를 올려 보세요.'; list.append(e); return; }
+  const pages = Math.max(1, Math.ceil(rows.length / PER)); if (page > pages) page = pages;
+  const tb = document.createElement('table');
+  const th = document.createElement('tr');
+  [['no', '순번'], ['ti', '제목'], ['du', '길이'], ['nm', '작성자'], ['dt', '날짜'], ['ac', '']].forEach(([c, t]) => { const h = document.createElement('th'); h.className = c; h.textContent = t; th.append(h); });
+  tb.append(th);
+  rows.slice((page - 1) * PER, page * PER).forEach((p, i) => {
+    const tr = document.createElement('tr'); tr.dataset.id = p.id;
+    const td = (c) => { const x = document.createElement('td'); x.className = c; tr.append(x); return x; };
+    const seq = items.findIndex(x => x.id === p.id);
+    td('no').textContent = seq >= 0 ? seq + 1 : '–';
+    const ti = td('ti'); const a = document.createElement('a'); a.href = /^https?:\/\//i.test(p.u) ? p.u : '#'; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = p.t || p.u; a.title = p.u; ti.append(a);
+    td('du').textContent = +p.d > 0 ? dur(p.d) : '방송 제외';
+    td('nm').textContent = p.n || '손님';
+    td('dt').textContent = fmt(p.ts);
+    const ac = td('ac');
+    const b = (t, tt, fn) => { const x = document.createElement('button'); x.type = 'button'; x.className = 'lbb'; x.textContent = t; x.title = tt; x.onclick = fn; ac.append(x); };
+    b('▶', '방장이면 지금 방에서 재생, 아니면 새 창에서 열기', () => { try { if (liveRoom && liveRoom.host){ hostLink(p.u); return; } } catch(e){} window.open(p.u, '_blank', 'noopener'); });
+    b('➕', '내 재생목록에 추가', () => { try { if (plPush(p.u, p.t)) msg('재생목록에 추가했습니다.'); else msg('추가하지 못했습니다.', true); } catch(e){ msg('추가하지 못했습니다.', true); } });
+    if (mine(p) || adm) b('✕', '이 글 삭제', () => del(p));
+    tb.append(tr);
+  });
+  list.append(tb);
+  if (pages > 1) for (let n = 1; n <= pages; n++){ const x = document.createElement('button'); x.type = 'button'; x.className = 'lbb' + (n === page ? ' on' : ''); x.textContent = n; x.onclick = () => { page = n; render(); }; pg.append(x); }
+  tick();
+}
+
+// ---- 방송 재생: 유튜브는 유튜브 플레이어, 음원 링크는 오디오로 같은 위치부터 재생 ----
+function tick(){
+  const w = where();
+  const now_ = g('lb_now');
+  if (!w){ now_.textContent = on ? '방송할 곡이 없습니다. 링크를 올려 주세요.' : ''; return; }
+  const it = items[w.i], nx = items[(w.i + 1) % items.length];
+  now_.textContent = (on ? '🎧 ' : '📻 ') + '지금 방송: ' + (it.t || it.u) + ' (' + dur(w.o) + ' / ' + dur(it.d) + ')' + (items.length > 1 ? ' · 다음: ' + (nx.t || nx.u) : '');
+  g('lb_list').querySelectorAll('tr[data-id]').forEach(r => { const hit = r.dataset.id === it.id; r.style.background = hit ? '#ffcf7a22' : ''; });
+  if (!on) return;
+  const vol = +g('lb_vol').value;
+  if (curId !== it.id){
+    curId = it.id; errId = ''; lastSync = Date.now();
+    const v = ytid(it.u);
+    if (v){
+      try { au && au.pause(); } catch(e){}
+      if (ready){ try { yt.setVolume(vol); yt.loadVideoById({videoId: v, startSeconds: w.o}); } catch(e){} }
+    } else {
+      try { yt && ready && yt.stopVideo(); } catch(e){}
+      if (!au) au = new Audio();
+      au.onerror = () => { errId = it.id; msg('이 음원은 재생할 수 없어 다음 곡이 시작될 때까지 기다립니다. (관리자에게 삭제를 요청하세요)', true); };
+      au.src = it.u; au.volume = vol / 100;
+      const go = () => { try { au.currentTime = w.o; } catch(e){} au.play().catch(() => msg('브라우저가 소리 재생을 막았습니다. ▶ 방송 듣기를 다시 눌러 주세요.', true)); };
+      au.onloadedmetadata = go; try { au.load(); } catch(e){}
+    }
+    return;
+  }
+  if (errId === it.id) return;
+  if (Date.now() - lastSync > 5000){
+    lastSync = Date.now();
+    try {
+      if (ytid(it.u)){ if (ready){ const st = yt.getPlayerState(); if (st === 1 || st === 3){ if (Math.abs(yt.getCurrentTime() - w.o) > 3) yt.seekTo(w.o, true); } else yt.loadVideoById({videoId: ytid(it.u), startSeconds: w.o}); } }
+      else if (au){ if (au.paused || Math.abs(au.currentTime - w.o) > 3){ au.currentTime = w.o; au.play().catch(() => {}); } }
+    } catch(e){}
+  }
+}
+
+async function start(){
+  try { rUserPause = true; rIntr = false; audio.pause(); } catch(e){}   // 메인 라디오는 멈춤
+  try { window.pbStop && window.pbStop(); } catch(e){}              // 추억의 라디오 방송국과 동시에 나오지 않게
+  try { await loadYT(); } catch(e){}
+  on = true; curId = ''; errId = ''; g('lb_play').textContent = '⏹ 듣기 끝내기'; msg('');
+  if (window.YT && YT.Player && !yt){
+    ready = false;
+    if (!g('lb_ytp')){
+      const w = document.createElement('div'); w.style.cssText = 'position:fixed;left:-9999px;top:0;width:320px;height:200px;overflow:hidden';
+      const d = document.createElement('div'); d.id = 'lb_ytp'; w.append(d); document.body.append(w);
+    }
+    yt = new YT.Player('lb_ytp', {width: '100%', height: '100%', playerVars: {autoplay: 1, playsinline: 1, controls: 0, rel: 0, disablekb: 1, modestbranding: 1}, events: {
+      onReady: () => { ready = true; try { yt.setVolume(+g('lb_vol').value); } catch(e){} curId = ''; tick(); },
+      onError: () => { errId = curId; msg('이 유튜브 영상은 재생할 수 없어 다음 곡이 시작될 때까지 기다립니다. (관리자에게 삭제를 요청하세요)', true); }
+    }});
+  }
+  tick();
+}
+function stop(){
+  on = false; curId = ''; g('lb_play').textContent = '▶ 방송 듣기';
+  try { yt && ready && yt.stopVideo(); } catch(e){}
+  try { au && au.pause(); } catch(e){}
+  tick();
+}
+window.lbStop = () => { if (on) stop(); };
+g('lb_play').onclick = () => { on ? stop() : start(); };
+g('lb_vol').oninput = () => { const v = +g('lb_vol').value; try { yt && ready && yt.setVolume(v); } catch(e){} try { if (au) au.volume = v / 100; } catch(e){} };
+try { audio.addEventListener('play', () => { if (on) stop(); }); } catch(e){}
+
+// ---- 올릴 때 길이 읽기 ----
+function probeYT(id){
+  return new Promise(res => {
+    const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-9999px;top:0;width:200px;height:200px';
+    const d = document.createElement('div'); box.append(d); document.body.append(box);
+    let p = null, done = false, iv = 0;
+    const fin = r => { if (done) return; done = true; clearInterval(iv); clearTimeout(to); try { p && p.destroy(); } catch(e){} box.remove(); res(r); };
+    const to = setTimeout(() => fin({err: 'nodur'}), 15000);
+    p = new YT.Player(d, {width: 200, height: 200, videoId: id, playerVars: {autoplay: 0, controls: 0, playsinline: 1}, events: {
+      onReady: e => { try { e.target.mute(); e.target.playVideo(); } catch(_){}
+        iv = setInterval(() => { try { const vd = (p.getVideoData && p.getVideoData()) || {}; if (vd.isLive) return fin({err: 'live'}); const du = p.getDuration(); if (du > 0) fin({d: Math.floor(du), title: vd.title || ''}); } catch(_){} }, 400); },
+      onError: () => fin({err: 'embed'})
+    }});
+  });
+}
+function probeAudio(u){
+  return new Promise(res => {
+    const a = new Audio(); a.preload = 'metadata';
+    const to = setTimeout(() => res({err: 'nodur'}), 12000);
+    a.onloadedmetadata = () => { clearTimeout(to); const d = a.duration; res(isFinite(d) && d > 0 ? {d: Math.floor(d)} : {err: 'live'}); };
+    a.onerror = () => { clearTimeout(to); res({err: 'embed'}); };
+    a.src = u;
+  });
+}
+
+async function add(){
+  if (busy) return;
+  const u = g('lb_u').value.trim(); let t = g('lb_t').value.trim();
+  if (!/^https?:\/\//i.test(u)){ msg('링크는 http:// 또는 https:// 로 시작해야 합니다.', true); return; }
+  if (u.length > 500){ msg('링크가 너무 깁니다.', true); return; }
+  if (!String(DB || '')){ msg('서버(Firebase) 주소가 설정되지 않았습니다.', true); return; }
+  busy = true; g('lb_add').disabled = true; msg('길이를 확인하는 중입니다… (최대 15초)');
+  try {
+    const id = ytid(u), url = id ? 'https://www.youtube.com/watch?v=' + id : u;
+    if (posts.some(x => x.u === url)){ msg('이미 올라와 있는 링크입니다.', true); return; }
+    let r = {};
+    if (id){ try { await loadYT(); } catch(e){} r = (window.YT && YT.Player) ? await probeYT(id) : {err: 'nodur'}; }
+    else r = await probeAudio(u);
+    let d = 0;
+    if (r.d){
+      if (r.d < 5){ msg('너무 짧은 곡은 올릴 수 없습니다. (5초 이상)', true); return; }
+      if (r.d > MAXDUR){ msg('너무 긴 곡은 올릴 수 없습니다. (최대 3시간)', true); return; }
+      d = r.d;
+    } else {
+      const why = r.err === 'live' ? '생방송·스트림이라 길이가 없습니다.' : r.err === 'embed' ? '퍼가기가 막혔거나 재생할 수 없는 링크입니다.' : '길이를 읽지 못했습니다.';
+      if (!confirm(why + '\n게시판에는 올리지만 반복 방송에는 들어가지 않습니다. 그래도 올릴까요?')) return;
+    }
+    if (!t) t = r.title || (id ? '유튜브 ' + id : (() => { try { const x = new URL(u); return decodeURIComponent(x.pathname.split('/').filter(Boolean).pop() || '') || x.hostname; } catch(e){ return u; } })());
+    const rec = {t: t.slice(0, 60), u: url, n: nick(), k: (typeof UID !== 'undefined' ? UID : ''), ts: {'.sv': 'timestamp'}};
+    if (d) rec.d = d;
+    const w = await fetch(base() + '.json', {method: 'POST', body: JSON.stringify(rec)});
+    if (!w.ok) throw new Error(w.status);
+    g('lb_u').value = ''; g('lb_t').value = ''; page = 1;
+    await load(true); msg(d ? '✅ 올렸습니다. 방송 순서 맨 끝에 들어갑니다.' : '✅ 올렸습니다. (방송 제외)');
+  } catch(e){ msg('올리지 못했습니다. Firebase 규칙에서 linkboard 쓰기를 허용했는지 확인하세요.', true); }
+  finally { busy = false; g('lb_add').disabled = false; }
+}
+
+async function del(p){
+  if (!confirm('이 글을 삭제할까요?\n' + (p.t || p.u))) return;
+  try { const r = await fetch(base() + '/' + encodeURIComponent(p.id) + '.json', {method: 'DELETE'}); if (!r.ok) throw new Error(r.status); await load(true); msg('삭제했습니다.'); }
+  catch(e){ msg('삭제하지 못했습니다.', true); }
+}
+
+g('lb_add').onclick = add;
+g('lb_u').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) add(); });
+g('lb_q').oninput = () => { q = g('lb_q').value; page = 1; render(); };
+g('lb_reload').onclick = () => load();
+const admLabel = () => { g('lb_adm').textContent = adm ? '🔓 관리자 해제' : '🔒 관리자'; g('lb_reset').hidden = !adm; };
+g('lb_adm').onclick = async () => {
+  if (adm){ adm = false; try { sessionStorage.removeItem('board_admin'); } catch(e){} admLabel(); render(); return; }
+  const pw = prompt('관리자 비밀번호'); if (pw === null) return;
+  let ok = false;
+  try { const hh = await pwHash(pw.trim()); ok = hh === ADMIN_HASH || hh === '8be22f5b30df095a0d37f7ddd772b77fc4be5e8503665a11172320f0d0f96c84'; } catch(e){ alert('이 주소에서는 확인할 수 없습니다. https:// 주소나 파일로 열어 주세요.'); return; }
+  if (!ok){ alert('비밀번호가 맞지 않습니다.'); return; }
+  adm = true; try { sessionStorage.setItem('board_admin', '1'); } catch(e){} admLabel(); render(); msg('관리자 모드: 모든 글을 지울 수 있습니다.');
+};
+g('lb_reset').onclick = async () => {
+  if (!adm) return;
+  if (!confirm('방송을 지금 시각 기준으로 첫 번째 곡부터 다시 시작할까요?')) return;
+  await syncClock();
+  try { await fetch(base() + '/_meta/t0.json', {method: 'PUT', body: JSON.stringify(Math.round(now()))}); } catch(e){ msg('처음부터 시작하지 못했습니다.', true); return; }
+  curId = ''; await load(true);
+};
+setInterval(() => { try { if ((sessionStorage.getItem('board_admin') === '1') !== adm){ adm = !adm; admLabel(); render(); } } catch(e){} }, 2000);
+admLabel(); load();
+setInterval(tick, 1000);
+setInterval(() => { if (!document.hidden) load(true); }, 30000);   // 다른 컴퓨터에서 올린 글을 30초마다 자동 반영
+} catch(e){ console.warn('링크 게시판을 시작하지 못했습니다:', e); }
 })();
 </script>
 <script>
@@ -6630,6 +6960,7 @@ function tick(){
 async function start(){
   try { if (typeof audio !== 'undefined'){ rUserPause = true; rIntr = false; audio.pause(); } } catch(e){}   // 라디오가 저절로 되살아나지 않게 내가 멈춘 것으로 처리
   try { const o = gid('rdonly'); if (o && !o.hidden) gid('rdonlyoff').click(); } catch(e){}   // 음방 소리만 듣는 중이면 끔
+  try { window.lbStop && window.lbStop(); } catch(e){}
   try { await loadYT(); } catch(e){}
   if (!(window.YT && YT.Player)){ msg('유튜브 플레이어를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'); return; }
   on = true; curId = ''; errId = ''; $('play').textContent = '⏹ 듣기 끝내기'; pinUpdate();
@@ -6650,7 +6981,7 @@ function stop(){
   try { yt && ready && yt.stopVideo(); } catch(e){}
   tick();
 }
-window.pbStart = () => { if (!on) start(); }; window.pbHasItems = () => items.length > 0;
+window.pbStop = () => { if (on) stop(); }; window.pbStart = () => { if (!on) start(); }; window.pbHasItems = () => items.length > 0;
 $('play').onclick = () => { on ? stop() : start(); };
 $('vol').oninput = () => { try { yt && ready && yt.setVolume(+$('vol').value); } catch(e){} };
 try { if (typeof audio !== 'undefined') audio.addEventListener('play', () => { if (on) stop(); }); } catch(e){}
