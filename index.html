@@ -1722,7 +1722,6 @@ function botBtn(){ const b = $('botbtn'); if (!b) return; let plain = false; try
 function botShuffle(){
   const pool = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
   BOT.who = pool.slice(0, 8 + Math.floor(Math.random() * 7)); BOT.shuffleAt = Date.now() + 180000 + Math.random() * 120000; botBtn();
-  try { if (typeof renderMembers === 'function' && $('members')) renderMembers(); } catch(e){}
 }
 // 🔘 방의 「토론 반응」 버튼(💯100점·👏박수·🔥불꽃·😂웃김·🤔의문·😮놀람)을 누른 것처럼 화면에 이모지가 떠오름 (집계 숫자·찬반 투표에는 넣지 않음)
 const BOT_REACT = ['100','100','100','clap','clap','clap','fire','fire','lol','lol','wow','hmm'];
@@ -2213,14 +2212,6 @@ function renderMembers(){
       box.append(row);
     }
   });
-  // 🤖 가상 손님도 목록에 표시 (이 기기에서만 보이며, 이름 앞에 🤖가 붙고 귓속말은 할 수 없음)
-  try {
-    if (typeof BOT !== 'undefined' && BOT.on && liveRoom && botIsLive(roomPath()) && BOT.who && BOT.who.length){
-      const h = document.createElement('div'); h.style.cssText = 'font-size:12px;opacity:.7;margin:8px 0 4px';
-      h.textContent = '🤖 가상 손님 (' + BOT.who.length + '명) · 이 기기에서만 보이는 봇이에요'; box.append(h);
-      BOT.who.forEach(n => { const r = document.createElement('div'); r.style.opacity = '.85'; r.textContent = '· 🤖 ' + n; r.title = '가상 손님 (미리 정해진 말만 하는 봇)'; box.append(r); });
-    }
-  } catch(e){}
 }
 function memRec(){
   const r = {n: myNick(), h: isHost() ? 1 : 0, ts: nowS()};
