@@ -2849,7 +2849,7 @@ async function mvPoll(){
     return;
   } else {
     MV.gone = 0;
-    if (MV.hostless){ MV.hostless = false; setBc('새 방장에게 다시 연결합니다.'); if (liveRoom.virt && !lis){ liveRoom.virt = false; connectListen(id, liveRoom.name, liveRoom.pw || ''); } else reconnectListen(); }
+    if (MV.hostless){ MV.hostless = false; setBc('새 방장에게 다시 연결합니다.'); if (liveRoom.virt && !lis){ liveRoom.virt = false; connectListen(id, liveRoom.name, liveRoom.pw || '', false, rmAdm()); } else reconnectListen(); }
   }
   if (MV.hostless) return;
   MV.last = s;
@@ -2910,7 +2910,7 @@ function reconnectListen(){
   try { l.pc.close(); } catch(e){}
   lj('sig_' + l.bid + '/o_' + l.lid, 'DELETE').catch(() => {}); lj('sig_' + l.bid + '/a_' + l.lid, 'DELETE').catch(() => {});
   liveAudio.srcObject = null; setStatus('새 방장에게 연결 중…');
-  connectListen(l.bid, liveRoom.name, l.pw, l.pv);
+  connectListen(l.bid, liveRoom.name, l.pw, l.pv, l.adm);
 }
 async function mvApply(s){
   const k = s && s.k;
@@ -3053,7 +3053,7 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
       vbase = cv.captureStream(1).getVideoTracks()[0]; stream.addTrack(vbase); timers.push(setInterval(tick, 1000));
     } catch(e){ vbase = null; }
   }
-  const me = {holdSet: true, hold: 43200, alone: false, an: (opts && opts.an) || null, aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : '', title, src: null, pvOff: !!(opts && opts.pn), cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
+  const me = {holdSet: true, hold: 43200, alone: false, an: (opts && opts.an) || null, aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : ((opts && opts.lk) || ''), title, src: null, pvOff: !!(opts && opts.pn), cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
   bc = me;
   me.sid = Math.random().toString(36).slice(2, 12);
   me.reg = async () => {
@@ -3068,7 +3068,7 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
     }
     if (bc !== me) return;
     me.regd = true; try { kpSave(me); } catch(_){}
-    return lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: nowS(), s: me.sid, p: me.pw ? 1 : 0, pn: me.pvOff ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length, hd: me.hold, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, an: me.an || null, np: npText(), nk: npKind()}).catch(() => {});
+    return lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: nowS(), s: me.sid, p: (me.pw || me.lock) ? 1 : 0, lk: me.lock || '', pn: me.pvOff ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length, hd: me.hold, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, an: me.an || null, np: npText(), nk: npKind()}).catch(() => {});
   };
   await me.reg(); if (!keepState) mvPut({k: hasCam ? 'cam' : ''});
   me.timers.push(setInterval(me.reg, 15000), setInterval(bcPoll, 2000), setInterval(bcWatch, 6000));
@@ -3096,7 +3096,7 @@ function kpSave(me){
   if (me.kpN % 4 !== 1) return;
   let v = null; try { v = mvKeepSnap(); } catch(_){}
   const now = nowS();
-  lj('livekeep/' + me.rid, 'PUT', {x: now + KEEP_MIN * 60000, ts: now, n: me.title, p: me.pw ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: v || null}).catch(() => {});
+  lj('livekeep/' + me.rid, 'PUT', {x: now + KEEP_MIN * 60000, ts: now, n: me.title, p: (me.pw || me.lock) ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: v || null}).catch(() => {});
 }
 function kpWipe(id){ ['livereg/', 'sig_', 'roommem_', 'roommedia_', 'livekeep/'].forEach(k => lj(k + id, 'DELETE').catch(() => {})); }
 function kpTouch(id){ try { lj('livereg/' + id, 'PATCH', {e: nowS() + KEEP_MIN * 60000}).catch(() => {}); } catch(_){} }
@@ -3104,7 +3104,7 @@ async function kpRescue(id, r, now){
   let k = null; try { k = await lj('livekeep/' + id, 'GET'); } catch(_){}
   const x = Math.max((k && +k.x) || 0, (+r.ts || now) + KEEP_MIN * 60000);
   if (x <= now) return null;
-  const rec = {n: String(r.n || (k && k.n) || ''), h: '', ts: now, p: (r.p || (k && k.p)) ? 1 : 0, c: 0, e: x, hd: KEEP_MIN, hs: 1, al: 0, pn: (r.pn || (k && k.pn)) ? 1 : 0, lk: (k && k.lk) || '', an: r.an || (k && k.an) || null};
+  const rec = {n: String(r.n || (k && k.n) || ''), h: '', ts: now, p: (r.p || (k && k.p)) ? 1 : 0, c: 0, e: x, hd: KEEP_MIN, hs: 1, al: 0, pn: (r.pn || (k && k.pn)) ? 1 : 0, lk: (k && k.lk) || r.lk || '', an: r.an || (k && k.an) || null};
   if (k && k.v) rec.v = k.v;
   try { await lj('livereg/' + id, 'PUT', rec); } catch(_){ return r; }
   return rec;
@@ -3122,7 +3122,7 @@ function stopBroadcast(noKeep, local){
   try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep){ lj('livereg/' + me.rid, 'DELETE').catch(() => {}); lj('livekeep/' + me.rid, 'DELETE').catch(() => {}); }
-  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: me.pw ? 1 : 0, c: 0, e: nowS() + Math.min(43200, me.hold || 10080) * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap}).catch(() => {});
+  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: (me.pw || me.lock) ? 1 : 0, c: 0, e: nowS() + Math.min(43200, me.hold || 10080) * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap}).catch(() => {});
   lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
   leaveRoom(); setBc(''); loadLive();
@@ -3157,7 +3157,7 @@ async function bcPoll(){
       if (k.indexOf('o_') !== 0 || me.seen[k]) return;
       me.seen[k] = 1;
       const isPv = !!d[k].pv; // 🔒 밖에서 듣기(소리만) 요청
-      if (me.lock && d[k].k !== lockOf(me.pw, me.rid + '|' + k.slice(2)) && !(isPv && !me.pvOff)){ lj('sig_' + me.rid + '/a_' + k.slice(2), 'PUT', {no: 1}).catch(() => {}); return; }
+      if (me.lock && d[k].k !== lockOf(me.pw, me.rid + '|' + k.slice(2)) && !(isPv && !me.pvOff) && !d[k].am){ lj('sig_' + me.rid + '/a_' + k.slice(2), 'PUT', {no: 1}).catch(() => {}); return; }
       if (Object.keys(me.pcs).length < (me.cam ? 4 : MAX_LISTEN)) answerOffer(me, k.slice(2), d[k], isPv);
       else lj('sig_' + me.rid + '/a_' + k.slice(2), 'PUT', {full: 1}).catch(() => {});
     });
@@ -3847,11 +3847,12 @@ setInterval(rxPoll, 3000);
 async function listen(bid, name, locked, presetPw){
   if (!DB || !chatAllowed){ setBc('채팅 접속 인원이 가득 차서 지금은 음악 방에 들어갈 수 없습니다. 잠시 후 다시 시도하세요.'); return; }
   if (bc && bc.rid === bid) return;
-  let pw = '', pv = false;
+  let pw = '', pv = false, adm = false;
   if (locked){
     pw = presetPw || '';
     if (!pw){
-      if (RDONLY.on) pv = true; // 🔒 소리만 듣기: 비밀번호 없이 밖에서 소리만 (방 입장은 비밀번호 필요)
+      if (rmAdm()) adm = true; // 🔓 관리자는 비밀번호 없이 입장
+      else if (RDONLY.on) pv = true; // 🔒 소리만 듣기: 비밀번호 없이 밖에서 소리만 (방 입장은 비밀번호 필요)
       else { pw = prompt('이 음악 방은 비밀번호가 필요합니다.') || ''; if (!pw) return; }
     }
   }
@@ -3859,7 +3860,7 @@ async function listen(bid, name, locked, presetPw){
   stopListen(); rUserPause = true; rIntr = false; audio.pause();
   $('now').textContent = name; $('meta').textContent = '음악 방'; setStatus('연결 중…'); enterRoom(bid, name);
   if (!(liveRoom && liveRoom.only)){ try { localStorage.setItem('radio_last_room', JSON.stringify({id: bid, name: String(name)})); } catch(e){} }
-  return connectListen(bid, name, pw, pv);
+  return connectListen(bid, name, pw, pv, adm);
 }
 // 듣는 사람: 수신 버퍼를 늘려 화면을 조금 늦게 재생하는 대신 끊김을 줄임 (Chrome/Edge 114+)
 async function rxDiag(){
@@ -3899,9 +3900,9 @@ function lagSupported(){ try { return typeof RTCRtpReceiver !== 'undefined' && '
   };
 })();
 let lisRetry = 0;
-async function connectListen(bid, name, pw, pv){
+async function connectListen(bid, name, pw, pv, adm){
   const lid = myId + Date.now().toString(36).slice(-4);
-  const pc = new RTCPeerConnection(RTC_CFG); lis = {pc, bid, lid, pw, pv: !!pv};
+  const pc = new RTCPeerConnection(RTC_CFG); lis = {pc, bid, lid, pw, pv: !!pv, adm: !!adm};
   lis.dtm = setInterval(rxDiag, 1500); $('rxdiag').hidden = false; $('rxdiag').textContent = '⏳ 방장 소리를 기다리는 중…';
   if (pv){ pc.addTransceiver('audio', {direction: 'recvonly'}); } // 🔒 밖에서 듣기: 소리만 받음 (말하기·카메라 없음)
   else {
@@ -3933,7 +3934,7 @@ async function connectListen(bid, name, pw, pv){
   try {
     await pc.setLocalDescription(await pc.createOffer());
     await iceDone(pc);
-    await lj('sig_' + bid + '/o_' + lid, 'PUT', {sdp: pc.localDescription.sdp, ts: Date.now(), k: pw ? lockOf(pw, bid + '|' + lid) : '', u: pv ? '' : myId, pv: pv ? 1 : 0});
+    await lj('sig_' + bid + '/o_' + lid, 'PUT', {sdp: pc.localDescription.sdp, ts: Date.now(), k: pw ? lockOf(pw, bid + '|' + lid) : '', u: pv ? '' : myId, pv: pv ? 1 : 0, am: adm ? 1 : 0});
     for (let i = 0; i < 25; i++){
       await new Promise(r => setTimeout(r, 1000));
       if (!lis || lis.pc !== pc) return;
@@ -3961,16 +3962,21 @@ async function claimEmptyRoom(R, info){
   if (!DB || !chatAllowed) return;
   let pw = '';
   const fv = mhFind(R, String(info.n)); if (fv && fv.nick) applyMyName(fv.nick);
+  let admLk = '';
   if (info.p){
-    pw = (fv && fv.pw) || prompt('이 음악 방은 비밀번호가 필요합니다.') || ''; if (!pw) return;
-    if (info.lk && lockOf(pw, R) !== info.lk){ setBc('비밀번호가 맞지 않습니다.'); return; }
+    pw = (fv && fv.pw) || '';
+    if (pw && info.lk && lockOf(pw, R) !== info.lk) pw = '';
+    if (!pw){
+      if (rmAdm()) admLk = info.lk || '*';   // 🔓 관리자: 비밀번호 없이 입장 (방의 잠금은 그대로 유지)
+      else { pw = prompt('이 음악 방은 비밀번호가 필요합니다.') || ''; if (!pw) return; if (info.lk && lockOf(pw, R) !== info.lk){ setBc('비밀번호가 맞지 않습니다.'); return; } }
+    }
   }
   let cur = null; try { cur = await lj('livereg/' + R, 'GET'); } catch(e){ return; }
   if (!cur){ setBc('이미 사라진 방입니다.'); loadLive(); return; }
   if (!cur.e){ loadLive(); listen(R, String(cur.n), !!cur.p, pw); return; }
   kpTouch(R);
   stopListen(); audio.pause(); stopBroadcast(false);
-  if (!(await buildBc(R, String(info.n), pw, false, undefined, {hold: cur.hd || info.hd, holdSet: !!(cur.hs || info.hs), alone: !!info.al, an: cur.an || info.an, pn: cur.pn || info.pn}))) return;
+  if (!(await buildBc(R, String(info.n), pw, false, undefined, {hold: cur.hd || info.hd, holdSet: !!(cur.hs || info.hs), alone: !!info.al, an: cur.an || info.an, pn: cur.pn || info.pn, lk: admLk ? (cur.lk || admLk) : ''}))) return;
   enterRoom(R, String(info.n)); fillInvite(); loadLive();
   let resumed = false;
   if (cur.v && cur.v.u){ try { resumed = await resumeVirtual(cur.v); } catch(e){} }
@@ -4264,7 +4270,7 @@ async function listenOnlyVirtual(id, info){
   if (info.p){
     const fv = mhFind(id, String(info.n)); pw = (fv && fv.pw) || '';
     if (pw && info.lk && lockOf(pw, id) !== info.lk) pw = '';   // 저장된 비밀번호가 틀리면 비밀번호 없이 듣기로
-    if (!pw && info.pn){ setBc('🔒 이 방은 방장이 밖에서 듣기를 막아 두어 비밀번호가 필요합니다.'); return; }
+    if (!pw && info.pn && !rmAdm()){ setBc('🔒 이 방은 방장이 밖에서 듣기를 막아 두어 비밀번호가 필요합니다.'); return; }
   }
   let cur = null; try { cur = await lj('livereg/' + id, 'GET'); } catch(e){ return; }
   if (!cur){ setBc('이미 사라진 방입니다.'); loadLive(); return; }
