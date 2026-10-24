@@ -2248,7 +2248,7 @@ async function mvApply(s){
   if (MV.k !== k || MV.u !== s.u){
     if (MV.busy) return; MV.busy = true;
     try {
-      mvStop(); MV.k = k; MV.u = s.u;
+      mvStop(); MV.k = k; MV.u = s.u; MV.born = Date.now(); MV.sk = [];
       if (k === 'yt'){
         await loadYT();
         if (!(window.YT && YT.Player) || MV.k !== 'yt' || !liveRoom){ MV.k = ''; return; }
@@ -2264,9 +2264,16 @@ async function mvApply(s){
     } finally { MV.busy = false; }
     return;
   }
-  let cur;
-  if (k === 'yt'){ if (!(MV.yt && MV.yt.getCurrentTime && MV.yt.seekTo)) return; cur = MV.yt.getCurrentTime(); } else cur = mwvid.currentTime;
-  if (Math.abs(cur - want) > (s.p ? 2.5 : 0.8)){ if (k === 'yt') MV.yt.seekTo(want, true); else { try { mwvid.currentTime = want; } catch(e){} } }
+  let cur, ps = 1;
+  if (k === 'yt'){ if (!(MV.yt && MV.yt.getCurrentTime && MV.yt.seekTo)) return; cur = MV.yt.getCurrentTime(); try { ps = MV.yt.getPlayerState(); } catch(_){} } else cur = mwvid.currentTime;
+  if (Math.abs(cur - want) > (s.p ? 2.5 : 0.8)){
+    // 유튜브가 아직 불러오는 중(버퍼링·시작 전)일 때는 위치가 뒤처져 보이므로 되감지 않음.
+    // (예전에는 3초마다 계속 되감아서 음악 앞부분이 3~4번 반복된 뒤에야 정상 재생됐음)
+    // 재생이 시작된 뒤에만, 입장 4초 후부터, 마지막 이동 8초 뒤에, 30초 안에 최대 2번까지만 위치를 맞춤
+    const tn = Date.now(); MV.sk = (MV.sk || []).filter(x => tn - x < 30000);
+    const ok = k !== 'yt' || ((ps === 1 || ps === 2) && tn - (MV.born || 0) > 4000 && tn - (MV.sk[MV.sk.length - 1] || 0) > 8000 && MV.sk.length < 3);
+    if (ok){ MV.sk.push(tn); if (k === 'yt') MV.yt.seekTo(want, true); else { try { mwvid.currentTime = want; } catch(e){} } }
+  }
   const p = s.p ? 1 : 0;
   if (p !== MV.lp){ MV.lp = p; if (k === 'yt'){ p ? MV.yt.playVideo() : MV.yt.pauseVideo(); } else { p ? mwvid.play().catch(() => {}) : mwvid.pause(); } }
 }
@@ -6820,6 +6827,7 @@ if (!$('url')) return;
 const BASE = DB + '/bcast';
 const MAXITEMS = 200, MAXDUR = 3 * 3600, COOLDOWN = 30000;
 let items = [], t0 = 0, off = 0, isAdm = false, on = false, yt = null, ready = false, curId = '', errId = '', lastSync = 0, loaded = false, curTitle = '', solo = '';
+let durFix = {}, fixTry = {}, seekLog = [];   // 영상 길이 자동 보정 / 되감기 횟수 기록
 const NAME = '추억의 라디오 방송국';
 const gid = id => document.getElementById(id);
 try { isAdm = sessionStorage.getItem('board_admin') === '1'; } catch(e){}
@@ -6846,6 +6854,7 @@ async function load(){
     const j = (await r.json()) || {};
     items = Object.entries(j.items || {}).map(([id, v]) => Object.assign({id}, v)).filter(v => v && v.v && v.d > 0)
       .sort((a, b) => ((a.ts || 0) - (b.ts || 0)) || (a.id < b.id ? -1 : 1));
+    items.forEach(v => { if (durFix[v.id]) v.d = durFix[v.id]; });
     t0 = (j.meta && j.meta.t0) || 0;
     if (!t0){ t0 = Math.round(now()); fetch(BASE + '/meta/t0.json', {method: 'PUT', body: JSON.stringify(t0)}).catch(() => {}); }
     loaded = true; render(); tick();
@@ -6922,6 +6931,18 @@ function pick(it){
   if (!on) start(); else tick();
 }
 $('back').onclick = () => { solo = ''; curId = ''; errId = ''; msg(''); tick(); };
+// 서버에 적힌 영상 길이가 실제와 다르면(예: 긴 영상이 5초로 기록된 경우) 방송이 몇 초마다 처음으로 되감기므로, 실제 길이로 바로잡아 모두에게 반영
+function fixDur(it){
+  try {
+    if (!yt || !ready || yt.getPlayerState() !== 1) return false;
+    const real = Math.floor(yt.getDuration()), cur = yt.getCurrentTime();
+    if (!(real >= 5 && real <= MAXDUR) || cur < 1.5) return false;
+    if (Math.abs(real - it.d) <= 3 || (fixTry[it.id] || 0) >= 1) return false;
+    fixTry[it.id] = 1; durFix[it.id] = real; it.d = real;
+    fetch(BASE + '/items/' + it.id + '/d.json', {method: 'PUT', body: JSON.stringify(real)}).catch(() => {});
+    return true;
+  } catch(e){ return false; }
+}
 function tick(){
   const w = where();
   if (!w){ curTitle = ''; $('now').textContent = on ? '재생할 영상이 없습니다.' : ''; pinUpdate(); return; }
@@ -6945,13 +6966,19 @@ function tick(){
     }
   }
   if (!on || !ready) return;
-  if (curId !== it.id){ curId = it.id; errId = ''; lastSync = Date.now(); try { yt.loadVideoById({videoId: it.v, startSeconds: w.o}); } catch(e){} return; }
+  if (curId !== it.id){ curId = it.id; errId = ''; lastSync = Date.now(); seekLog = []; try { yt.loadVideoById({videoId: it.v, startSeconds: w.o}); } catch(e){} return; }
   if (errId === it.id) return;
   if (Date.now() - lastSync > 5000){
     lastSync = Date.now();
     try {
       const st = yt.getPlayerState();
-      if (st === 1 || st === 3){ if (Math.abs(yt.getCurrentTime() - w.o) > 3) yt.seekTo(w.o, true); }
+      if (st === 1 || st === 3){
+        if (fixDur(it)){ curId = ''; return; }   // 길이를 바로잡았으면 맞는 위치로 한 번 다시 맞춤
+        if (Math.abs(yt.getCurrentTime() - w.o) > 3){
+          const tn = Date.now(); seekLog = seekLog.filter(x => tn - x < 40000);
+          if (seekLog.length < 2){ seekLog.push(tn); yt.seekTo(w.o, true); }   // 40초 안에 3번째부터는 억지로 되감지 않고 그대로 이어서 재생
+        }
+      }
       else yt.loadVideoById({videoId: it.v, startSeconds: w.o});
     } catch(e){}
   }
