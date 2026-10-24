@@ -1784,6 +1784,12 @@ function botTick(){
     if (Math.random() < 0.2) gap += 15000 + Math.random() * 25000;   // 가끔은 한동안 조용
     if (Math.random() < 0.15) gap = 3000 + Math.random() * 3000;      // 가끔은 연달아
   }
+  // 👥 가끔은 거의 동시에 다른 손님이 한마디 얹음 (0.4~1.6초 차이)
+  if (!BOT.q.length && Math.random() < 0.18){
+    const w = botWho(), e = botRand(BOT_ECHO);
+    setTimeout(() => { if (BOT.on && roomPath() === key) botSay(w, e, key); }, 400 + Math.random() * 1200);
+    if (Math.random() < 0.3){ const w2 = botWho([w]), e2 = botRand(BOT_ECHO); setTimeout(() => { if (BOT.on && roomPath() === key) botSay(w2, e2, key); }, 900 + Math.random() * 1600); }
+  }
   const busy = chat.some(c => c && !c.bot && c.k !== UID && now - (c.ts || 0) < 45000);   // 진짜 사람들이 이야기 중이면 조용히
   BOT.next = Date.now() + (busy ? gap * 1.8 : gap);
 }
@@ -1815,6 +1821,10 @@ window.botUserSaid = text => {
   if (Math.random() < 0.2) d1 += 5000 + Math.random() * 8000;
   BOT.next = Date.now() + d1 + 6000;   // 답하기 전에 다른 손님이 끼어들지 않게
   setTimeout(() => { if (BOT.on) botSay(w, line, key); }, d1);
+  if (pool !== BOT_RULES[0][1] && Math.random() < 0.3){   // 다른 손님이 거의 동시에 같이 답함
+    const wb = botWho([w]), lb = botRand(pool.length > 1 ? pool.filter(x => x !== line) : BOT_ECHO);
+    setTimeout(() => { if (BOT.on) botSay(wb, lb, key); }, d1 + 300 + Math.random() * 1500);
+  }
   if (pool !== BOT_FALLBACK && pool !== BOT_RULES[0][1] && Math.random() < 0.4){
     const w2 = botWho([w]), l2 = botRand(['ㅋㅋ 저도요','맞아요~ 😊','ㅎㅎ 동감이에요','저도 그렇게 생각해요','오 공감이에요']);
     setTimeout(() => { if (BOT.on) botSay(w2, l2, key); }, d1 + 3500 + Math.random() * 9000);
