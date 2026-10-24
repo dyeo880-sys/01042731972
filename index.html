@@ -1787,6 +1787,47 @@ function botTimeLines(){
   if (m === 11 && day === 11) ev.push('오늘 빼빼로데이네요 ㅎㅎ');
   return ev.length ? L.concat(ev, ev) : L;
 }
+// ⏰ 대사가 지금 시각·요일·계절과 맞는지 검사 (안 맞는 대사는 뽑지 않거나 말하지 않음)
+function botInH(h, a, b){ return a <= b ? (h >= a && h < b) : (h >= a || h < b); }
+const BOT_TR = [
+  [/좋은 아침|굿모닝|아침 드셨|아침은 드|아침부터|오늘 아침|아침 햇살|출근길|Good morning/i, (h) => botInH(h, 5, 14)],
+  [/점심|런치|lunch/i, (h) => botInH(h, 11, 15)],
+  [/저녁|dinner|Good evening/i, (h) => botInH(h, 16, 24)],
+  [/새벽/, (h) => botInH(h, 22, 6)],
+  [/늦은 밤|오늘 밤|좋은 밤|굿나잇|야식|잠자리|Good night/i, (h) => botInH(h, 17, 6)],
+  [/노을/, (h) => botInH(h, 16, 20)],
+  [/오후/, (h) => botInH(h, 12, 19)],
+  [/오전/, (h) => botInH(h, 5, 12)],
+  [/월요일|Happy Monday|Monday blues/i, (h, d) => d === 1],
+  [/화요일/, (h, d) => d === 2],
+  [/수요일/, (h, d) => d === 3],
+  [/목요일/, (h, d) => d === 4],
+  [/금요일|불금|Happy Friday|TGIF/i, (h, d) => d === 5],
+  [/토요일/, (h, d) => d === 6],
+  [/일요일/, (h, d) => d === 0],
+  [/여름|무더위|폭염|에어컨|장마/, (h, d, m) => m >= 5 && m <= 8],
+  [/가을|단풍|코스모스/, (h, d, m) => m >= 8 && m <= 10],
+  [/겨울|한파/, (h, d, m) => m >= 10 || m <= 2],
+  [/눈 오는|눈이 오|함박눈/, (h, d, m) => m >= 10 || m <= 2],
+  [/(^|[^가-힣])봄|벚꽃/, (h, d, m) => m >= 2 && m <= 4],
+  [/귤|군고구마|붕어빵|핫초코/, (h, d, m) => m >= 9 || m <= 2],
+  [/크리스마스|Merry Christmas/i, (h, d, m) => m >= 10]
+];
+function botOk(text){
+  if (typeof text !== 'string') return true;
+  const n = new Date(), h = n.getHours(), d = n.getDay(), m = n.getMonth();
+  for (const r of BOT_TR) if (r[0].test(text) && !r[1](h, d, m)) return false;
+  return true;
+}
+function botScOk(sc){ return sc.every(l => botOk(l[1])); }
+function botPickOk(arr){
+  for (let i = 0; i < 30; i++){ const t = botRand(arr); if (botOk(t)) return t; }
+  const ok = arr.filter(botOk); return ok.length ? botRand(ok) : botRand(arr);
+}
+function botPT(p){
+  for (let i = 0; i < 10; i++){ const t = botFill(botRand(p.t), p, {}); if (botOk(t)) return t; }
+  return null;
+}
 // 🎭 손님마다 성격 (이름으로 정해져서 항상 같음): 수다쟁이는 자주, 과묵한 손님은 가끔만 말함
 function botTrait(n){ let h = 0; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0; const r = h % 10; return r < 3 ? 3 : r < 8 ? 2 : 1; }
 const BOT_ECHO = ['ㅋㅋㅋ','맞아요 ㅎㅎ','오~','저도요!','ㅎㅎ','인정','👍','와','ㅋㅋ 공감','그쵸 ㅎㅎ','ㅇㅈ','ㅎㅎㅎ','좋네요~','👏','그러게요','오 ㅋㅋ','그니까요','맞아 맞아','헐','ㅎㅎ 공감','저도 그래요','나도 나도','ㅋㅋㅋㅋㅋ','오호','굿 👍','ㅇㅇ 맞음','아 진짜','ㅋㅋ 웃겨','인정합니다'];
@@ -1827,12 +1868,14 @@ function botForeign(key){
   let gap;
   if (Math.random() < 0.5){
     const pk = () => (gn && Math.random() < 0.6) ? botGenScript(L, live) : botRand(F.s);
-    let sc = pk(), tries = 0; while (BOT.recent.includes(sc[0][1]) && tries++ < 6) sc = pk();
+    let sc = pk(), tries = 0; while ((BOT.recent.includes(sc[0][1]) || !botScOk(sc)) && tries++ < 20) sc = pk();
+    if (!botScOk(sc)) sc = [[0, botPickOk(BOT_LINES)]];
     sc.forEach((l, i) => { if (i === 0) botSay(nm[l[0]], l[1], key); else BOT.q.push([nm[l[0]], l[1]]); });
     gap = 2500 + (sc[1] ? sc[1][1].length * 170 : 0) + Math.random() * 4500;
   } else {
     const pl = () => (gn && Math.random() < 0.6) ? botGenLine(L, live) : botRand(F.l);
-    let t = pl(), tries = 0; while (BOT.recent.includes(t) && tries++ < 8) t = pl();
+    let t = pl(), tries = 0; while ((BOT.recent.includes(t) || !botOk(t)) && tries++ < 20) t = pl();
+    if (!botOk(t)) t = botPickOk(BOT_LINES);
     botSay(nm[0], t, key); gap = 6000 + Math.random() * 14000;
   }
   if (Math.random() < 0.25) BOT.q.push([botWho(), botRand(BOT_FX_KO)]);   // 한국 손님이 반갑게 인사
@@ -1878,8 +1921,9 @@ const BOT_PQ = [{"nm":"취한곰돌이","mu":1,"o":["","","어? ","아니 ","야
 const botIsPQ = n => BOT_PQ.some(p => p.nm === n);
 function botPersona(key){
   const on = BOT_PQ.filter(p => BOT.who.includes(p.nm)), p = botRand(on.length ? on : BOT_PQ);
-  botSay(p.nm, botFill(botRand(p.t), p, {}), key);
-  if (p.mu && Math.random() < 0.5){ const n = 1 + Math.floor(Math.random() * 2); for (let i = 0; i < n; i++) BOT.q.push([p.nm, botFill(botRand(p.t), p, {})]); }
+  const pt = botPT(p); if (!pt) return 3000;
+  botSay(p.nm, pt, key);
+  if (p.mu && Math.random() < 0.5){ const n = 1 + Math.floor(Math.random() * 2); for (let i = 0; i < n; i++){ const q = botPT(p); if (q) BOT.q.push([p.nm, q]); } }
   if (Math.random() < 0.4) BOT.q.push([botWho([p.nm]), botRand(p.rx)]);   // 다른 손님이 한마디 얹음
   return 5000 + Math.random() * 14000;
 }
@@ -1919,6 +1963,7 @@ function botReactFor(text){   // 대사 내용에 어울리는 버튼
   return '';
 }
 function botSay(name, text, key){
+  if (!botOk(text)) return;
   const now = Date.now(); key = key || roomPath(); BOT.last = name; BOT.recent.push(text); BOT.recent = BOT.recent.slice(-24);
   BOT.msgs.push({n: name, t: text, ts: now, k: 'bot', bot: 1, r: key});
   BOT.msgs = BOT.msgs.filter(m => now - m.ts < 600000).slice(-40);
@@ -1951,14 +1996,16 @@ function botTick(){
   else if (Math.random() < 0.5){
     const src = (live && Math.random() < 0.6) ? BOT_LIVE_SCRIPTS : BOT_SCRIPTS;
     const pk = () => Math.random() < 0.6 ? botGenScript('ko', live) : botRand(src);
-    let sc = pk(), tries = 0; while (BOT.recent.includes(sc[0][1]) && tries++ < 6) sc = pk();
+    let sc = pk(), tries = 0; while ((BOT.recent.includes(sc[0][1]) || !botScOk(sc)) && tries++ < 20) sc = pk();
+    if (!botScOk(sc)) sc = [[0, botPickOk(BOT_LINES)]];
     const a = [botWho()]; a.push(botWho(a)); a.push(botWho(a));
     sc.forEach((l, i) => { if (i === 0) botSay(a[l[0]], l[1], key); else BOT.q.push([a[l[0]], l[1]]); });
     gap = 2500 + (sc[1] ? sc[1][1].length * 170 : 0) + Math.random() * 4500;
   } else {
     const src = Math.random() < 0.3 ? botTimeLines() : ((live && Math.random() < 0.6) ? BOT_LIVE_LINES : BOT_LINES);
     const pl = () => Math.random() < 0.6 ? botGenLine('ko', live) : botRand(src);
-    let t = pl(), tries = 0; while (BOT.recent.includes(t) && tries++ < 8) t = pl();
+    let t = pl(), tries = 0; while ((BOT.recent.includes(t) || !botOk(t)) && tries++ < 20) t = pl();
+    if (!botOk(t)) t = botPickOk(BOT_LINES);
     botSay(botWho(), t, key);
     gap = 7000 + Math.random() * 20000;                      // 말 사이 간격이 일정하지 않게
     if (Math.random() < 0.2) gap += 15000 + Math.random() * 25000;   // 가끔은 한동안 조용
@@ -1997,7 +2044,8 @@ window.botUserSaid = text => {
   let pool = null; for (const r of BOT_RULES){ if (r[0].test(text)){ pool = r[1]; break; } }
   if (!pool){ if (Math.random() < 0.35) return; pool = BOT_FALLBACK; }
   BOT.q = []; BOT.next = Date.now() + 10000;
-  const w = botWho(), line = (pool === BOT_FALLBACK && Math.random() < 0.6) ? botFill(botRand(BOT_G.ko.r), BOT_G.ko, {}) : botRand(pool);
+  const okPool = pool.filter(botOk);
+  const w = botWho(), line = (pool === BOT_FALLBACK && Math.random() < 0.6) ? botFill(botRand(BOT_G.ko.r), BOT_G.ko, {}) : botRand(okPool.length ? okPool : pool);
   // 읽고 → 생각하고 → 타자 치는 시간: 사용자 글 길이·답 길이에 비례, 가끔은 한참 뒤에 답함
   let d1 = 2500 + Math.min(text.length, 40) * 60 + line.length * 120 + Math.random() * 5500;
   if (Math.random() < 0.2) d1 += 5000 + Math.random() * 8000;
