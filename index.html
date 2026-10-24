@@ -2035,6 +2035,20 @@ function botReactTick(){
     BOT.rnext = now + 2500 + Math.random() * 5500;
   }
 }
+// 👋 진짜 사람이 방에 들어오면 가상 손님이 인사 (1~2명, 몇 초 뒤에)
+const BOT_WELCOME = ['방가 방가~ 👋','방가방가 ㅎㅎ','어서오세요~','안녕하세요! 반가워요 ㅎㅎ','{n}님 어서오세요~','{n}님 방가방가 🙌','오 새 손님이다 안녕하세요~','환영해요 {n}님!','반갑습니다~ 같이 들어요 🎶','어서 오세요 😊','안녕하세요~ {n}님 반가워요','오 {n}님 오셨네요 ㅎㅎ','좋은 아침이에요 {n}님~','저녁 시간에 오셨네요, 반가워요 😊','늦은 밤에 오셨네요 어서오세요~','점심 드셨어요? 어서 오세요 ㅎㅎ'];
+const BOT_WELCOME2 = ['저도 방가워요 ㅎㅎ','어서오세요~ 👋','환영해요!','반가워요~','방가 방가 ㅎㅎ','같이 들어요 🎶'];
+let botWelAt = 0;
+window.botWelcome = name => {
+  const key = roomPath(); if (!BOT.on || !botKeyOk(key) || Date.now() - botWelAt < 6000) return;
+  botWelAt = Date.now(); if (!BOT.who.length) botShuffle();
+  const nm = String(name || '').slice(0, 12), fill = t => t.replace(/\{n\}/g, nm || '새');
+  const pool = BOT_WELCOME.filter(botOk).map(fill), w = botWho();
+  const d = 1500 + Math.random() * 3500;
+  BOT.q = []; BOT.next = Math.max(BOT.next, Date.now() + d + 6000);
+  setTimeout(() => { if (BOT.on) botSay(w, botRand(pool), key); }, d);
+  if (Math.random() < 0.5){ const w2 = botWho([w]); setTimeout(() => { if (BOT.on) botSay(w2, botRand(BOT_WELCOME2), key); }, d + 2500 + Math.random() * 4000); }
+};
 window.botUserSaid = text => {
   const key = roomPath();
   if (!BOT.on || !botKeyOk(key)) return;
@@ -2392,7 +2406,7 @@ function memNotify(rid, list){
   const old = memSeen.ks, miss = memSeen.miss;
   Object.keys(cur).forEach(k => {
     delete miss[k];
-    if (k !== myId && !(k in old)) memToast('🟢 ' + cur[k] + '님이 입장했습니다');
+    if (k !== myId && !(k in old)){ memToast('🟢 ' + cur[k] + '님이 입장했습니다'); try { window.botWelcome && window.botWelcome(cur[k]); } catch(_){} }
     old[k] = cur[k];
   });
   Object.keys(old).forEach(k => {
