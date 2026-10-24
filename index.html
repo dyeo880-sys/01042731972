@@ -1488,7 +1488,7 @@ $('chatin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isCom
 // ===== 🤖 가상 손님: 서버·DB·API 비용 없이 이 브라우저 안에서만 도는 대본형 대화 (전체 채팅방 + 음악 방 채팅) =====
 // 모든 가상 손님은 이름 앞에 🤖가 붙고, 미리 정한 대사만 합니다. 다른 접속자 화면에는 전달되지 않습니다.
 // ⚙ 가상 손님 수 표기 설정: 최소·최대(명), 한 번에 오르내리는 폭, 갱신 간격(ms)
-const BOT_CFG = {min: 600, max: 1000, step: 18, every: 3500};
+const BOT_CFG = {min: 5600, max: 6400, step: 40, every: 3500};
 BOT = {msgs: [], on: true, q: [], next: Date.now() + 4000, rnext: Date.now() + 6000, who: [], last: '', recent: [], shuffleAt: 0, key: '', rhist: [], cnt: BOT_CFG.min + Math.floor(Math.random() * (BOT_CFG.max - BOT_CFG.min))};
 try { BOT.on = localStorage.getItem('radio_bots') !== '0'; } catch(e){}
 const BOT_NAMES = ['노을지기','밤하늘별','가을바람','초코우유','라디오팬','새벽감성','LP판돌리기','소나기','달빛산책','커피한잔','구름빵','은행나무','길고양이','동네DJ','비오는날','햇살가득','막걸리한잔','쑥쑥이','레트로맨','별똥별','한강라면','보라돌이','추억소환','청춘열차','오래된라디오','낙엽엔딩','첫눈오면','곰돌이','바람개비','여름밤','휘파람','꿈꾸는나무','따뜻한차','야간비행','모닝커피','은하수','살구나무','종이비행기','기타치는곰','목요일밤','퇴근길','소풍가자','도토리','카세트테이프','감성충전','달콤한밤','라면끓이는','느린우체통','새벽두시','주말농부','배고픈사자','치킨은살아있다','퇴근하고싶다','졸린눈의토끼','라면먹다가','월요일싫어','치맥요정','방구석DJ','늦잠자는곰','붕어빵장인','고구마한입','엄마가부른다','옆집강아지','뒹굴뒹굴','밤샘청취자','귤까는중','야식요정','김치볶음밥','트로트의민족','노래방18번','아재개그왕','웃음폭탄','춤추는감자','오늘도출근','커피수혈중','눈팅전문가','잠깐들렀어요','마음은청춘','소주한잔','국밥러버','떡볶이사랑','달리는거북이','하품하는고래','수다쟁이','라디오중독','이불속라디오','호떡할머니','심야식당','복권당첨꿈','통닭천사','호빵맨','음악먹는하마','반달곰','동동구리무','옛날사람','뽀글머리','쉬는날','내일은맑음','김민준','이서연','박지훈','최수빈','정하늘','한지민','오세훈','윤서진','강민호','송지은','임현우','배수지','신동엽','장미란','서재원','류현주','남궁민','조은별','문성호','홍지수','백승현','안유진','권태준','노은지','양재석','고은숙','마음이고운','품격있는신사','우아한숙녀','온화한미소','단정한아침','맑은샘물','정원사','조용한서재','차분한목소리','따뜻한마음','고요한호수','푸른언덕','빛나는오후','향기로운차','다정한이웃','선한바람','고운하늘','넉넉한웃음','깊은가을','잔잔한강물','은빛물결','소담한하루','평온한저녁','단아한여인','점잖은신사','봄날의햇살','늘푸른소나무','해맑은아침','곱게늙은이','청아한새벽','어진마음','sunny_day','blue_sky77','happy_life','moonlight','dream_girl','nice_guy','cool_breeze','good_vibes','music_lover','sweet_home','little_star','coffee_time','hello_world','radio_star','smile_always','lucky_7','first_love','night_owl','spring_rain','한결같이','행복나무','mj0412','jh_1985','sy_kim','yoon0705','hana_88','가을하늘77','바다사랑','산들바람12','꽃보다할배','맑음이','희망이','소나무집','나그네','행인1','지나가던객','아침해','늦은밤','귀염둥이','믿음소망','솔바람','초록나무','하늘이','바람의노래'];
@@ -1823,14 +1823,16 @@ function botLang(t){
 }
 // 🌏 외국 손님: 영어·일본어·중국어 등 각 나라 말로 대화 (모두 미리 정한 대사만 하는 🤖 봇)
 function botForeign(key){
-  const L = botRand(BOT_FXW), F = BOT_FX[L], nm = F.n.slice().sort(() => Math.random() - 0.5);
+  const L = botRand(BOT_FXW), F = BOT_FX[L], nm = F.n.slice().sort(() => Math.random() - 0.5), live = botIsLive(key), gn = !!BOT_G[L];
   let gap;
   if (Math.random() < 0.5){
-    let sc = botRand(F.s), tries = 0; while (BOT.recent.includes(sc[0][1]) && tries++ < 6) sc = botRand(F.s);
+    const pk = () => (gn && Math.random() < 0.6) ? botGenScript(L, live) : botRand(F.s);
+    let sc = pk(), tries = 0; while (BOT.recent.includes(sc[0][1]) && tries++ < 6) sc = pk();
     sc.forEach((l, i) => { if (i === 0) botSay(nm[l[0]], l[1], key); else BOT.q.push([nm[l[0]], l[1]]); });
     gap = 2500 + (sc[1] ? sc[1][1].length * 170 : 0) + Math.random() * 4500;
   } else {
-    let t = botRand(F.l), tries = 0; while (BOT.recent.includes(t) && tries++ < 8) t = botRand(F.l);
+    const pl = () => (gn && Math.random() < 0.6) ? botGenLine(L, live) : botRand(F.l);
+    let t = pl(), tries = 0; while (BOT.recent.includes(t) && tries++ < 8) t = pl();
     botSay(nm[0], t, key); gap = 6000 + Math.random() * 14000;
   }
   if (Math.random() < 0.25) BOT.q.push([botWho(), botRand(BOT_FX_KO)]);   // 한국 손님이 반갑게 인사
@@ -1846,11 +1848,55 @@ function botForeignReply(text, L, key){
   if (cat !== 'bot' && Math.random() < 0.3) setTimeout(() => { if (BOT.on) botSay(botWho(), botRand(BOT_FX_KO), key); }, d1 + 3000 + Math.random() * 6000);
   return true;
 }
+
+// 🧩 조합형 대화 생성기: 말 조각(음식·장소·날씨·기분·음악 장르·도시…)을 섞어 수만 가지 문장·대화를 만듦 (모두 미리 정한 조각만 쓰는 🤖 가상 손님)
+const BOT_G = {"ko":{"o":["","","","아 ","헐 ","와 ","오 ","근데 ","갑자기 ","진짜 ","음 ","있잖아요 "],"e":[""," ㅎㅎ"," ㅋㅋ"," 😊"," ~"," 🎶"," ㅎㅎ 여러분은요?"," 다들 어떠세요?"],"u":[""," ㅎㅎ"," 😊"," 🙂"],"z":[""," ㅎㅎ"," ㅋㅋ"," 😊"," ~"," 👍"],"x":["오 ","와 ","헐 ","아 ","오호 ","음 ","ㅎㅎ "],"y":["그렇군요","그랬어요?","진짜요?","맞아요","저도요","공감돼요","좋네요","신기하네요","그럴 수 있죠","대박이네요"],"q":["점심","저녁","아침","야식","간식"],"f":["김치찌개","된장찌개","칼국수","국밥","떡볶이","치킨","피자","라면","삼겹살","비빔밥","순대국","냉면","붕어빵","호떡","군고구마","순두부찌개","짜장면","짬뽕","돈가스","김밥","샌드위치","팥빙수","핫도그","만두"],"p":["버스","지하철","카페","집","회사","학교","공원","차 안","옥상","베란다","도서관","침대","부엌","한강변","동네 산책길","독서실"],"w":["비가 오네요","날씨가 맑네요","바람이 시원하네요","쌀쌀하네요","안개가 꼈네요","하늘이 예쁘네요","눈이 올 것 같아요","햇살이 따뜻하네요","구름이 많네요","공기가 상쾌하네요","좀 덥네요","노을이 예쁘네요"],"m":["기분이 좋아요","마음이 편해요","좀 피곤해요","왠지 설레요","괜히 센치해져요","힘이 나요","졸려요","여유로워요","뿌듯해요","든든해요","나른해요","평화로워요"],"a":["설거지하면서","청소하면서","요리하면서","빨래 개면서","공부하면서","일하면서","운동하면서","산책하면서","책 읽으면서","게임하면서","뜨개질하면서","그림 그리면서","정리하면서","스트레칭하면서","화분 정리하면서","출근 준비하면서","커피 마시면서","라면 끓이면서","샤워하면서","청소기 돌리면서"],"d":[["0|오늘 {q} 뭐 드셨어요?","1|저는 {f1} 먹었어요{z}","2|{f2}요 ㅋㅋ","0|오 {f1} 좋죠 ㅎㅎ 저도 먹고 싶네요"],["0|오늘 {w1}","1|그러게요 {w2}","2|{g1} 들으면 딱이겠어요","0|오 {g1} 한 곡 어때요? ㅎㅎ"],["0|저 지금 {a1} 듣는 중이에요","1|저도 {a2} 듣는 중이에요 ㅎㅎ","2|다들 바쁘게 사시네요 👏"],["0|{g1} 좋아하세요?","1|저는 {g2} 좋아해요","2|{g1}도 좋고 {g2}도 좋죠 ㅎㅎ","0|취향 다양해서 재밌다 ㅋㅋ"],["0|오늘 {m1}","1|저도 {m2} ㅎㅎ","0|노래 들으면서 푹 쉬어요 🎧"],["0|{d1} 마시면서 듣는 중이에요","1|부럽다 저도 {d2} 마셔야겠어요","2|{d3} 한 잔이면 노래가 더 좋아지죠 ㅎㅎ"],["0|다들 어디서 들으세요?","1|저는 {p1}에서요","2|저는 {p2}에서요 ㅎㅎ","0|각자 자리에서 같이 듣는 느낌 좋다"],["0|{f1:이/가} 너무 먹고 싶어요 ㅠㅠ","1|{f2:은/는} 어때요? 저는 {f2:이/가} 땡겨요","2|ㅋㅋ 다 먹고 싶네요 야식 유혹이에요"],["0|{g1} 좋아하는 분 계세요?","1|저요 ㅎㅎ {g1} 들으면 마음이 편해져요","2|저도 요즘 {g1} 자주 들어요","0|오 취향 같은 분들 만났네요 ㅎㅎ"],["0|{p1}에서 듣고 있는데 {w1}","1|저는 {p2}인데 {w2}","2|{w3} 다들 같은 하늘 아래 있네요 ㅎㅎ"],["0|{a1} 들으니까 시간 잘 가네요","1|{g1} 틀어놓고 하면 더 그래요","2|맞아요 저는 {d1} 한 잔 곁들여요 ☕"]],"g":["발라드","트로트","재즈","팝송","클래식","7080 가요","90년대 가요","뽕짝","시티팝","인디 음악","OST","동요","포크송","록"],"t":["{o}{f:이/가} 땡겨요{e}","{o}{f} 먹고 싶다{e}","{o}{p}에서 듣는 중이에요{e}","{o}오늘 {w}{e}","{o}오늘 {m}{e}","{o}{a} 듣는 중이에요{e}","{o}{d} 한 잔 하면서 듣는 중이에요{e}","{o}{g} 땡기는 날이에요{e}","{o}{g} 좋아하시는 분 계세요?{u}","{o}{f} 먹으면서 {d} 마시면 최고죠{e}","{o}{g} 듣다 보니 {m}{e}","{o}{p}에서 {g} 들으니까 {m}{e}","{o}{w}, {g} 생각나네요{e}","{o}{a} 듣기 딱 좋은 방송이에요{e}","{o}오늘 {q} 뭐 드셨어요?{u}","{o}{f1}랑 {f2} 중에 뭐가 더 좋으세요?{u}"],"lt":["방장님 {g} 한 곡만 틀어주세요{u}","이 곡 들으니까 {m}{e}","{p}에서 듣는데 이 곡 진짜 좋네요{e}","이 노래 들으니까 {f:이/가} 생각나요 ㅋㅋ","방장님 {g} 선곡 믿고 있어요 👍","{a} 듣기 딱 좋은 곡이네요{e}","{o}이 곡 {p}에서 들으면 더 좋을 것 같아요{e}"],"r":["{x}{y}{z}"],"ld":[["0|방장님 {g1} 한 곡만 부탁드려요 🙏","1|저도 {g1} 듣고 싶어요 ㅎㅎ","2|{g1} 나오면 바로 박수 칠게요 👏"],["0|이 곡 들으니까 {f1:이/가} 생각나요 ㅋㅋ","1|왜요 ㅋㅋㅋ","0|예전에 이 노래 들으면서 {f1} 먹었거든요","2|추억의 맛이네요 ㅎㅎ"],["0|{p1}에서 듣는데 이 곡 진짜 좋네요","1|저는 {p2}에서 듣는 중이에요","2|어디서든 같이 듣는 느낌 좋다 ☺️"]]},"en":{"o":["","","Hey, ","Honestly, ","Ok so ","Haha ",""],"e":[""," 😊"," 🎶","!"," ✨"," 🙂"],"c":["Seattle","London","Toronto","Sydney","Dublin","Chicago","Manila","Berlin","Austin","Vancouver","Melbourne","Boston"],"w":["sunny","rainy","freezing","cloudy","windy","warm","foggy","pretty chilly","really hot","snowing"],"a":["cooking","working","studying","walking the dog","doing laundry","commuting","cleaning","drawing","driving","jogging","sipping tea","stretching"],"f":["pizza","ramen","tacos","fried chicken","pasta","sushi","kimchi stew","ice cream","pancakes","dumplings","burgers","soup"],"g":["ballads","jazz","classic rock","lo-fi","80s pop","folk","city pop","blues","R&B","soft piano"],"t":["{o}Hello from {c}{e}","{o}it's {w} in {c} right now{e}","{o}Listening while {a}{e}","{o}Now I'm craving {f}{e}","{o}Perfect night for {g}{e}","{o}Good evening from {c}{e}","{o}Anyone else listening to {g} tonight?","{o}Can't stop thinking about {f}{e}","{o}Greetings from {c}, it's {w} here{e}","{o}Radio, {g} and some {f}, what a combo{e}"],"lt":["Please play some {g}, host! 🙏","This one's perfect for {a}{e}","Love this pick{e}","{o}Listening from {c}, this track is great{e}"],"d":[["0|Where is everyone listening from?","1|{c1} here! It's {w1}{e}","2|{c2}, hi everyone 👋","0|Love how global this chat is"],["0|What are you all up to tonight?","1|Just {a1}, you?","0|{a2} for me haha","2|Radio on, perfect combo 🎶"],["0|Anyone craving {f1}?","1|Always! Maybe {f2} though","2|Now I'm hungry, thanks guys 😂"],["0|Any {g1} fans here?","1|Yes! {g1} is my favorite","2|I'm more into {g2}, but I'll take both"]]},"ja":{"o":["","","あ、","わあ、","ふふ、","そういえば、","今日は"],"e":["","😊","🎶","！","✨","〜"],"c":["東京","大阪","札幌","福岡","京都","名古屋","沖縄","仙台","横浜","神戸"],"w":["晴れ","雨","曇り","寒い","暑い","風が強い","涼しい"],"a":["料理しながら","仕事しながら","勉強しながら","散歩しながら","洗濯しながら","通勤しながら","掃除しながら","お茶を飲みながら","ドライブしながら"],"f":["ラーメン","カレー","お寿司","おでん","たい焼き","焼き芋","うどん","餃子","天ぷら","ケーキ"],"g":["バラード","ジャズ","演歌","シティポップ","クラシック","フォーク","ロック","J-POP"],"t":["{o}{c}から聴いています{e}","{o}今日の{c}は{w}です{e}","{o}{a}聴いてます{e}","{o}{f}食べたいな〜{e}","{o}{g}の夜っていいですよね{e}","{o}{g}を聴いてると落ち着きます{e}","{o}{c}は夜になって冷えてきました{e}"],"lt":["{o}マスター、{g}を一曲お願いします🙏","{o}この曲、{a}聴くのにぴったりです{e}","{o}{c}から聴いてます、この曲いいですね{e}"],"d":[["0|みなさんどこから聴いていますか？","1|{c1}です〜","2|私は{c2}から！","0|全国から集まってますね 😊"],["0|今夜は何してますか？","1|{a1}聴いてます","2|私は{a2}聴いてます〜","0|みんな頑張ってますね 👏"],["0|{f1}食べたくなりませんか？","1|わかります！私は{f2}の気分です","2|お腹すいてきた 笑"]]},"zh":{"o":["","","哎，","哈哈，","对了，"],"e":["","😊","🎶","~","✨"],"c":["台北","上海","北京","香港","高雄","成都","广州","新加坡","台中","深圳"],"w":["晴天","下雨","很冷","很热","有点凉","起雾了","刮风"],"a":["做饭","工作","学习","散步","洗衣服","通勤","打扫","喝茶"],"f":["火锅","拉面","饺子","奶茶","烧烤","小笼包","炸鸡","蛋糕"],"g":["民谣","爵士","老歌","流行歌","抒情歌","古典乐","摇滚"],"t":["{o}我在{c}，大家好{e}","{o}{c}今天{w}{e}","{o}一边{a}一边听歌{e}","{o}好想吃{f}{e}","{o}这种{g}真适合晚上听{e}"],"lt":["{o}主持人，来一首{g}吧🙏","{o}我在{c}听，这首太棒了{e}"],"d":[["0|大家都在哪里听呀？","1|我在{c1}~","2|我在{c2}，刚下班","0|真是天南地北都有呢"],["0|今晚你们在做什么？","1|我在{a1}","2|我也是，一边{a2}一边听歌","0|大家都好用心生活 👏"]]},"es":{"o":["","","Uy, ","Jaja, ","Oye, "],"e":[""," 😊"," 🎶","!"," ✨"],"c":["Madrid","Ciudad de México","Buenos Aires","Bogotá","Lima","Santiago","Barcelona","Sevilla"],"w":["hace sol","llueve","hace frío","hace calor","está nublado","hace viento"],"a":["cocinando","trabajando","estudiando","paseando","limpiando","conduciendo","tomando café"],"f":["tacos","paella","empanadas","churros","pizza","helado","tortilla"],"g":["baladas","jazz","boleros","rock","música clásica","pop"],"t":["{o}Saludos desde {c}{e}","{o}Hoy en {c} {w}{e}","{o}Escuchando la radio mientras estoy {a}{e}","{o}Se me antoja {f}{e}","{o}Noche perfecta para {g}{e}"],"lt":["{o}Pon algo de {g}, por favor 🙏","{o}Desde {c}, esta canción es genial{e}"],"d":[["0|¿Desde dónde nos escuchan?","1|Desde {c1}, ¡hola a todos!","2|Yo desde {c2} 👋","0|¡Qué bonito, gente de todo el mundo!"],["0|¿Qué hacen esta noche?","1|Estoy {a1}","2|Yo {a2}, con la radio de fondo 🎶"]]}};
+const botBat = w => { const c = w.charCodeAt(w.length - 1); return c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0; };
+function botFill(s, L, used){
+  return s.replace(/\{([a-z])(\d?)(?::([^\/}]+)\/([^}]*))?\}/g, (m, k, d, j1, j2) => {
+    const key = k + d, arr = L[k]; if (!arr) return '';
+    if (!(key in used)){ let v, n = 0; do { v = botRand(arr); } while (d && n++ < 12 && Object.keys(used).some(kk => kk[0] === k && used[kk] === v)); used[key] = v; }
+    const w = used[key]; return j1 ? w + (botBat(w) ? j1 : j2) : w;
+  });
+}
+function botGenLine(lang, live){ const L = BOT_G[lang]; if (!L) return ''; const pool = (live && L.lt && Math.random() < 0.4) ? L.lt : L.t; return botFill(botRand(pool), L, {}).replace(/^((?:Hey|Honestly|Uy|Jaja|Oye), |Ok so |Haha )([A-Z])(?![A-Z])/, (m, a, c) => a + c.toLowerCase()); }
+function botGenScript(lang, live){
+  const L = BOT_G[lang]; if (!L) return null; const pool = (live && L.ld && Math.random() < 0.4) ? L.ld : L.d, u = {};
+  return botRand(pool).map(x => { const i = x.indexOf('|'); return [+x.slice(0, i), botFill(x.slice(i + 1), L, u)]; });
+}
+window.botGenCount = function(){   // 콘솔에서 botGenCount() 로 조합 가능한 문장·대화 수 확인
+  let tot = 0;
+  const cnt = (strs, L) => { const keys = {}; strs.forEach(s => { (s.match(/\{[a-z]\d?/g) || []).forEach(k => { keys[k.slice(1)] = 1; }); });
+    const by = {}; Object.keys(keys).forEach(k => { (by[k[0]] = by[k[0]] || []).push(k); });
+    let n = 1; Object.keys(by).forEach(k => { const len = (L[k] || ['']).length; for (let i = 0; i < by[k].length; i++) n *= Math.max(1, len - i); }); return n; };
+  Object.keys(BOT_G).forEach(l => { const L = BOT_G[l]; (L.t || []).concat(L.lt || [], L.r || []).forEach(s => { tot += cnt([s], L); }); (L.d || []).concat(L.ld || []).forEach(d => { tot += cnt(d, L); }); });
+  return tot;
+};
+
+// 🎭 별난 손님: 술 취한 사람·한자만 쓰는 사람·계속 웃는 사람·양반 흉내·고양이 말투·사투리·DJ 병·중2병·초성만 쓰는 사람·이모티콘 폭격·먹방러 (모두 미리 정한 조각만 쓰는 🤖 가상 손님)
+const BOT_PQ = [{"nm":"취한곰돌이","mu":1,"o":["","","어? ","아니 ","야 ","저기여 ","잠깐만여 ","있잖아여 "],"e":["딸꾹","딸꾹 ㅎㅎ","헤헤","으흐흐","우웅","어헝","캬~","크으","에헤헤","히끅"],"d":["소주","맥주","막걸리","소맥","와인","하이볼"],"s":["오늘은 내가 쏜다","내가 말이야 한잔했는데 말이야","노래 조오타아","여러분 사랑해여","집에 가야 되는데 가기 시러","나 안 취했어여","아까 그 친구가 뭐라 했냐면","이 노래 들으니까 눈물나여","세상은 아름다워여","사장님 여기 노래 한 곡 더요","다들 내 말 들어봐여","오늘 월급날이라 기분이 조오아","우리 모두 친구야","내가 누구게여","택시 불러야 되나","소주가 달아여 오늘따라","방송국 사람들 다 내 동생이야","내일 후회할 거 알지만 지금은 행복해여","나 목소리 좋지 않아여? 노래 한 곡 할까여","근데 여기 어디예여"],"t":["{o}{s} {e}","{o}{s}... {s2} {e}","{o}{d} 한 잔만 더 {e}","{o}{s}~ {e} {e2}"],"rx":["또 취하셨네요 ㅋㅋ","물 드세요 💧","어서 집에 가세요 ㅋㅋㅋ","내일 출근 어쩌려고요 ㅠㅠ","취중진담 인정합니다 ㅋㅋ","택시 타고 가세요~","귀여우시다 ㅋㅋ"],"r":["네에~ 맞아여 {e}","그쵸오 내 말이 그 말이야여 {e}","{s} {e}","{d} 한 잔 하실래여? {e}"]},{"nm":"漢字박사","e":["","","~","!"],"t":["今日 {h}, 참으로 {j}하도다{e}","各位의 健康과 幸福을 祈願합니다{e}","{h} 鑑賞에 時間 가는 줄 모르겠소{e}","此曲은 {j}하니 感動이 {j2}하도다{e}","晝夜로 {h} 들으니 人生이 {j}하다{e}","故鄕의 {h} 그립도다{e}","諸位 {j}한 하루 되시옵소서{e}","오늘도 無事히 一日을 마쳤으니 感謝할 따름이오{e}","{h}과 {h2}이 어우러지니 實로 絶景이로다{e}","此處의 雰圍氣는 {j}하여 마음이 便安하구나{e}","聽取者 諸賢께 感謝드립니다{e}"],"rx":["한자 박사님 오셨네요 ㅋㅋ","와 한자 하나도 못 읽겠어요 ㅠㅠ","뜻이 뭐예요?? ㅋㅋ","국어사전 켜야겠다 ㅋㅋㅋ","대단하세요 👏","선생님 한글로 써주세요 ㅎㅎ"],"r":["貴下의 말씀에 同感합니다{e}","然也, 그러하도다","참으로 {j}한 말씀이오{e}","感謝합니다{e}","萬事 好事多魔라 하였으니 즐겁게 들으소서"],"h":["音樂","放送","夜景","秋風","月光","雨聲","夕陽","詩","歌謠","演奏"],"j":["平安","淸明","風流","安寧","幸福","浪漫","悠悠","閑暇"],"mu":0},{"nm":"하하하호호","mu":1,"l":["ㅋㅋㅋㅋㅋ","ㅎㅎㅎㅎ","하하하하하","ㅋㅋㅋ","ㅋㅋㅋㅋㅋㅋㅋ","크크크크","푸하하하","히히히","ㅎㅎㅎㅎㅎㅎ","킥킥킥","ㅋㅋㅋㅋㅋㅋㅋㅋㅋ","우하하하"],"m":["아 진짜","근데","와 이거","방금 그 말","나 지금","갑자기 생각나서","아 배아파","웃음이 안 멈춰요","아니 왜 웃긴지 모르겠는데","여기 채팅방","아 눈물나","저 혼자 웃고 있어요","어떡해","이 노래 가사가"],"t":["{l1}","{l1} {m} {l2}","{m} {l1}","{l1} {m}","{l1}{l2}","{m}... {l1}"],"rx":["ㅋㅋㅋ 웃음 전염돼요","같이 웃어요 ㅋㅋ","웃음소리 들려요 ㅎㅎ","이분 웃음 부자세요 ㅋㅋ","저도 덩달아 웃음 ㅋㅋㅋ"],"r":["{l1}","{l1} 맞아요 {l2}","{l1} 진짜요? {l2}","{m} {l1}"]},{"nm":"자칭양반","o":["","","허허, ","어험, ","에헴, ","험험, "],"e":["",""," 어험"," 허허"," 껄껄"],"f":["국밥","칼국수","떡볶이","순대","삼겹살","비빔밥","냉면","김밥"],"d":["막걸리","소주","대추차","식혜","맥주"],"t":["{o}이리 오너라, 이 방송은 누가 틀었는고{e}","{o}그대들은 뉘시오? 이 소생은 한양 양반이외다{e}","{o}참으로 흥겹구려, 한 곡조 더 청하오{e}","{o}어허, 요즘 것들은 노래를 모르는구먼{e}","{o}소생 오늘 {f} 한 그릇에 {d} 한 잔 하였소이다{e}","{o}이 몸이 비록 가난하나 풍류만은 아는 사람이오{e}","{o}음악이 구성지니 시름이 사라지는구려{e}","{o}여봐라, 볼륨을 좀 올리거라{e}","{o}쯧쯧 근본 없는 노래로다... 근데 좋구려{e}","{o}이 소생의 가문은 대대로 라디오를 들어온 집안이오{e}","{o}내 오늘 그대들과 한 곡조 나누고 싶소{e}","{o}어험, 닉네임이 참으로 범상치 않구려{e}","{o}{f}이라... 양반이 먹을 것은 아니나 맛은 좋더이다{e}"],"rx":["양반님 오셨네요 ㅋㅋ","나리 안녕하십니까 ㅎㅎ","쇤네 문안 아뢰옵니다 ㅋㅋ","도령님 반갑소이다 ㅎㅎ","어르신 사극 찍으시네요 ㅋㅋ"],"r":["{o}그러하오{e}","{o}그대의 말에 일리가 있소{e}","{o}허허 참으로 좋은 말씀이오{e}","{o}소생도 동감이외다{e}"],"mu":0},{"nm":"냥냥펀치","mu":1,"s":["노래 좋다","배고프다","졸려","오늘 날씨 좋다","간식 먹고 싶다","집사 어디 갔냐","햇볕 쬐고 싶다","박스에 들어가고 싶다","창밖 구경 중이다","이 노래 골골송 같다","츄르 먹고 싶다","낮잠 자야지","방금 책상 위 컵 떨어뜨렸다"],"n":["냥","다냥","냥냥","옹","야옹"],"c":["🐱","🐾","😺","","😸"],"t":["{s}{n} {c}","{s}{n}... {c}","{s}{n} {s2}{n2} {c}"],"rx":["귀여워 ㅋㅋ","냥이님 안녕 🐱","집사님이신가요 ㅋㅋ","야옹~ 🐾","츄르 드릴게요 ㅋㅋ"],"r":["맞다냥 {c}","그렇다냥 🐾","잘 모르겠다냥 ㅋㅋ","{s}{n} {c}"]},{"nm":"사투리대장","f":["국밥","치킨","칼국수","떡볶이","삼겹살","수제비","냉면","순대"],"e":[""," ㅋㅋ"," ㅎㅎ"," 😊"],"t":["마 이 노래 억수로 좋네예{e}","아이고 뭐라카노 ㅋㅋ","밥은 묵었나?","와 이리 좋노{e}","오늘 날씨 와이리 춥노{e}","아따 노래 징하게 좋당께{e}","거시기 그 노래 뭐시기냐{e}","워메 오늘 날씨 환장하겄네{e}","밥은 묵었능가?{e}","노래 참 좋네유~{e}","그랬슈? 괜찮은규{e}","천천히 하셔유{e}","혼저 옵서예~{e}","노래 하영 좋수다{e}","경 햄수다예{e}","{f} 묵고 싶다 아이가{e}","{f} 먹고잡소잉{e}","{f} 땡기네유~{e}","{f} 하영 먹고 싶수다{e}"],"rx":["사투리 정겹네요 ㅎㅎ","어디 분이세요? ㅋㅋ","사투리 들으니까 고향 생각나요","구수하다 ㅋㅋ"],"r":["맞고요~","그렇고말고요","와 그라노 ㅋㅋ","그랬슈~","아따 그라제잉","맞수다예"],"mu":0},{"nm":"별밤DJ지망생","w":["날씨는 맑음","비 소식이 있고","쌀쌀한 바람이 불고","별이 빛나는 밤"],"q":["저녁 아홉 시","밤 열 시","새벽 한 시","오후 세 시","아침 일곱 시","점심시간","퇴근길"],"g":["발라드","트로트","재즈","팝송","7080 가요","시티팝"],"t":["안녕하세요 지금은 {q}, {w}입니다","여러분 {q}의 라디오 시간입니다 이 곡 들려드릴게요","사연 보내주신 분께 감사드립니다 이어서 한 곡 듣고 오시죠","자 그럼 광고 듣고 오겠습니다 ㅋㅋ","오늘의 선곡 {g:으로/로} 시작해 보겠습니다","청취자 여러분 좋은 밤 되세요","지금까지 {q} 방송이었습니다","채널 고정해주세요 여러분","오늘의 첫 곡 들려드립니다"],"rx":["DJ님 오셨네요 ㅋㅋ","오프닝 멘트 좋아요 👏","진짜 라디오 같아요 ㅎㅎ","신청곡 받으시나요 DJ님? ㅋㅋ"],"r":["사연 감사합니다 청취자님 ㅎㅎ","오 좋은 말씀이네요 청취자님","다음 곡 이어서 듣겠습니다","{g} 한 곡 바로 들려드릴게요"],"mu":0},{"nm":"封印된왼손","e":[""," ...후"," 크큭"," 🌑"],"t":["내 안의 어둠이 깨어난다...{e}","후후... 이 노래 나쁘지 않군{e}","내 오른손이 疼痛한다...{e}","이 세계의 법칙은 내게 통하지 않는다{e}","봉인이 풀리기 전에 이 노래를 끝까지 들어야 한다{e}","나는 어둠의 청취자... 그림자 속에서 듣고 있다{e}","내 왼눈이 이 멜로디에 반응한다{e}","이 곡은... 전설의 시작이다{e}","후후, 평범한 인간들이여 노래나 즐겨라{e}","시간이 멈춘 듯한 이 느낌... 신기하군{e}","나의 흑염룡이 잠에서 깨고 있다{e}"],"rx":["ㅋㅋㅋ 중2병 오셨네요","흑역사 생성 중이시네요 ㅋㅋ","저도 한때 그랬어요 ㅋㅋ","왼손 괜찮으세요? ㅋㅋㅋ","멋있어요 ㅋㅋ(?)"],"r":["후후... 그대의 말도 일리가 있군{e}","크큭, 흥미로운 인간이로군","그건 운명이다...{e}"],"mu":0},{"nm":"ㅇㅈㄹㅇ","mu":1,"s":["ㅇㅈ ㅋㅋ","ㄹㅇ 노래 좋음 ㅋㅋ","ㅇㅇ 인정","ㄱㅅ ㅎㅎ","ㅂㅂ","ㅇㅋ","ㅊㅋㅊㅋ","ㅈㅅ","ㄱㄷ 노래 좋다","ㅎㅇ","ㅇㅈㅇㅈ","ㄴㄴ 그건 아님 ㅋㅋ","ㅇㅇ ㄱㅅ","ㄱㅊ ㅎㅎ","ㄹㅇㅋㅋ"],"t":["{s}","{s} {s2}","{s}{s2}"],"rx":["ㅋㅋㅋ 초성 해독 중","ㅇㅈ이 뭔지 알겠다 ㅋㅋ","무슨 뜻이에요 ㅋㅋㅋ","해독하는 데 시간 걸려요 ㅎㅎ"],"r":["{s}","{s} {s2}"]},{"nm":"이모티콘폭격","mu":1,"i":["🎉","🎶","😆","👏","🔥","💃","🥳","😍","🎵","✨","🌈","💖"],"s":["노래 좋다","여러분 안녕","오늘도 파이팅","신난다","분위기 최고","사랑해요","음악 최고","행복하다","대박","좋은 하루"],"t":["{i1}{i2}{i3} {s} {i4}{i5}","{i1}{i2} {s} {i3}{i4}{i5}{i6}","{s} {i1}{i2}{i3}{i4}"],"rx":["이모티콘 폭격 ㅋㅋ","화면이 반짝반짝 ✨","기분 좋아지네요 ㅎㅎ","이모티콘 부자시네요 ㅋㅋ"],"r":["{i1}{i2} {s} {i3}{i4}","{s} {i1}{i2}{i3}"]},{"nm":"먹방요정","f":["치킨","피자","떡볶이","삼겹살","라면","족발","보쌈","마라탕","돈가스","짜장면"],"d":["콜라","맥주","사이다","소주"],"t":["방금 {f} 시켰어요","지금 {f} 먹는 중인데 {d} 없으니 아쉬워요","{f} 먹고 {f2} 또 먹을 거예요","배달 {k} 걸린대요 기다리는 중 ㅠㅠ","{f} 한 입만 먹어볼래요?","내일은 {f} 먹을 거예요 오늘은 {f2}","{f} 바삭바삭 소리 들리세요? ㅎㅎ","다이어트는 내일부터 {f} 먹고 시작"],"rx":["먹방 중이시네요 ㅋㅋ","저도 배고파졌어요 ㅠㅠ","야식 테러다 ㅋㅋㅋ","무슨 맛이에요? ㅎㅎ"],"r":["{f} 같이 드실래요? ㅎㅎ","저는 {f}에 {d} 조합 좋아해요","{f} 생각나서 배고파요 ㅠㅠ"],"k":["30분","한 시간","40분","20분"],"mu":0}];
+const botIsPQ = n => BOT_PQ.some(p => p.nm === n);
+function botPersona(key){
+  const on = BOT_PQ.filter(p => BOT.who.includes(p.nm)), p = botRand(on.length ? on : BOT_PQ);
+  botSay(p.nm, botFill(botRand(p.t), p, {}), key);
+  if (p.mu && Math.random() < 0.5){ const n = 1 + Math.floor(Math.random() * 2); for (let i = 0; i < n; i++) BOT.q.push([p.nm, botFill(botRand(p.t), p, {})]); }
+  if (Math.random() < 0.4) BOT.q.push([botWho([p.nm]), botRand(p.rx)]);   // 다른 손님이 한마디 얹음
+  return 5000 + Math.random() * 14000;
+}
+function botPersonaReply(text, key){
+  if (BOT_RULES[0][0].test(text) || Math.random() > 0.2) return false;
+  const on = BOT_PQ.filter(p => BOT.who.includes(p.nm)); if (!on.length) return false;
+  const p = botRand(on), line = botFill(botRand(p.r), p, {});
+  const d1 = 2500 + Math.min(text.length, 40) * 60 + line.length * 100 + Math.random() * 5000;
+  BOT.q = []; BOT.next = Date.now() + d1 + 6000;
+  setTimeout(() => { if (BOT.on) botSay(p.nm, line, key); }, d1);
+  return true;
+}
 function botBtn(){ const b = $('botbtn'); if (!b) return; let plain = false; try { plain = localStorage.getItem('radio_bots_plain') === '1'; } catch(e){}
   b.textContent = plain ? (BOT.on ? '👥 접속 중 ' + BOT.cnt + '명' : '👥 조용히') : (BOT.on ? '🤖 가상 손님 ' + BOT.cnt + '명' : '🤖 가상 손님 꺼짐'); b.title = '가상 손님 수는 실제 접속자가 아닌 가상 숫자입니다. 미리 정해 둔 대사·반응만 하는 봇이며 이 기기에서만 보입니다 (누르면 켜고 끕니다)'; }
 function botShuffle(){
   const pool = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
-  BOT.who = pool.slice(0, 8 + Math.floor(Math.random() * 7)); BOT.shuffleAt = Date.now() + 180000 + Math.random() * 120000; botBtn();
+  BOT.who = pool.slice(0, 8 + Math.floor(Math.random() * 7)).concat(BOT_PQ.map(p => p.nm).sort(() => Math.random() - 0.5).slice(0, 2 + Math.floor(Math.random() * 3))); BOT.shuffleAt = Date.now() + 180000 + Math.random() * 120000; botBtn();
 }
 // 🔘 방의 「토론 반응」 버튼(💯100점·👏박수·🔥불꽃·😂웃김·🤔의문·😮놀람)을 누른 것처럼 화면에 이모지가 떠오름 (집계 숫자·찬반 투표에는 넣지 않음)
 const BOT_REACT = ['100','100','100','clap','clap','clap','fire','fire','lol','lol','wow','hmm'];
@@ -1880,7 +1926,7 @@ function botSay(name, text, key){
   if (Math.random() < 0.4){ const k = botReactFor(text); if (k){ const w = botWho([name]); setTimeout(() => botReact(w, k), 900 + Math.random() * 1500); } }
 }
 function botWho(not){
-  const c = BOT.who.filter(n => n !== BOT.last && !(not || []).includes(n)), base = c.length ? c : BOT.who, w = [];
+  const nw = BOT.who.filter(n => !botIsPQ(n)), c = nw.filter(n => n !== BOT.last && !(not || []).includes(n)), base = c.length ? c : nw, w = [];
   base.forEach(n => { for (let i = botTrait(n); i > 0; i--) w.push(n); });   // 수다쟁이 3칸 · 보통 2칸 · 과묵 1칸
   return botRand(w);
 }
@@ -1900,16 +1946,19 @@ function botTick(){
     if (Math.random() < 0.15) gap += 4000 + Math.random() * 7000;
     if (Math.random() < 0.12) gap = 1200 + Math.random() * 1000;   // 가끔은 바로 받아침
   }
-  else if (Math.random() < 0.22){ gap = botForeign(key); }
+  else if (Math.random() < 0.05){ gap = botForeign(key); }   // 외국 손님은 전체의 약 5% (1000명 중 50명 정도)
+  else if (Math.random() < 0.3){ gap = botPersona(key); }
   else if (Math.random() < 0.5){
     const src = (live && Math.random() < 0.6) ? BOT_LIVE_SCRIPTS : BOT_SCRIPTS;
-    let sc = botRand(src), tries = 0; while (BOT.recent.includes(sc[0][1]) && tries++ < 6) sc = botRand(src);
+    const pk = () => Math.random() < 0.6 ? botGenScript('ko', live) : botRand(src);
+    let sc = pk(), tries = 0; while (BOT.recent.includes(sc[0][1]) && tries++ < 6) sc = pk();
     const a = [botWho()]; a.push(botWho(a)); a.push(botWho(a));
     sc.forEach((l, i) => { if (i === 0) botSay(a[l[0]], l[1], key); else BOT.q.push([a[l[0]], l[1]]); });
     gap = 2500 + (sc[1] ? sc[1][1].length * 170 : 0) + Math.random() * 4500;
   } else {
     const src = Math.random() < 0.3 ? botTimeLines() : ((live && Math.random() < 0.6) ? BOT_LIVE_LINES : BOT_LINES);
-    let t = botRand(src), tries = 0; while (BOT.recent.includes(t) && tries++ < 8) t = botRand(src);
+    const pl = () => Math.random() < 0.6 ? botGenLine('ko', live) : botRand(src);
+    let t = pl(), tries = 0; while (BOT.recent.includes(t) && tries++ < 8) t = pl();
     botSay(botWho(), t, key);
     gap = 7000 + Math.random() * 20000;                      // 말 사이 간격이 일정하지 않게
     if (Math.random() < 0.2) gap += 15000 + Math.random() * 25000;   // 가끔은 한동안 조용
@@ -1944,10 +1993,11 @@ window.botUserSaid = text => {
   if (!BOT.on || !botKeyOk(key)) return;
   if (!BOT.who.length) botShuffle();
   const fl = botLang(text); if (fl && BOT_FX[fl]){ botForeignReply(text, fl, key); return; }
+  if (botPersonaReply(text, key)) return;
   let pool = null; for (const r of BOT_RULES){ if (r[0].test(text)){ pool = r[1]; break; } }
   if (!pool){ if (Math.random() < 0.35) return; pool = BOT_FALLBACK; }
   BOT.q = []; BOT.next = Date.now() + 10000;
-  const w = botWho(), line = botRand(pool);
+  const w = botWho(), line = (pool === BOT_FALLBACK && Math.random() < 0.6) ? botFill(botRand(BOT_G.ko.r), BOT_G.ko, {}) : botRand(pool);
   // 읽고 → 생각하고 → 타자 치는 시간: 사용자 글 길이·답 길이에 비례, 가끔은 한참 뒤에 답함
   let d1 = 2500 + Math.min(text.length, 40) * 60 + line.length * 120 + Math.random() * 5500;
   if (Math.random() < 0.2) d1 += 5000 + Math.random() * 8000;
@@ -1975,7 +2025,7 @@ function botAdmShow(){
   b.hidden = !a;
 }
 botAdmShow(); setInterval(botAdmShow, 1000);
-// 가상 손님 수 표기: 600~1000명 사이에서 조금씩 오르내림 (실제 접속자 수와는 무관한 가상 숫자)
+// 가상 손님 수 표기: 5600~6400명(약 6000명) 사이에서 조금씩 오르내림 (실제 접속자 수와는 무관한 가상 숫자)
 function botCountTick(){
   if (!BOT.on) return;
   const C = BOT_CFG, edge = (C.max - C.min) * 0.1;
