@@ -1366,7 +1366,7 @@ function renderChat(forceBottom){
   const near = forceBottom === true || log.scrollHeight - log.scrollTop - log.clientHeight < 40;
   log.innerHTML = '';
   let all = chat.concat(pending);
-  try { if (BOT && BOT.on && BOT.msgs.length && roomPath() === 'lobby'){ all = all.concat(BOT.msgs); all.sort((a, b) => (a.ts || 0) - (b.ts || 0)); } } catch(e){}   // 🤖 가상 손님(이 기기에서만)
+  try { const bk = roomPath(); if (BOT && BOT.on && BOT.msgs.length && botKeyOk(bk)){ const bm = BOT.msgs.filter(m => m.r === bk); if (bm.length){ all = all.concat(bm); all.sort((a, b) => (a.ts || 0) - (b.ts || 0)); } } } catch(e){}   // 🤖 가상 손님(이 기기에서만)
   all = all.filter(c => !isBlockedMsg(c));
   if (!all.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
   const isDmRoom = $('room').value.indexOf('u:') === 0;
@@ -1478,9 +1478,11 @@ async function sendChat(){
 }
 $('chatsend').onclick = sendChat;
 $('chatin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) sendChat(); });
-// ===== 🤖 가상 손님: 서버·DB·API 비용 없이 이 브라우저 안에서만 도는 대본형 대화 (전체 채팅방 전용) =====
+// ===== 🤖 가상 손님: 서버·DB·API 비용 없이 이 브라우저 안에서만 도는 대본형 대화 (전체 채팅방 + 음악 방 채팅) =====
 // 모든 가상 손님은 이름 앞에 🤖가 붙고, 미리 정한 대사만 합니다. 다른 접속자 화면에는 전달되지 않습니다.
-BOT = {msgs: [], on: true, q: [], next: Date.now() + 4000, who: [], last: '', recent: [], shuffleAt: 0};
+// ⚙ 가상 손님 수 표기 설정: 최소·최대(명), 한 번에 오르내리는 폭, 갱신 간격(ms)
+const BOT_CFG = {min: 600, max: 1000, step: 18, every: 3500};
+BOT = {msgs: [], on: true, q: [], next: Date.now() + 4000, rnext: Date.now() + 6000, who: [], last: '', recent: [], shuffleAt: 0, key: '', rhist: [], cnt: BOT_CFG.min + Math.floor(Math.random() * (BOT_CFG.max - BOT_CFG.min))};
 try { BOT.on = localStorage.getItem('radio_bots') !== '0'; } catch(e){}
 const BOT_NAMES = ['노을지기','밤하늘별','가을바람','초코우유','라디오팬','새벽감성','LP판돌리기','소나기','달빛산책','커피한잔','구름빵','은행나무','길고양이','동네DJ','비오는날','햇살가득','막걸리한잔','쑥쑥이','레트로맨','별똥별','한강라면','보라돌이','추억소환','청춘열차','오래된라디오','낙엽엔딩','첫눈오면','곰돌이','바람개비','여름밤','휘파람','꿈꾸는나무','따뜻한차','야간비행','모닝커피','은하수','살구나무','종이비행기','기타치는곰','목요일밤','퇴근길','소풍가자','도토리','카세트테이프','감성충전','달콤한밤','라면끓이는','느린우체통','새벽두시','주말농부'];
 const BOT_SCRIPTS = [
@@ -1499,7 +1501,15 @@ const BOT_SCRIPTS = [
   [[0,'커피 한 잔 하면서 듣는 중'],[1,'부럽다 ☕'],[0,'같이 마셔요 ㅎㅎ']],
   [[0,'오늘 하루 어땠어요?'],[1,'평범했어요 ㅎㅎ'],[2,'저는 좀 피곤했어요'],[0,'음악 들으면서 푹 쉬세요']]
 ];
+const BOT_LIVE_SCRIPTS = [   // 음악 방 안에서
+  [[0,'이 노래 제목이 뭐예요?'],[1,'화면 위쪽에 제목 나와요 ㅎㅎ'],[0,'아 감사해요!']],
+  [[0,'방장님 선곡 센스 있네요 👍'],[1,'인정ㅋㅋ 취향 저격이에요'],[2,'다음 곡도 기대돼요']],
+  [[0,'이 노래 오랜만에 듣네요'],[1,'저도요 예전에 많이 들었는데'],[2,'추억 돋는다 ㅎㅎ']],
+  [[0,'소리 잘 들리세요?'],[1,'네 잘 들려요~'],[2,'저도 괜찮아요 👌']],
+  [[0,'여기 음악 방 처음 들어와 봤어요'],[1,'어서 오세요! 편하게 들으세요 ㅎㅎ'],[0,'분위기 좋네요']]
+];
 const BOT_LINES = ['안녕하세요~','다들 어디서 들으세요?','노래 좋다 🎶','ㅎㅎ','이 곡 오랜만에 듣네요','라디오 켜놓고 일하는 중이에요','오늘도 수고했어요 👏','배고프다...','날씨가 쌀쌀해졌어요','가을 노래 추천해주세요','이어폰 끼고 듣는 중 🎧','추억의 노래 들으니까 기분 좋네요','음악 방 구경 중이에요','오늘 분위기 좋다','ㅋㅋㅋ','졸리다...','따뜻한 차 마시면서 듣는 중','이 방송국 처음 들어봐요','볼륨 살짝 올렸어요','여러분 좋은 하루 보내세요 ☀️','저 이 노래 알아요!','가사가 너무 좋다','저녁에 듣기 딱 좋네요','누구 신청곡이에요? ㅎㅎ','오랜만에 들어왔어요','라디오 감성 최고'];
+const BOT_LIVE_LINES = ['이 노래 너무 좋아요','선곡 취향 저격이에요 👍','오 이 곡 오랜만이다','다음 곡도 기대돼요','음질 좋네요','방 분위기 좋아요 ㅎㅎ','신청곡 받나요?','방장님 최고 👏','이 부분 좋다...','같이 듣는 사람 많네요'];
 const BOT_RULES = [
   [/\bai\b|봇|로봇|사람이야|사람이세요|사람이니|가짜|알바|진짜야/i, ['저는 🤖 가상 손님이에요. 미리 정해진 말로만 대화하는 봇이라서 진짜 사람은 아니에요 ㅎㅎ','맞아요, 저는 가상 손님 봇이에요 🤖']],
   [/안녕|ㅎㅇ|하이|반가|처음/, ['안녕하세요! 어서 오세요 ㅎㅎ','반가워요~ 🙌','안녕하세요~ 편하게 들으세요']],
@@ -1513,52 +1523,106 @@ const BOT_RULES = [
 ];
 const BOT_FALLBACK = ['그렇군요 ㅎㅎ','오 맞아요~','ㅎㅎ 좋네요','그쵸 ㅋㅋ','저도 그렇게 생각해요'];
 const botRand = a => a[Math.floor(Math.random() * a.length)];
-function botBtn(){ const b = $('botbtn'); if (!b) return; b.textContent = BOT.on ? '🤖 가상 손님 ' + BOT.who.length + '명' : '🤖 가상 손님 꺼짐'; b.title = '가상 손님은 미리 정해 둔 대사만 하는 봇입니다 (이 기기에서만 보이며, 누르면 켜고 끕니다)'; }
+const botKeyOk = k => k === 'lobby' || String(k).indexOf('live_') === 0;
+const botIsLive = k => String(k).indexOf('live_') === 0;
+function botBtn(){ const b = $('botbtn'); if (!b) return; b.textContent = BOT.on ? '🤖 가상 손님 ' + BOT.cnt + '명' : '🤖 가상 손님 꺼짐'; b.title = '가상 손님 수는 실제 접속자가 아닌 가상 숫자입니다. 미리 정해 둔 대사·반응만 하는 봇이며 이 기기에서만 보입니다 (누르면 켜고 끕니다)'; }
 function botShuffle(){
   const pool = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
   BOT.who = pool.slice(0, 8 + Math.floor(Math.random() * 7)); BOT.shuffleAt = Date.now() + 180000 + Math.random() * 120000; botBtn();
 }
-function botSay(name, text){
-  const now = Date.now(); BOT.last = name; BOT.recent.push(text); BOT.recent = BOT.recent.slice(-24);
-  BOT.msgs.push({n: name, t: text, ts: now, k: 'bot', bot: 1});
-  BOT.msgs = BOT.msgs.filter(m => now - m.ts < 600000).slice(-25);
-  if (roomPath() === 'lobby') renderChat();
+// 🔘 방의 「토론 반응」 버튼(💯100점·👏박수·🔥불꽃·😂웃김·🤔의문·😮놀람)을 누른 것처럼 화면에 이모지가 떠오름 (집계 숫자·찬반 투표에는 넣지 않음)
+const BOT_REACT = ['100','100','100','clap','clap','clap','fire','fire','lol','lol','wow','hmm'];
+function botReact(name, kind){
+  try {
+    if (!BOT.on || !liveRoom || typeof rxFloat !== 'function') return;
+    let k = kind;
+    if (!k){   // 같은 버튼만 계속 누르면 티가 나므로 최근 3번과 겹치지 않게 섞음
+      let tries = 0; do { k = botRand(BOT_REACT); } while (BOT.rhist.slice(-2).includes(k) && tries++ < 12);
+    }
+    BOT.rhist.push(k); BOT.rhist = BOT.rhist.slice(-6);
+    rxFloat(k, '🤖' + name);
+  } catch(e){}
+}
+function botReactFor(text){   // 대사 내용에 어울리는 버튼
+  if (/ㅋㅋ|ㅎㅎ|웃/.test(text)) return 'lol';
+  if (/\?|뭐예요|있어요/.test(text)) return 'hmm';
+  if (/최고|취향|좋아요|좋다|센스|기대|👍|👏/.test(text)) return botRand(['100','clap','fire']);
+  if (/오랜만|추억|처음/.test(text)) return botRand(['wow','clap']);
+  return '';
+}
+function botSay(name, text, key){
+  const now = Date.now(); key = key || roomPath(); BOT.last = name; BOT.recent.push(text); BOT.recent = BOT.recent.slice(-24);
+  BOT.msgs.push({n: name, t: text, ts: now, k: 'bot', bot: 1, r: key});
+  BOT.msgs = BOT.msgs.filter(m => now - m.ts < 600000).slice(-40);
+  if (roomPath() === key) renderChat();
+  if (botIsLive(key) && Math.random() < 0.4){ const k = botReactFor(text); if (k){ const w = botWho([name]); setTimeout(() => botReact(w, k), 900 + Math.random() * 1500); } }
 }
 function botWho(not){ const c = BOT.who.filter(n => n !== BOT.last && !(not || []).includes(n)); return botRand(c.length ? c : BOT.who); }
 function botTick(){
-  if (!BOT.on || document.hidden || roomPath() !== 'lobby') return;
-  const now = Date.now(); if (now < BOT.next) return;
+  const key = roomPath();
+  if (!BOT.on || document.hidden || !botKeyOk(key)) return;
+  const now = Date.now();
+  if (BOT.key !== key){ BOT.key = key; BOT.q = []; BOT.next = now + 3000; return; }
+  if (now < BOT.next) return;
   if (!BOT.who.length || now > BOT.shuffleAt) botShuffle();
-  let gap;
-  if (BOT.q.length){ const s = BOT.q.shift(); botSay(s[0], s[1]); gap = 3000 + Math.random() * 4000; }
+  const live = botIsLive(key); let gap;
+  if (BOT.q.length){ const s = BOT.q.shift(); botSay(s[0], s[1], key); gap = 3000 + Math.random() * 4000; }
   else if (Math.random() < 0.5){
-    let sc = botRand(BOT_SCRIPTS), tries = 0; while (BOT.recent.includes(sc[0][1]) && tries++ < 6) sc = botRand(BOT_SCRIPTS);
+    const src = (live && Math.random() < 0.6) ? BOT_LIVE_SCRIPTS : BOT_SCRIPTS;
+    let sc = botRand(src), tries = 0; while (BOT.recent.includes(sc[0][1]) && tries++ < 6) sc = botRand(src);
     const a = [botWho()]; a.push(botWho(a)); a.push(botWho(a));
-    sc.forEach((l, i) => { if (i === 0) botSay(a[l[0]], l[1]); else BOT.q.push([a[l[0]], l[1]]); });
+    sc.forEach((l, i) => { if (i === 0) botSay(a[l[0]], l[1], key); else BOT.q.push([a[l[0]], l[1]]); });
     gap = 3500 + Math.random() * 3500;
   } else {
-    let t = botRand(BOT_LINES), tries = 0; while (BOT.recent.includes(t) && tries++ < 8) t = botRand(BOT_LINES);
-    botSay(botWho(), t); gap = 8000 + Math.random() * 12000;
+    const src = (live && Math.random() < 0.6) ? BOT_LIVE_LINES : BOT_LINES;
+    let t = botRand(src), tries = 0; while (BOT.recent.includes(t) && tries++ < 8) t = botRand(src);
+    botSay(botWho(), t, key); gap = 8000 + Math.random() * 12000;
   }
   const busy = chat.some(c => c && !c.bot && c.k !== UID && now - (c.ts || 0) < 45000);   // 진짜 사람들이 이야기 중이면 조용히
   BOT.next = Date.now() + (busy ? gap * 1.8 : gap);
 }
+// 🔘 방 안에 있는 동안 2~8초마다 반응 버튼을 섞어서 누름 (가끔 여럿이 몰려서 박수·100점)
+function botReactTick(){
+  if (!BOT.on || document.hidden || !liveRoom) return;
+  const now = Date.now(); if (now < BOT.rnext) return;
+  if (!BOT.who.length) botShuffle();
+  if (Math.random() < 0.22){   // 몰려서 누르기
+    const k = botRand(['100', 'clap', 'fire', 'wow']), n = 2 + Math.floor(Math.random() * 3), used = [];
+    for (let i = 0; i < n; i++){ const w = botWho(used); used.push(w); setTimeout(() => botReact(w, k), i * 450 + Math.random() * 250); }
+    BOT.rnext = now + 7000 + Math.random() * 8000;
+  } else {
+    const n = 1 + Math.floor(Math.random() * 2), used = [];
+    for (let i = 0; i < n; i++){ const w = botWho(used); used.push(w); setTimeout(() => botReact(w), i * 700 + Math.random() * 300); }
+    BOT.rnext = now + 2500 + Math.random() * 5500;
+  }
+}
 window.botUserSaid = text => {
-  if (!BOT.on || roomPath() !== 'lobby') return;
+  const key = roomPath();
+  if (!BOT.on || !botKeyOk(key)) return;
   if (!BOT.who.length) botShuffle();
   let pool = null; for (const r of BOT_RULES){ if (r[0].test(text)){ pool = r[1]; break; } }
   if (!pool){ if (Math.random() < 0.35) return; pool = BOT_FALLBACK; }
   BOT.q = []; BOT.next = Date.now() + 10000;
   const w = botWho(), line = botRand(pool);
-  setTimeout(() => { if (BOT.on) botSay(w, line); }, 2200 + Math.random() * 3500);
+  setTimeout(() => { if (BOT.on) botSay(w, line, key); }, 2200 + Math.random() * 3500);
   if (pool !== BOT_FALLBACK && pool !== BOT_RULES[0][1] && Math.random() < 0.4){
-    const w2 = botWho([w]); setTimeout(() => { if (BOT.on) botSay(w2, botRand(['ㅋㅋ 저도요','맞아요~ 😊','ㅎㅎ 동감이에요'])); }, 6500 + Math.random() * 3000);
+    const w2 = botWho([w]); setTimeout(() => { if (BOT.on) botSay(w2, botRand(['ㅋㅋ 저도요','맞아요~ 😊','ㅎㅎ 동감이에요']), key); }, 6500 + Math.random() * 3000);
   }
 };
 (() => { const b = $('botbtn'); if (!b) return; botShuffle();
   b.onclick = () => { BOT.on = !BOT.on; try { localStorage.setItem('radio_bots', BOT.on ? '1' : '0'); } catch(e){} BOT.q = []; botBtn(); renderChat(); };
 })();
-setInterval(botTick, 1000);
+setInterval(botTick, 1000); setInterval(botReactTick, 1000);
+// 가상 손님 수 표기: 600~1000명 사이에서 조금씩 오르내림 (실제 접속자 수와는 무관한 가상 숫자)
+function botCountTick(){
+  if (!BOT.on) return;
+  const C = BOT_CFG, edge = (C.max - C.min) * 0.1;
+  let d = Math.round((Math.random() - 0.5) * C.step);
+  if (Math.random() < 0.08) d += Math.round((Math.random() - 0.5) * C.step * 4);   // 가끔 크게 출렁
+  if (BOT.cnt > C.max - edge) d -= Math.ceil(C.step / 4); if (BOT.cnt < C.min + edge) d += Math.ceil(C.step / 4);   // 가장자리에선 안쪽으로 되돌아옴
+  BOT.cnt = Math.max(C.min, Math.min(C.max, BOT.cnt + d)); botBtn();
+}
+setInterval(botCountTick, BOT_CFG.every);
 $('room').onchange = () => {
   const v = $('room').value, isDm = v.indexOf('u:') === 0;
   if (isDm){ delete unread[v.slice(2)]; peerSig = ''; renderRooms(v); }
