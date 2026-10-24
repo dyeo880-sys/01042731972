@@ -475,6 +475,8 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 #lbsec .lbpg{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:8px}
 #lbsec .lbpg .lbb.on{background:#b99a5b;color:#2a1a08;font-weight:700}
 @media(max-width:560px){#lbsec th.dt,#lbsec td.dt,#lbsec th.no,#lbsec td.no{display:none}}
+#botbtn[hidden]{display:none!important}
+#botbtn{background:none!important;border:0!important;box-shadow:none!important;opacity:.5;font-size:11px!important;padding:2px 4px!important;margin-left:auto!important}#botbtn:hover{opacity:.9}
 </style>
 </head>
 <body>
@@ -647,7 +649,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="chatnote" id="mrxnote"></div>
   </section>
   <section class="chat" id="chatsec" aria-label="채팅">
-    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"><button id="botbtn" class="addhome" type="button" style="margin:0;padding:6px 10px"></button></div>
+    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"><button id="botbtn" class="addhome" type="button" hidden style="margin:0;padding:6px 10px"></button></div>
     <div class="roomform" id="roomform" hidden>
       <input id="roomname" maxlength="20" placeholder="새 채팅방 이름 (최대 20자)" aria-label="새 채팅방 이름">
       <button id="roomok" class="addhome" style="margin:0" type="button">만들기</button>
@@ -1620,6 +1622,14 @@ window.botUserSaid = text => {
   b.onclick = () => { BOT.on = !BOT.on; try { localStorage.setItem('radio_bots', BOT.on ? '1' : '0'); } catch(e){} BOT.q = []; botBtn(); renderChat(); };
 })();
 setInterval(botTick, 1000); setInterval(botReactTick, 1000);
+// 가상 손님 버튼은 관리자에게만 보임 (일반 접속자에게는 숨김)
+function botAdmShow(){
+  const b = $('botbtn'); if (!b) return;
+  let a = false;
+  try { a = !!isAdmin || sessionStorage.getItem('board_admin') === '1' || sessionStorage.getItem('radio_admin') === '1'; } catch(e){}
+  b.hidden = !a;
+}
+botAdmShow(); setInterval(botAdmShow, 1000);
 // 가상 손님 수 표기: 600~1000명 사이에서 조금씩 오르내림 (실제 접속자 수와는 무관한 가상 숫자)
 function botCountTick(){
   if (!BOT.on) return;
