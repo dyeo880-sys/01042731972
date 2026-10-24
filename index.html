@@ -649,7 +649,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="chatnote" id="mrxnote"></div>
   </section>
   <section class="chat" id="chatsec" aria-label="채팅">
-    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"><button id="tpbtn" class="addhome" type="button" style="margin:0;padding:6px 10px" title="날씨·공기질·스포츠·뉴스 키워드로 대화 주제 만들기">💡 오늘의 주제</button><button id="botbtn" class="addhome" type="button" hidden style="margin:0;padding:6px 10px"></button></div>
+    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"><button id="botbtn" class="addhome" type="button" hidden style="margin:0;padding:6px 10px"></button></div>
     <div class="roomform" id="roomform" hidden>
       <input id="roomname" maxlength="20" placeholder="새 채팅방 이름 (최대 20자)" aria-label="새 채팅방 이름">
       <button id="roomok" class="addhome" style="margin:0" type="button">만들기</button>
@@ -663,8 +663,6 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <button id="adminok" class="addhome" style="margin:0" type="button">관리자 입장</button>
       </div>
     </div>
-    <style>#tpbox{margin:8px 0;padding:10px;border:1px solid #b99a5b88;border-radius:8px;background:#1a0f08}#tpbox[hidden]{display:none}#tpbox .tph{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}#tpbox select{background:#1a0f08;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:6px 8px;font-size:13px}#tplist{max-height:260px;overflow-y:auto}.tpc{padding:8px 0;border-top:1px dashed #b99a5b55}.tpc b{color:var(--amber)}.tpc .tt{opacity:.85;font-size:13px;margin:2px 0 6px}.tpc button{margin:0 6px 0 0;padding:4px 9px;font-size:12px}</style>
-    <div id="tpbox" hidden><div class="tph"><strong>💡 오늘의 주제</strong><select id="tpreg" aria-label="지역"></select><button id="tpref" class="addhome" type="button" style="margin:0;padding:5px 9px">🔄 새로고침</button><button id="tpclose" class="addhome" type="button" style="margin:0;padding:5px 9px">닫기</button></div><div id="tplist"></div><div class="chatnote" id="tpmsg"></div></div>
     <div id="camstrip"></div>
     <div class="chatlog" id="chatlog" role="log" aria-live="polite"></div>
     <div class="chatform" id="chatform">
@@ -2261,94 +2259,6 @@ window.botUserSaid = text => {
   b.onclick = () => { BOT.on = !BOT.on; try { localStorage.setItem('radio_bots', BOT.on ? '1' : '0'); } catch(e){} BOT.q = []; botBtn(); renderChat(); };
 })();
 setInterval(botTick, 1000); setInterval(botReactTick, 1000);
-// ===== 💡 오늘의 주제: 실제 데이터(날씨·미세먼지·스포츠·뉴스 키워드)로 대화 거리를 만든다 (서버 없음, 브라우저에서 직접 호출) =====
-// 정치·사건사고·연예는 아예 다루지 않는다(뉴스는 기존 BOT_NEWS_BLOCK 필터를 통과한 키워드만).
-const TP_SPORTS = [['⚾','MLB','baseball/mlb'],['⚽','프리미어리그','soccer/eng.1'],['⚽','분데스리가','soccer/ger.1'],['⚽','리그앙','soccer/fra.1'],['⚽','MLS','soccer/usa.1'],['🏀','NBA','basketball/nba']];
-const TP_RX = {
-  wx: ['오 그렇군요 몰랐어요','저도 참고해서 나가야겠어요','이런 날엔 노래가 더 잘 들려요 🎧','확인하고 나오길 잘했네요 ㅎㅎ'],
-  air: ['저도 확인하고 나가야겠어요','환기는 시간 잘 골라서 해야겠네요','공기 좋은 날엔 산책이죠 🚶'],
-  sp: ['오 결과 보셨어요?','응원하는 팀 있으세요?','스포츠는 같이 얘기해야 재밌어요 ㅎㅎ','직관 한번 가보고 싶어요']
-};
-const tpWmo = c => c === 0 ? '맑음' : c <= 2 ? '구름 조금' : c === 3 ? '흐림' : c <= 48 ? '안개' : c <= 57 ? '이슬비' : c <= 67 ? '비' : c <= 77 ? '눈' : c <= 82 ? '소나기' : c <= 86 ? '눈 소나기' : '뇌우';
-const tpRegions = () => (typeof KW !== 'undefined' && KW.length) ? KW : [['대구', 35.8714, 128.6014]];
-async function tpGet(u){
-  const ac = new AbortController(), t = setTimeout(() => ac.abort(), 9000);
-  try { const r = await fetch(u, {signal: ac.signal}); if (!r.ok) throw new Error(r.status); return await r.json(); } finally { clearTimeout(t); }
-}
-async function tpWeather(r){
-  const j = await tpGet('https://api.open-meteo.com/v1/forecast?latitude=' + r[1] + '&longitude=' + r[2] + '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=2&timezone=Asia%2FSeoul');
-  const c = j.current, d = j.daily, R = Math.round;
-  const t = R(c.temperature_2m), hi = R(d.temperature_2m_max[0]), lo = R(d.temperature_2m_min[0]), pop = d.precipitation_probability_max[0] || 0;
-  const hi2 = R(d.temperature_2m_max[1]), lo2 = R(d.temperature_2m_min[1]), pop2 = d.precipitation_probability_max[1] || 0, df = hi2 - hi;
-  const tip = pop >= 60 ? '우산 챙기세요 ☔' : hi - lo >= 10 ? '일교차가 커서 겉옷 챙기세요 🧥' : hi >= 28 ? '꽤 더워요, 물 자주 드세요 💧' : hi <= 5 ? '많이 추워요, 따뜻하게 입으세요 🧣' : '다니기 무난한 날씨예요 😊';
-  const out = [{ico: '🌤', cat: 'wx', title: r[0] + ' 오늘 날씨', text: '지금 ' + t + '° ' + tpWmo(c.weather_code) + ' · 오늘 ' + lo + '~' + hi + '° · 비 확률 ' + pop + '%', line: r[0] + ' 오늘 ' + lo + '도에서 ' + hi + '도까지 올라간대요. ' + tip}];
-  if (Math.abs(df) >= 3 || pop2 >= 60) out.push({ico: pop2 >= 60 ? '🌧' : '📅', cat: 'wx', title: '내일 예보', text: '내일 ' + lo2 + '~' + hi2 + '° · 비 확률 ' + pop2 + '%' + (Math.abs(df) >= 3 ? ' · 오늘보다 ' + Math.abs(df) + '° ' + (df > 0 ? '높음' : '낮음') : ''),
-    line: pop2 >= 60 ? '내일은 비 소식이 있어요 (확률 ' + pop2 + '%). 약속 있으신 분 참고하세요 ☔' : '내일은 오늘보다 ' + Math.abs(df) + '도 ' + (df > 0 ? '높' : '낮') + '대요. 옷차림 신경 써야겠어요'});
-  return out;
-}
-async function tpDust(r){
-  const a = (await tpGet('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=' + r[1] + '&longitude=' + r[2] + '&current=pm10,pm2_5&timezone=Asia%2FSeoul')).current || {};
-  if (a.pm10 == null && a.pm2_5 == null) return [];
-  const g = (v, x) => v == null ? 0 : v <= x[0] ? 0 : v <= x[1] ? 1 : v <= x[2] ? 2 : 3, N = ['좋음', '보통', '나쁨', '매우 나쁨'];
-  const w = Math.max(g(a.pm10, [30, 80, 150]), g(a.pm2_5, [15, 35, 75]));
-  return [{ico: w >= 2 ? '😷' : '🌿', cat: 'air', title: r[0] + ' 공기질', text: '미세먼지 ' + N[g(a.pm10, [30, 80, 150])] + (a.pm10 != null ? ' (PM10 ' + Math.round(a.pm10) + ')' : '') + ' · 초미세먼지 ' + N[g(a.pm2_5, [15, 35, 75])] + (a.pm2_5 != null ? ' (' + Math.round(a.pm2_5) + ')' : ''),
-    line: w >= 2 ? '오늘 미세먼지가 나쁨 수준이래요. 마스크 챙기세요 😷' : w === 1 ? '미세먼지는 보통 수준이에요. 환기하기 무난해요' : '오늘 공기가 깨끗해요. 창문 열고 노래 듣기 좋겠어요 🌿'}];
-}
-async function tpSport(s){
-  const j = await tpGet('https://site.api.espn.com/apis/site/v2/sports/' + s[2] + '/scoreboard'), G = [];
-  (j.events || []).forEach(e => {
-    const st = e.status && e.status.type, c = e.competitions && e.competitions[0]; if (!st || !c || !(st.completed || st.state === 'in')) return;
-    const h = c.competitors.find(x => x.homeAway === 'home'), a = c.competitors.find(x => x.homeAway === 'away'); if (!h || !a) return;
-    G.push(a.team.shortDisplayName + ' ' + a.score + ' : ' + h.score + ' ' + h.team.shortDisplayName + (st.completed ? '' : ' (진행 중)'));
-  });
-  if (!G.length) return [];
-  return [{ico: s[0], cat: 'sp', title: s[1] + ' 경기', text: G.slice(0, 3).join(' · '), line: s[1] + ' 결과 보셨어요? ' + G[0]}];
-}
-function tpNews(){
-  try { return botNewsTopics().map(x => ({ico: '📰', cat: 'nw', title: '요즘 뉴스에 자주 나오는 주제: ' + x.n, text: '뉴스 게시판 제목에서 찾은 키워드예요 (정치·사건사고·연예는 제외)', line: botRand(x.l), rx: x.l})); } catch(e){ return []; }
-}
-function tpDiscuss(c){
-  const key = roomPath();
-  if (!BOT.on || !botKeyOk(key)){ $('tpmsg').textContent = '이 방에서는 🤖 손님이 대화하지 않아요 (꺼져 있거나 비공개 방).'; return; }
-  if (!BOT.who.length) botShuffle();
-  const a = [botWho()]; a.push(botWho(a)); a.push(botWho(a));
-  const pool = (c.rx || TP_RX[c.cat] || TP_RX.wx).filter(x => x !== c.line).sort(() => Math.random() - .5);
-  botSay(a[0], c.line, key, true);
-  BOT.q = [[a[1], pool[0] || '오 그렇군요', true], [a[2], pool[1] || pool[0] || '저도요 ㅎㅎ', true]];
-  BOT.next = Date.now() + 3500;
-  $('tpmsg').textContent = '🤖 손님들이 이 주제로 이야기를 시작했어요.';
-}
-function tpRender(list, fail){
-  const box = $('tplist'); box.innerHTML = '';
-  if (!list.length){ box.textContent = '불러온 주제가 없어요. 인터넷 연결을 확인하고 새로고침을 눌러 주세요.'; }
-  list.forEach(c => {
-    const d = document.createElement('div'); d.className = 'tpc';
-    const h = document.createElement('b'); h.textContent = c.ico + ' ' + c.title;
-    const t = document.createElement('div'); t.className = 'tt'; t.textContent = c.text;
-    const b1 = document.createElement('button'); b1.type = 'button'; b1.className = 'addhome'; b1.textContent = '✍ 입력창에 넣기';
-    b1.onclick = () => { $('chatin').value = c.line.slice(0, 200); $('chatin').focus(); };
-    const b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'addhome'; b2.textContent = '🤖 손님과 이야기';
-    b2.onclick = () => tpDiscuss(c);
-    d.append(h, t, b1, b2); box.append(d);
-  });
-  $('tpmsg').textContent = '날씨·공기질: Open-Meteo · 스포츠: ESPN 공개 점수판' + (fail ? ' (스포츠 ' + fail + '곳은 불러오지 못했어요)' : '') + ' · ' + new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'}) + ' 기준';
-}
-async function tpLoad(){
-  const r = tpRegions()[+$('tpreg').value || 0]; $('tpmsg').textContent = '불러오는 중…';
-  try { localStorage.setItem('radio_tp_region', r[0]); } catch(e){}
-  const res = await Promise.allSettled([tpWeather(r), tpDust(r)].concat(TP_SPORTS.map(tpSport)));
-  let list = [], fail = 0;
-  res.forEach((x, i) => { if (x.status === 'fulfilled') list = list.concat(x.value); else if (i >= 2) fail++; });
-  tpRender(list.concat(tpNews()), fail);
-}
-(() => {
-  const btn = $('tpbtn'), box = $('tpbox'); if (!btn || !box) return;
-  const sel = $('tpreg'); let saved = ''; try { saved = localStorage.getItem('radio_tp_region') || '대구'; } catch(e){}
-  tpRegions().forEach((c, i) => { const o = document.createElement('option'); o.value = i; o.textContent = c[0]; if (c[0] === saved) o.selected = true; sel.append(o); });
-  btn.onclick = () => { box.hidden = !box.hidden; if (!box.hidden) tpLoad(); };
-  $('tpref').onclick = tpLoad; $('tpclose').onclick = () => { box.hidden = true; }; sel.onchange = tpLoad;
-})();
-
 // 가상 손님 버튼은 관리자에게만 보임 (일반 접속자에게는 숨김)
 function botAdmShow(){
   const b = $('botbtn'); if (!b) return;
