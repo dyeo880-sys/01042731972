@@ -2451,7 +2451,7 @@ function setAllowed(ok, count, adminFull){
     stopStream();
     $('gatemsg').textContent = adminFull
       ? '관리자 자리도 모두 찼습니다. 잠시 후 다시 시도해 주세요.'
-      : `채팅 접속 인원이 가득 찼습니다 (현재 ${count}/${TOTAL_CAP}명). 자리가 나면 자동으로 입장합니다. (라디오는 계속 들을 수 있습니다)`;
+      : `현재 방 정원이 가득 찬 상태입니다 (현재 ${count}/${TOTAL_CAP}명). 조금만 기다려 주시면 자리가 생기는 대로 자동으로 접속합니다. (라디오는 계속 들을 수 있습니다)`;
   } else if (!was){
     lastSig = ''; loadRooms(); fetchChat(true);
   }
@@ -5954,7 +5954,10 @@ renderRooms();
 renderChat();
 if (DB){
   $('chatlog').hidden = true; $('chatform').hidden = true;
-  $('gate').hidden = false; $('gatemsg').textContent = '채팅에 접속하는 중…';
+  const GATE_INIT = '접속 중입니다… 접속자가 많을 때는 접속이 지연될 수 있습니다. 잠시만 기다려 주세요.';
+  $('gate').hidden = false; $('gatemsg').textContent = GATE_INIT;
+  // 6초가 지나도 아직 접속 중이면: 접속자가 많거나 정원이 찬 상태일 수 있다고 안내
+  setTimeout(() => { if (!$('gate').hidden && $('gatemsg').textContent === GATE_INIT) $('gatemsg').textContent = '아직 접속 중입니다. 접속자가 많아 지연되고 있거나 현재 방 정원이 가득 찬 상태일 수 있습니다. 조금만 기다려 주시면 자리가 생기는 대로 자동으로 접속합니다. (라디오는 계속 들을 수 있습니다)'; }, 6000);
   admit();
   setInterval(() => { if (chatAllowed || !document.hidden) admit(); }, BEAT);
 } else { fetchChat(true); }
@@ -8358,6 +8361,42 @@ try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@
       info.textContent = n ? '📋 재생목록 ' + n + '개' : '📋 재생목록 비어 있음 — ➕ 로 영상 추가';
     } catch(e){}
   }, 700);
+})();
+</script>
+<style>
+#joinpop{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.55);transition:opacity .4s}
+#joinpop.out{opacity:0;pointer-events:none}
+#joinpop .box{max-width:420px;width:100%;background:var(--panel,#2a1a0e);color:var(--ink,#f3e6c8);border:1px solid var(--brass,#b99a5b);border-radius:10px;padding:18px 20px;box-shadow:0 10px 40px #000a;text-align:center;line-height:1.7;font-size:15px}
+#joinpop .box b{display:block;color:var(--amber,#f0a93b);font-size:17px;margin-bottom:6px}
+#joinpop .box small{display:block;margin-top:10px;opacity:.65;font-size:12px}
+</style>
+<div id="joinpop" role="dialog" aria-live="polite" aria-label="접속 안내"><div class="box"><b>📻 접속 중입니다</b>접속자가 많습니다. 접속자가 너무 많을 경우 접속이 지연될 수 있으며, 현재 방 정원이 가득 찬 상태일 수도 있습니다.<br>조금만 기다려 주시면 자리가 생기는 대로 자동으로 접속합니다.<small>잠시 후 자동으로 닫힙니다 (화면을 누르면 바로 닫힘)</small></div></div>
+<script>
+(function(){
+  var el = document.getElementById('joinpop'); if (!el) return;
+  var closed = false;
+  function close(){ if (closed) return; closed = true; el.classList.add('out'); setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 500); waitDone(); }
+  // ✅ 안내 창이 사라진 뒤, 실제로 채팅에 접속이 되면 "접속 완료" 문구를 2.5초간 보여 줌 (정원이 차 있으면 입장되는 순간에 표시)
+  function waitDone(){
+    var t0 = Date.now();
+    (function chk(){
+      var ok = true; try { ok = (typeof chatAllowed === 'undefined') ? true : chatAllowed; } catch(e){}
+      if (ok){ showDone(); return; }
+      if (Date.now() - t0 < 600000) setTimeout(chk, 500);
+    })();
+  }
+  function showDone(){
+    var d = document.createElement('div');
+    d.setAttribute('role', 'status');
+    d.style.cssText = 'position:fixed;left:50%;top:22px;transform:translateX(-50%);z-index:99999;background:#1f6b3a;color:#fff;padding:10px 20px;border-radius:24px;font-size:15px;box-shadow:0 6px 24px #0008;opacity:0;transition:opacity .4s';
+    d.textContent = '✅ 접속 완료되었습니다';
+    document.body.appendChild(d);
+    setTimeout(function(){ d.style.opacity = '1'; }, 20);
+    setTimeout(function(){ d.style.opacity = '0'; setTimeout(function(){ if (d.parentNode) d.parentNode.removeChild(d); }, 500); }, 2500);
+  }
+  el.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+  setTimeout(close, 4000);   // 3초 뒤 자동으로 닫힘 (바꾸려면 이 숫자, 1000 = 1초)
 })();
 </script>
 </body>
