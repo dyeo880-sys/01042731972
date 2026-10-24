@@ -1530,7 +1530,8 @@ const BOT_FALLBACK = ['그렇군요 ㅎㅎ','오 맞아요~','ㅎㅎ 좋네요',
 const botRand = a => a[Math.floor(Math.random() * a.length)];
 const botKeyOk = k => k === 'lobby' || String(k).indexOf('live_') === 0;
 const botIsLive = k => String(k).indexOf('live_') === 0;
-function botBtn(){ const b = $('botbtn'); if (!b) return; b.textContent = BOT.on ? '🤖 가상 손님 ' + BOT.cnt + '명' : '🤖 가상 손님 꺼짐'; b.title = '가상 손님 수는 실제 접속자가 아닌 가상 숫자입니다. 미리 정해 둔 대사·반응만 하는 봇이며 이 기기에서만 보입니다 (누르면 켜고 끕니다)'; }
+function botBtn(){ const b = $('botbtn'); if (!b) return; let plain = false; try { plain = localStorage.getItem('radio_bots_plain') === '1'; } catch(e){}
+  b.textContent = plain ? (BOT.on ? '👥 접속 중 ' + BOT.cnt + '명' : '👥 조용히') : (BOT.on ? '🤖 가상 손님 ' + BOT.cnt + '명' : '🤖 가상 손님 꺼짐'); b.title = '가상 손님 수는 실제 접속자가 아닌 가상 숫자입니다. 미리 정해 둔 대사·반응만 하는 봇이며 이 기기에서만 보입니다 (누르면 켜고 끕니다)'; }
 function botShuffle(){
   const pool = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
   BOT.who = pool.slice(0, 8 + Math.floor(Math.random() * 7)); BOT.shuffleAt = Date.now() + 180000 + Math.random() * 120000; botBtn();
@@ -1615,6 +1616,7 @@ window.botUserSaid = text => {
   }
 };
 (() => { const b = $('botbtn'); if (!b) return; botShuffle();
+  b.addEventListener('dblclick', e => { e.preventDefault(); try { localStorage.setItem('radio_bots_plain', localStorage.getItem('radio_bots_plain') === '1' ? '0' : '1'); } catch(_){} botBtn(); });
   b.onclick = () => { BOT.on = !BOT.on; try { localStorage.setItem('radio_bots', BOT.on ? '1' : '0'); } catch(e){} BOT.q = []; botBtn(); renderChat(); };
 })();
 setInterval(botTick, 1000); setInterval(botReactTick, 1000);
