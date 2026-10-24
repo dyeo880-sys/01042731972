@@ -642,7 +642,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="lbpg" id="lb_pg"></div>
   </section>
   <section class="chat" id="chatsec" aria-label="채팅">
-    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"></div>
+    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"><button id="botbtn" class="addhome" type="button" style="margin:0;padding:6px 10px"></button></div>
     <div class="roomform" id="roomform" hidden>
       <input id="roomname" maxlength="20" placeholder="새 채팅방 이름 (최대 20자)" aria-label="새 채팅방 이름">
       <button id="roomok" class="addhome" style="margin:0" type="button">만들기</button>
@@ -1355,6 +1355,7 @@ function loadLocal(){
     chat = JSON.parse(raw || '[]');
   } catch(e){ chat = []; }
 }
+var BOT;   // 가상 손님 상태(아래에서 채움)
 let pending = [], es = null, esPath = '', esOk = false, chatMap = {};
 const hasES = typeof EventSource !== 'undefined';
 function dropSeen(){
@@ -1364,13 +1365,16 @@ function renderChat(forceBottom){
   const log = $('chatlog');
   const near = forceBottom === true || log.scrollHeight - log.scrollTop - log.clientHeight < 40;
   log.innerHTML = '';
-  const all = chat.concat(pending).filter(c => !isBlockedMsg(c));
+  let all = chat.concat(pending);
+  try { if (BOT && BOT.on && BOT.msgs.length && roomPath() === 'lobby'){ all = all.concat(BOT.msgs); all.sort((a, b) => (a.ts || 0) - (b.ts || 0)); } } catch(e){}   // 🤖 가상 손님(이 기기에서만)
+  all = all.filter(c => !isBlockedMsg(c));
   if (!all.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
   const isDmRoom = $('room').value.indexOf('u:') === 0;
   all.forEach(c => {
     const d = document.createElement('div'); d.className = 'm' + (isDmRoom ? ' wh' : '');
-    const b = document.createElement('b'); b.textContent = (c.h ? '👑 ' : '') + c.n;
-    if (c.k === UID || c.n === $('nick').value.trim()){ b.style.cursor = 'pointer'; b.title = '이름 바꾸기'; b.onclick = renameMe; }
+    const b = document.createElement('b'); b.textContent = (c.bot ? '🤖 ' : '') + (c.h ? '👑 ' : '') + c.n;
+    if (c.bot){ b.title = '가상 손님 (미리 정한 대사만 하는 봇)'; }
+    else if (c.k === UID || c.n === $('nick').value.trim()){ b.style.cursor = 'pointer'; b.title = '이름 바꾸기'; b.onclick = renameMe; }
     else { b.className = 'nm'; b.title = '눌러서 귓속말 · 차단'; b.onclick = ev => nameMenu(ev, c); }
     const t = document.createElement('span'); t.textContent = c.t;
     const s = document.createElement('small'); s.textContent = hhmm(c.ts);
@@ -1452,6 +1456,7 @@ async function sendChat(){
   if (isHost() && $('room').value === 'b:' + liveRoom.id) msg.h = 1;
   try { localStorage.setItem('radio_nick', msg.n); } catch(e){}
   inp.value = '';
+  try { window.botUserSaid && window.botUserSaid(text); } catch(e){}
   if (!DB){
     chat.push(msg); chat = chat.slice(-100);
     try { localStorage.setItem('radio_chat_' + roomPath(), JSON.stringify(chat)); } catch(e){}
@@ -1473,6 +1478,87 @@ async function sendChat(){
 }
 $('chatsend').onclick = sendChat;
 $('chatin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) sendChat(); });
+// ===== 🤖 가상 손님: 서버·DB·API 비용 없이 이 브라우저 안에서만 도는 대본형 대화 (전체 채팅방 전용) =====
+// 모든 가상 손님은 이름 앞에 🤖가 붙고, 미리 정한 대사만 합니다. 다른 접속자 화면에는 전달되지 않습니다.
+BOT = {msgs: [], on: true, q: [], next: Date.now() + 4000, who: [], last: '', recent: [], shuffleAt: 0};
+try { BOT.on = localStorage.getItem('radio_bots') !== '0'; } catch(e){}
+const BOT_NAMES = ['노을지기','밤하늘별','가을바람','초코우유','라디오팬','새벽감성','LP판돌리기','소나기','달빛산책','커피한잔','구름빵','은행나무','길고양이','동네DJ','비오는날','햇살가득','막걸리한잔','쑥쑥이','레트로맨','별똥별','한강라면','보라돌이','추억소환','청춘열차','오래된라디오','낙엽엔딩','첫눈오면','곰돌이','바람개비','여름밤','휘파람','꿈꾸는나무','따뜻한차','야간비행','모닝커피','은하수','살구나무','종이비행기','기타치는곰','목요일밤','퇴근길','소풍가자','도토리','카세트테이프','감성충전','달콤한밤','라면끓이는','느린우체통','새벽두시','주말농부'];
+const BOT_SCRIPTS = [
+  [[0,'다들 오늘 뭐 들으세요?'],[1,'저는 90년대 가요요 ㅎㅎ'],[2,'오 저도 요즘 옛날 노래에 빠졌어요'],[0,'역시 추억의 노래가 최고죠']],
+  [[0,'오늘 날씨 진짜 좋네요'],[1,'맞아요 산책하기 딱이에요'],[0,'이어폰 끼고 걸으면 더 좋죠 🎧']],
+  [[0,'신청곡 받는 방 없나요?'],[1,'음악 방에서 영상 링크 올리면 틀어줘요'],[0,'오 그렇군요! 가봐야겠다']],
+  [[0,'점심 뭐 드셨어요?'],[1,'김치찌개요 ㅋㅋ'],[2,'저는 아직 못 먹었어요 ㅠㅠ'],[1,'얼른 드세요~']],
+  [[0,'이 방송 음질 괜찮네요'],[1,'라디오는 역시 이 맛이죠']],
+  [[0,'퇴근하고 싶다...'],[1,'ㅋㅋㅋ 저도요'],[2,'조금만 힘내요 ㅎㅎ']],
+  [[0,'비 오는 날 듣기 좋은 노래 있어요?'],[1,'잔잔한 발라드가 좋죠'],[2,'저는 재즈요 ☕'],[0,'둘 다 메모!']],
+  [[0,'밤에 라디오 들으면 감성 터져요'],[1,'ㅇㅈ 새벽엔 더 그래요'],[2,'잠 안 올 때 딱이죠']],
+  [[0,'여기 채팅방 분위기 좋다'],[1,'다들 친절해서 좋아요 ㅎㅎ']],
+  [[0,'옛날 카세트테이프 아직 가지고 있는 분?'],[1,'저 서랍에 몇 개 있어요 ㅋㅋ'],[2,'테이프 감던 기억 나네요'],[0,'연필로 감았죠 ㅋㅋ']],
+  [[0,'볼륨 너무 크게 해놨더니 놀랐네요'],[1,'ㅋㅋㅋ 저도 그런 적 많아요']],
+  [[0,'다른 나라 방송도 들어봤어요?'],[1,'일본 시티팝 방송 좋아요'],[2,'저는 프랑스 라디오 들어봤는데 분위기 좋더라고요']],
+  [[0,'커피 한 잔 하면서 듣는 중'],[1,'부럽다 ☕'],[0,'같이 마셔요 ㅎㅎ']],
+  [[0,'오늘 하루 어땠어요?'],[1,'평범했어요 ㅎㅎ'],[2,'저는 좀 피곤했어요'],[0,'음악 들으면서 푹 쉬세요']]
+];
+const BOT_LINES = ['안녕하세요~','다들 어디서 들으세요?','노래 좋다 🎶','ㅎㅎ','이 곡 오랜만에 듣네요','라디오 켜놓고 일하는 중이에요','오늘도 수고했어요 👏','배고프다...','날씨가 쌀쌀해졌어요','가을 노래 추천해주세요','이어폰 끼고 듣는 중 🎧','추억의 노래 들으니까 기분 좋네요','음악 방 구경 중이에요','오늘 분위기 좋다','ㅋㅋㅋ','졸리다...','따뜻한 차 마시면서 듣는 중','이 방송국 처음 들어봐요','볼륨 살짝 올렸어요','여러분 좋은 하루 보내세요 ☀️','저 이 노래 알아요!','가사가 너무 좋다','저녁에 듣기 딱 좋네요','누구 신청곡이에요? ㅎㅎ','오랜만에 들어왔어요','라디오 감성 최고'];
+const BOT_RULES = [
+  [/\bai\b|봇|로봇|사람이야|사람이세요|사람이니|가짜|알바|진짜야/i, ['저는 🤖 가상 손님이에요. 미리 정해진 말로만 대화하는 봇이라서 진짜 사람은 아니에요 ㅎㅎ','맞아요, 저는 가상 손님 봇이에요 🤖']],
+  [/안녕|ㅎㅇ|하이|반가|처음/, ['안녕하세요! 어서 오세요 ㅎㅎ','반가워요~ 🙌','안녕하세요~ 편하게 들으세요']],
+  [/추천|신청|뭐 ?들|뭐 ?듣/, ['저는 잔잔한 발라드 추천해요','90년대 가요도 좋아요 ㅎㅎ','음악 방에서 신청곡 올려보세요!']],
+  [/잘자|굿나잇|안녕히|갈게|가볼게/, ['안녕히 가세요~','좋은 밤 되세요 🌙','또 놀러 오세요!']],
+  [/고마|감사/, ['별말씀을요 ㅎㅎ','저도 고마워요~']],
+  [/피곤|힘들|졸려|우울|ㅠㅠ|ㅜㅜ/, ['토닥토닥 힘내요','음악 들으면서 쉬어요 🎧','오늘 고생 많았어요']],
+  [/배고|밥|점심|저녁|아침/, ['저도 배고파요 ㅋㅋ','맛있는 거 드세요~','밥은 먹고 들어야죠 ㅎㅎ']],
+  [/노래|음악|곡|라디오|방송/, ['오 좋은 선택이에요','저도 그 느낌 좋아해요','음악은 역시 분위기죠 🎶']],
+  [/ㅋㅋ|ㅎㅎ|웃/, ['ㅋㅋㅋ 맞아요','ㅎㅎ 재밌네요','ㅋㅋㅋㅋ']]
+];
+const BOT_FALLBACK = ['그렇군요 ㅎㅎ','오 맞아요~','ㅎㅎ 좋네요','그쵸 ㅋㅋ','저도 그렇게 생각해요'];
+const botRand = a => a[Math.floor(Math.random() * a.length)];
+function botBtn(){ const b = $('botbtn'); if (!b) return; b.textContent = BOT.on ? '🤖 가상 손님 ' + BOT.who.length + '명' : '🤖 가상 손님 꺼짐'; b.title = '가상 손님은 미리 정해 둔 대사만 하는 봇입니다 (이 기기에서만 보이며, 누르면 켜고 끕니다)'; }
+function botShuffle(){
+  const pool = BOT_NAMES.slice().sort(() => Math.random() - 0.5);
+  BOT.who = pool.slice(0, 8 + Math.floor(Math.random() * 7)); BOT.shuffleAt = Date.now() + 180000 + Math.random() * 120000; botBtn();
+}
+function botSay(name, text){
+  const now = Date.now(); BOT.last = name; BOT.recent.push(text); BOT.recent = BOT.recent.slice(-24);
+  BOT.msgs.push({n: name, t: text, ts: now, k: 'bot', bot: 1});
+  BOT.msgs = BOT.msgs.filter(m => now - m.ts < 600000).slice(-25);
+  if (roomPath() === 'lobby') renderChat();
+}
+function botWho(not){ const c = BOT.who.filter(n => n !== BOT.last && !(not || []).includes(n)); return botRand(c.length ? c : BOT.who); }
+function botTick(){
+  if (!BOT.on || document.hidden || roomPath() !== 'lobby') return;
+  const now = Date.now(); if (now < BOT.next) return;
+  if (!BOT.who.length || now > BOT.shuffleAt) botShuffle();
+  let gap;
+  if (BOT.q.length){ const s = BOT.q.shift(); botSay(s[0], s[1]); gap = 3000 + Math.random() * 4000; }
+  else if (Math.random() < 0.5){
+    let sc = botRand(BOT_SCRIPTS), tries = 0; while (BOT.recent.includes(sc[0][1]) && tries++ < 6) sc = botRand(BOT_SCRIPTS);
+    const a = [botWho()]; a.push(botWho(a)); a.push(botWho(a));
+    sc.forEach((l, i) => { if (i === 0) botSay(a[l[0]], l[1]); else BOT.q.push([a[l[0]], l[1]]); });
+    gap = 3500 + Math.random() * 3500;
+  } else {
+    let t = botRand(BOT_LINES), tries = 0; while (BOT.recent.includes(t) && tries++ < 8) t = botRand(BOT_LINES);
+    botSay(botWho(), t); gap = 8000 + Math.random() * 12000;
+  }
+  const busy = chat.some(c => c && !c.bot && c.k !== UID && now - (c.ts || 0) < 45000);   // 진짜 사람들이 이야기 중이면 조용히
+  BOT.next = Date.now() + (busy ? gap * 1.8 : gap);
+}
+window.botUserSaid = text => {
+  if (!BOT.on || roomPath() !== 'lobby') return;
+  if (!BOT.who.length) botShuffle();
+  let pool = null; for (const r of BOT_RULES){ if (r[0].test(text)){ pool = r[1]; break; } }
+  if (!pool){ if (Math.random() < 0.35) return; pool = BOT_FALLBACK; }
+  BOT.q = []; BOT.next = Date.now() + 10000;
+  const w = botWho(), line = botRand(pool);
+  setTimeout(() => { if (BOT.on) botSay(w, line); }, 2200 + Math.random() * 3500);
+  if (pool !== BOT_FALLBACK && pool !== BOT_RULES[0][1] && Math.random() < 0.4){
+    const w2 = botWho([w]); setTimeout(() => { if (BOT.on) botSay(w2, botRand(['ㅋㅋ 저도요','맞아요~ 😊','ㅎㅎ 동감이에요'])); }, 6500 + Math.random() * 3000);
+  }
+};
+(() => { const b = $('botbtn'); if (!b) return; botShuffle();
+  b.onclick = () => { BOT.on = !BOT.on; try { localStorage.setItem('radio_bots', BOT.on ? '1' : '0'); } catch(e){} BOT.q = []; botBtn(); renderChat(); };
+})();
+setInterval(botTick, 1000);
 $('room').onchange = () => {
   const v = $('room').value, isDm = v.indexOf('u:') === 0;
   if (isDm){ delete unread[v.slice(2)]; peerSig = ''; renderRooms(v); }
