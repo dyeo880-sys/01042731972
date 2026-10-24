@@ -641,6 +641,11 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div id="lb_list"></div>
     <div class="lbpg" id="lb_pg"></div>
   </section>
+  <section id="mainrx" aria-label="반응 버튼" style="margin:0 0 12px">
+    <div class="note" style="margin:0 0 6px;font-weight:700;color:var(--amber)">🎉 반응 버튼 — 누르면 화면에 날아갑니다 (🤖 가상 손님도 함께 눌러요)</div>
+    <div id="mrxrow" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    <div class="chatnote" id="mrxnote"></div>
+  </section>
   <section class="chat" id="chatsec" aria-label="채팅">
     <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"><button id="botbtn" class="addhome" type="button" style="margin:0;padding:6px 10px"></button></div>
     <div class="roomform" id="roomform" hidden>
@@ -1534,13 +1539,13 @@ function botShuffle(){
 const BOT_REACT = ['100','100','100','clap','clap','clap','fire','fire','lol','lol','wow','hmm'];
 function botReact(name, kind){
   try {
-    if (!BOT.on || !liveRoom || typeof rxFloat !== 'function') return;
+    if (!BOT.on) return;
     let k = kind;
     if (!k){   // 같은 버튼만 계속 누르면 티가 나므로 최근 3번과 겹치지 않게 섞음
       let tries = 0; do { k = botRand(BOT_REACT); } while (BOT.rhist.slice(-2).includes(k) && tries++ < 12);
     }
     BOT.rhist.push(k); BOT.rhist = BOT.rhist.slice(-6);
-    rxFloat(k, '🤖' + name);
+    mrxFloat(k, '🤖' + name);
   } catch(e){}
 }
 function botReactFor(text){   // 대사 내용에 어울리는 버튼
@@ -1555,7 +1560,7 @@ function botSay(name, text, key){
   BOT.msgs.push({n: name, t: text, ts: now, k: 'bot', bot: 1, r: key});
   BOT.msgs = BOT.msgs.filter(m => now - m.ts < 600000).slice(-40);
   if (roomPath() === key) renderChat();
-  if (botIsLive(key) && Math.random() < 0.4){ const k = botReactFor(text); if (k){ const w = botWho([name]); setTimeout(() => botReact(w, k), 900 + Math.random() * 1500); } }
+  if (Math.random() < 0.4){ const k = botReactFor(text); if (k){ const w = botWho([name]); setTimeout(() => botReact(w, k), 900 + Math.random() * 1500); } }
 }
 function botWho(not){ const c = BOT.who.filter(n => n !== BOT.last && !(not || []).includes(n)); return botRand(c.length ? c : BOT.who); }
 function botTick(){
@@ -1583,7 +1588,7 @@ function botTick(){
 }
 // 🔘 방 안에 있는 동안 2~8초마다 반응 버튼을 섞어서 누름 (가끔 여럿이 몰려서 박수·100점)
 function botReactTick(){
-  if (!BOT.on || document.hidden || !liveRoom) return;
+  if (!BOT.on || document.hidden) return;
   const now = Date.now(); if (now < BOT.rnext) return;
   if (!BOT.who.length) botShuffle();
   if (Math.random() < 0.22){   // 몰려서 누르기
@@ -1623,6 +1628,52 @@ function botCountTick(){
   BOT.cnt = Math.max(C.min, Math.min(C.max, BOT.cnt + d)); botBtn();
 }
 setInterval(botCountTick, BOT_CFG.every);
+// ===== 🎉 메인 화면 반응 버튼 (💯100점·👏박수·🔥불꽃·😂웃김·🤔의문·😮놀람) =====
+// 진짜 접속자가 누르면 내 화면에 날아가고(다른 접속자 화면에도 전달), 🤖 가상 손님도 같은 화면에서 함께 누릅니다.
+const MRX = [['100','💯','100점'],['clap','👏','박수'],['fire','🔥','불꽃'],['lol','😂','웃김'],['hmm','🤔','의문'],['wow','😮','놀람']];
+const MRX_MAP = {}; MRX.forEach(x => { MRX_MAP[x[0]] = x; });
+let mrxLast = 0, mrxSentAt = 0, mrxFail = false; const mrxSeen = {};
+function mrxFloat(k, name){
+  let ly = document.getElementById('mrxfloat');
+  if (!ly){ ly = document.createElement('div'); ly.id = 'mrxfloat'; ly.setAttribute('aria-hidden', 'true'); ly.style.cssText = 'position:fixed;left:0;right:0;bottom:70px;height:0;pointer-events:none;z-index:85'; document.body.append(ly); }
+  if (ly.children.length > 24) return;
+  const e = MRX_MAP[k] || [k, k, ''];
+  const d = document.createElement('div'); d.className = 'rxf'; d.style.left = (6 + Math.random() * 84) + '%';
+  const a = document.createElement('span'); a.textContent = e[1];
+  const n = document.createElement('small'); n.textContent = (String(name || '') + (e[2] ? ' · ' + e[2] : '')).slice(0, 18);
+  d.append(a, n); ly.append(d); setTimeout(() => d.remove(), 3200);
+}
+function mrxNote(t){ try { const n = $('mrxnote'); if (n) n.textContent = t || ''; } catch(e){} }
+async function mrxSend(k, nm){
+  if (!DB || !chatAllowed || mrxFail) return;
+  const n = Date.now(); if (n - mrxSentAt < 700) return; mrxSentAt = n;
+  try {   // 칸 40개를 돌려 쓰며 덮어쓰므로 데이터가 쌓이지 않음
+    const r = await fetch(`${DB}/mainrx/s${Math.floor(n / 250) % 40}.json`, {method: 'PUT', body: JSON.stringify({e: k, n: nm, u: myId, b: UID, ts: nowS()})});
+    if (!r.ok) throw new Error(r.status);
+  } catch(e){ mrxFail = true; mrxNote('지금은 내 화면에서만 보입니다. (Firebase 규칙에 mainrx 읽기·쓰기를 추가하면 다른 접속자에게도 보입니다)'); }
+}
+async function mrxPoll(){
+  if (!DB || !chatAllowed || mrxFail || document.hidden) return;
+  try {
+    const r = await fetch(`${DB}/mainrx.json`); if (!r.ok) throw new Error(r.status);
+    const d = (await r.json()) || {}, now = nowS();
+    Object.keys(d).forEach(s => {
+      const m = d[s]; if (!m || !MRX_MAP[m.e] || m.u === myId) return;
+      if (m.b && typeof BLK !== 'undefined' && BLK[m.b]) return;   // 차단한 사람 것은 숨김
+      if (!(m.ts > (mrxSeen[s] || 0)) || now - m.ts > 9000) return;
+      mrxSeen[s] = m.ts; mrxFloat(m.e, String(m.n || '손님').slice(0, 12));
+    });
+  } catch(e){ mrxFail = true; mrxNote('지금은 내 화면에서만 보입니다. (Firebase 규칙에 mainrx 읽기·쓰기를 추가하면 다른 접속자에게도 보입니다)'); }
+}
+function mrxPress(k){
+  const n = Date.now(); if (n - mrxLast < 300) return; mrxLast = n;
+  let nm = ''; try { nm = String(($('nick').value || '').trim()).slice(0, 12); } catch(e){}
+  nm = nm || '나'; mrxFloat(k, nm); mrxSend(k, nm);
+}
+(() => { const row = $('mrxrow'); if (!row) return;
+  MRX.forEach(([k, ic, nm]) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:6px 12px'; b.textContent = ic + ' ' + nm; b.onclick = () => mrxPress(k); row.append(b); });
+})();
+setInterval(mrxPoll, 3500);
 $('room').onchange = () => {
   const v = $('room').value, isDm = v.indexOf('u:') === 0;
   if (isDm){ delete unread[v.slice(2)]; peerSig = ''; renderRooms(v); }
