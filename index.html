@@ -86,6 +86,11 @@ body.onlybox #roomview[hidden]{display:block!important;position:fixed;left:-1000
 #mwnow{font-size:13px;opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mwscreen{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#120a05;border-radius:8px;min-height:84px;padding:8px}
 .mwscreen{--mws:1;overflow:auto;max-height:85vh;position:relative}
+#capov{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6;border-radius:8px}
+#capov .cap{position:absolute;left:6%;right:6%;top:100%;text-align:center;color:#fff;font-family:'Jua','Noto Sans KR','Malgun Gothic',sans-serif;font-size:clamp(20px,4.2vw,40px);line-height:1.35;letter-spacing:.02em;word-break:keep-all;text-shadow:0 0 6px #000,0 2px 4px #000c,0 0 18px #0009;animation:capup var(--cd,9s) linear forwards;will-change:transform}
+@keyframes capup{from{transform:translateY(0)}to{transform:translateY(calc(-100% - var(--ch,300px)))}}
+#caprow{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+#caprow input{flex:1;min-width:160px}
 #guestTile{position:absolute;right:8px;bottom:8px;width:min(34%,calc(200px * var(--mws)));background:#000;border:2px solid var(--amber);border-radius:8px;overflow:hidden;z-index:2;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 2px 10px #000a}#guestTile[hidden]{display:none}#guestTile.big{width:min(72%,calc(440px * var(--mws)))}#guestTile video{width:100%;display:block;max-height:none!important;border-radius:0!important}#guestTile small{position:absolute;left:4px;top:4px;background:#000b;color:var(--amber);padding:1px 7px;border-radius:6px;font-size:11px}#roomview.mini #guestTile{width:96px}
 .mwscreen video{max-width:100%;max-height:calc(34vh * var(--mws));border-radius:8px;background:#000}
 .vr.bad{opacity:.4;text-decoration:line-through}.vr.good::before{content:'● ';color:#6fd36f;font-size:10px}
@@ -480,6 +485,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 #botbtn[hidden]{display:none!important}
 #botbtn{background:none!important;border:0!important;box-shadow:none!important;opacity:.5;font-size:11px!important;padding:2px 4px!important;margin-left:auto!important}#botbtn:hover{opacity:.9}
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 </head>
 <body>
 <main class="set">
@@ -857,6 +863,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="mwsize" id="lagrow" hidden><label for="lagsel">🐢 끊김 줄이기</label><select id="lagsel" aria-label="끊김 줄이기 (영상을 조금 늦게 재생)" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:4px 8px;font-size:13px"><option value="0">끔 (가장 빠름)</option><option value="1000">1초 늦게</option><option value="1500">1.5초 늦게 (기본)</option><option value="2000">2초 늦게</option><option value="3000">3초 늦게</option><option value="4000">4초 늦게 (소리가 끊길 수 있음)</option></select><span class="chatnote" style="margin:0">늦게 볼수록 덜 끊깁니다</span></div>
     <div class="mwsize" id="lecmeter" hidden><strong style="color:var(--amber)">🎓 보내는 소리</strong><span>PC 소리 <meter id="mtsys" min="0" max="1" value="0" style="width:90px"></meter></span><span>내 마이크 <meter id="mtmic" min="0" max="1" value="0" style="width:90px"></meter></span><button class="addhome" type="button" id="lecmic" style="margin:0" title="강의 중 내 마이크만 끄거나 켭니다 (PC 소리는 계속 나갑니다)">🎤 마이크 끄기</button><span id="mtmsg" style="flex-basis:100%;font-size:13px"></span></div>
     <div class="chatnote" id="rxdiag" hidden style="margin:0 0 8px;font-size:13px"></div>
+    <div class="mwsize" id="caprow" hidden><label for="capin">📜 영상 자막</label><input id="capin" maxlength="80" placeholder="글을 쓰면 영상 위로 흰 글씨가 올라갑니다" aria-label="영상 자막 글"><button class="addhome" type="button" id="capgo" style="margin:0">⬆ 올리기</button></div>
     <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><button class="addhome" id="kbtn" type="button" hidden>🎤 노래 신청</button><button class="addhome" id="gfbtn" type="button" hidden title="내 컴퓨터의 음악·영상 파일을 방에 틀어 줍니다 (방장 허용 필요)">🎵 내 파일 틀기</button><button class="addhome" id="vqbtn" type="button" hidden title="유튜브·영상 링크를 방장 재생목록에 올립니다 (방장이 체크해야 재생)">🎬 영상 추가</button><input id="gffile" type="file" accept="audio/*,video/*" hidden><input id="klibdir" type="file" webkitdirectory multiple hidden><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div><div id="vqform" hidden style="flex-basis:100%;background:#1a0f08;border-radius:6px;padding:8px 10px"><div class="chatnote" style="margin:0 0 6px">🎬 영상 추가 — 유튜브·mp4 링크를 넣으면 방장의 재생목록에 올라갑니다. <b>방장이 체크(허용)한 영상만 재생</b>되고, 허용되지 않은 영상은 건너뜁니다. (한 사람 최대 5개)</div><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="vqu" placeholder="영상 링크 (유튜브 · mp4 · m3u8)" aria-label="추가할 영상 링크"><button class="addhome" id="vqgo" type="button" style="margin:0">➕ 추가</button></div><div id="vqmsg" class="chatnote" style="margin:6px 0 0"></div><div id="vqmine"></div></div><div id="kform" hidden style="flex-basis:100%;background:#1a0f08;border-radius:6px;padding:8px 10px"><div class="chatnote" style="margin:0 0 6px">🎤 노래 신청 — 부를 곡과 반주(노래방) 영상을 미리 골라 넣어 두세요. 순서가 되면 방장이 시작하고, 내 마이크가 자동으로 켜집니다. 마이크는 이어폰을 쓰세요.<br>📂 유튜브가 막힌 곡은 아래 「내 파일로 반주」(mp3·mp4 등)나 영상 직접 주소로 신청하세요. 내 파일 반주는 내 기기에서 재생되어 내 목소리와 함께 방에 나갑니다. (이어폰 필수)</div><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kt" maxlength="30" placeholder="곡 제목" aria-label="곡 제목" style="max-width:180px"><input id="ku" placeholder="반주 주소 (유튜브 · mp3/mp4 직접 주소)" aria-label="반주 영상 주소"></div><div id="klib" class="kbook" style="margin:6px 0"><h4>🎤 노래방 곡 목록</h4><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kq2" placeholder="🔎 제목 · 곡번호 · 초성 검색 (예: 사랑, 10023, ㅅㄹ)" aria-label="노래 검색" style="min-width:200px"><button class="addhome" id="klibreload" type="button" style="margin:0;padding:4px 10px;font-size:12px">새로고침</button></div><div id="kcats" class="kcats" hidden></div><div id="klibres" class="kres" hidden></div></div>
 <div class="chatform" style="flex-wrap:wrap;margin:6px 0;align-items:center"><label class="addhome" style="margin:0;cursor:pointer">📂 내 파일로 반주 (mp3·mp4 등)<input id="kfile" type="file" accept="audio/*,video/*" hidden></label><span id="kfname" style="font-size:13px;opacity:.9"></span><button class="addhome" id="kfclr" type="button" style="margin:0;padding:2px 8px;font-size:12px" hidden>✕</button></div>
 <label class="chatnote" style="display:block;margin:6px 0"><input type="checkbox" id="ke" checked> 노래방 에코(울림) 효과</label><div class="chatform" style="margin:0"><button class="addhome" id="kgo" type="button" style="margin:0">🎤 신청하기</button><button class="addhome" id="kprevbtn" type="button" style="margin:0">🔍 영상 미리보기</button><button class="addhome" id="kcancel" type="button" style="margin:0">취소</button></div><div id="kprev" style="margin-top:6px"></div><div class="chatnote" style="margin:6px 0 0">저작권 안내: 영상·가사는 이 사이트가 저장하지 않으며, 유튜브가 허용하는 영상만 재생됩니다. 권리자가 막은 영상은 재생되지 않을 수 있습니다.</div></div></div>
@@ -867,6 +874,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <div id="mwyt" style="display:none"></div>
       <video id="liveAudio" autoplay playsinline style="display:none"></video>
       <video id="bcPreview" muted autoplay playsinline style="display:none;transform:scaleX(-1)"></video>
+      <div id="capov" aria-live="polite"></div>
       <div id="guestTile" hidden title="누르면 크게 (크기 조절·이동 가능)"><video id="guestVid" muted autoplay playsinline></video><small id="guestLbl"></small></div>
     </div>
     <audio id="bcAudio" controls hidden style="width:100%;margin-top:8px"></audio>
@@ -2890,6 +2898,41 @@ async function ctlUnkick(ck){
   renderMembers();
 }
 setInterval(ctlPoll, 3000);
+// ===== 방장 영상 자막: 글을 쓰면 영상 위로 흰 글씨가 올라감 =====
+const CAP = {rid: '', seen: {}, first: true};
+function capShow(t){
+  const ov = $('capov'); if (!ov) return;
+  const d = document.createElement('div'); d.className = 'cap'; d.textContent = t;
+  const h = ov.clientHeight || 300;
+  d.style.setProperty('--ch', h + 'px'); d.style.setProperty('--cd', Math.max(7, Math.min(14, h / 40 + 3)) + 's');
+  while (ov.children.length > 6) ov.firstChild.remove();
+  ov.append(d); d.addEventListener('animationend', () => d.remove());
+}
+async function capSend(){
+  const inp = $('capin'), t = inp.value.trim();
+  if (!t || !isHost() || !liveRoom || !DB) return;
+  { const bm = badMsg([t]); if (bm){ alert(bm); return; } }
+  inp.value = '';
+  const ts = nowS(); capShow(t);
+  try { const r = await fetch(`${DB}/chat/roomcap_${liveRoom.id}.json`, {method: 'POST', body: JSON.stringify({t, ts})}); const j = await r.json(); if (j && j.name) CAP.seen[j.name] = 1; } catch(e){}
+}
+async function capPoll(){
+  const row = $('caprow'); if (row) row.hidden = !(liveRoom && isHost());
+  if (!liveRoom || !DB){ CAP.rid = ''; return; }
+  const id = liveRoom.id;
+  if (CAP.rid !== id){ CAP.rid = id; CAP.seen = {}; CAP.first = true; }
+  let d = null; try { const r = await fetch(`${DB}/chat/roomcap_${id}.json?orderBy="$key"&limitToLast=5`); d = await r.json(); } catch(e){ return; }
+  if (!liveRoom || liveRoom.id !== id) return;
+  const now = nowS();
+  Object.keys(d || {}).sort().forEach(k => {
+    if (CAP.seen[k]) return; CAP.seen[k] = 1;
+    const c = d[k]; if (!c || !c.t || CAP.first && now - c.ts > 4000 || now - c.ts > 15000) return;   // 처음 들어왔을 때 옛 글은 건너뜀
+    capShow(String(c.t).slice(0, 80));
+  });
+  CAP.first = false;
+}
+setInterval(capPoll, 1500);
+$('capgo').onclick = capSend; $('capin').onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); capSend(); } };
 async function memBeat(){
   if (!liveRoom || !DB) return;
   const id = liveRoom.id;
@@ -3531,7 +3574,7 @@ function kpSave(me){
   const now = nowS();
   lj('livekeep/' + me.rid, 'PUT', {x: now + KEEP_MIN * 60000, ts: now, n: me.title, p: (me.pw || me.lock) ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: v || null}).catch(() => {});
 }
-function kpWipe(id){ ['livereg/', 'djpic/', 'sig_', 'roommem_', 'roommedia_', 'livekeep/', 'roomctl_'].forEach(k => lj(k + id, 'DELETE').catch(() => {})); }
+function kpWipe(id){ ['livereg/', 'djpic/', 'sig_', 'roommem_', 'roommedia_', 'livekeep/', 'roomctl_', 'roomcap_'].forEach(k => lj(k + id, 'DELETE').catch(() => {})); }
 function kpTouch(id){ try { lj('livereg/' + id, 'PATCH', {e: nowS() + KEEP_MIN * 60000}).catch(() => {}); } catch(_){} }
 async function kpRescue(id, r, now){
   let k = null; try { k = await lj('livekeep/' + id, 'GET'); } catch(_){}
@@ -3558,7 +3601,7 @@ function stopBroadcast(noKeep, local){
   if (noKeep){ lj('livereg/' + me.rid, 'DELETE').catch(() => {}); lj('livekeep/' + me.rid, 'DELETE').catch(() => {}); }
   else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: (me.pw || me.lock) ? 1 : 0, c: 0, e: nowS() + KEEP_MIN * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap, dj: me.dj || 0, dn: me.dn || ''}).catch(() => {});
   if (noKeep || !me.dj) lj('djpic/' + me.rid, 'DELETE').catch(() => {});   // 사진은 방이 남아 있는 동안(30일, 누가 들어오면 다시 30일) 그대로 유지
-  lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {}); lj('roomctl_' + me.rid, 'DELETE').catch(() => {});
+  lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {}); lj('roomctl_' + me.rid, 'DELETE').catch(() => {}); lj('roomcap_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
   leaveRoom(); setBc(''); loadLive();
 }
@@ -4572,7 +4615,7 @@ async function forceBomb(id, name){
   if (!rmAdm()) return;
   if (!confirm('관리자 권한으로 「' + name + '」 방을 강제 폭파합니다.\n안에 있는 사람도 모두 방에서 나오게 됩니다. 진행할까요?')) return;
   try { await lj('roomclosed_' + id, 'PUT', {ts: Date.now(), f: 1}); } catch(e){}
-  ['livereg/', 'livekeep/', 'djpic/', 'sig_', 'roommedia_', 'roommem_', 'talkreq_', 'talkok_', 'kalib_', 'kq_', 'roomguest_', 'roomctl_'].forEach(k => lj(k + id, 'DELETE').catch(() => {}));
+  ['livereg/', 'livekeep/', 'djpic/', 'sig_', 'roommedia_', 'roommem_', 'talkreq_', 'talkok_', 'kalib_', 'kq_', 'roomguest_', 'roomctl_', 'roomcap_'].forEach(k => lj(k + id, 'DELETE').catch(() => {}));
   if (bc && bc.rid === id) stopBroadcast(true);
   else if (liveRoom && liveRoom.id === id){ if (lis) stopListen(); else leaveRoom(); }
   setBc('💣 「' + name + '」 방을 강제 폭파했습니다.'); loadLive();
