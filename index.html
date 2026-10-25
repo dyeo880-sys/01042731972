@@ -90,6 +90,7 @@ body.onlybox #roomview[hidden]{display:block!important;position:fixed;left:-1000
 #capov{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6;border-radius:8px}
 #capov .cap{position:absolute;left:6%;right:6%;bottom:6%;text-align:center;color:#fff;font-family:'Jua','Noto Sans KR','Malgun Gothic',sans-serif;font-size:clamp(20px,4.2vw,40px);line-height:1.35;letter-spacing:.02em;word-break:keep-all;text-shadow:0 0 6px #000,0 2px 4px #000c,0 0 18px #0009;animation:capup var(--cd,9s) linear forwards;will-change:transform}
 @keyframes capup{0%{opacity:0;transform:translateY(0)}12%{opacity:1}55%{opacity:1}100%{opacity:0;transform:translateY(calc(var(--ch,300px) * -.55))}}
+#caprow[hidden]{display:none!important}
 #caprow{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
 #caprow input{flex:1;min-width:160px}
 #guestTile{position:absolute;right:8px;bottom:8px;width:min(34%,calc(200px * var(--mws)));background:#000;border:2px solid var(--amber);border-radius:8px;overflow:hidden;z-index:2;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 2px 10px #000a}#guestTile[hidden]{display:none}#guestTile.big{width:min(72%,calc(440px * var(--mws)))}#guestTile video{width:100%;display:block;max-height:none!important;border-radius:0!important}#guestTile small{position:absolute;left:4px;top:4px;background:#000b;color:var(--amber);padding:1px 7px;border-radius:6px;font-size:11px}#roomview.mini #guestTile{width:96px}
@@ -2918,7 +2919,7 @@ function capShow(t){
 }
 async function capSend(){
   const inp = $('capin'), t = inp.value.trim();
-  if (!t || !isHost() || !liveRoom || !DB) return;
+  if (!t || !(isHost() || rmAdm()) || !liveRoom || !DB) return;
   { const bm = badMsg([t]); if (bm){ alert(bm); return; } }
   inp.value = '';
   const ts = nowS(); capShow(t);
@@ -2929,7 +2930,7 @@ async function capSend(){
   } catch(e){ memToast('⚠ 자막을 보내지 못했습니다 (DB 쓰기 규칙 확인)', true); }
 }
 async function capPoll(){
-  const row = $('caprow'); if (row) row.hidden = !(liveRoom && isHost());
+  const row = $('caprow'); if (row) row.hidden = !(liveRoom && (isHost() || rmAdm()));
   if (!liveRoom || !DB){ CAP.rid = ''; return; }
   const id = liveRoom.id;
   if (CAP.rid !== id){ CAP.rid = id; CAP.seen = {}; CAP.first = true; }
