@@ -950,6 +950,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <div class="mixrow" id="mixrow">
           <label title="내가 틀어 주는 음악·반주·영상 소리와 내 마이크의 크기"><span>🎚 방장 소리 <small>(음악·반주)</small></span><input id="mixhost" type="range" min="0" max="2" step="0.05" value="1"><span id="mixhostv" class="mv">100%</span></label>
           <label title="마이크를 켠 손님 모두의 목소리 크기 (손님 한 명씩은 아래 요청 목록에서 조절)"><span>🎤 손님 마이크 전체</span><input id="mixguest" type="range" min="0" max="2" step="0.05" value="1"><span id="mixguestv" class="mv">100%</span></label>
+          <label title="라디오를 방에 송출할 때 방 사람들에게 들리는 라디오 크기 (내 스피커 음량과 별개)"><span>📻 라디오 송출 <small>(방 사람들 듣는 크기)</small></span><input id="mixradio" type="range" min="0" max="2" step="0.05" value="1"><span id="mixradiov" class="mv">100%</span></label>
         </div>
         <div class="vxbox" id="vxbox">
           <div class="vxt">📡 PC 소리 · 마이크 <small>(체크 = 끌 때까지 계속 · 버튼 = 누르고 있는 동안만)</small></div>
@@ -3584,6 +3585,7 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
   }
   const me = {holdSet: true, hold: 43200, alone: false, an: (opts && opts.an) || null, aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : ((opts && opts.lk) || ''), title, src: null, pvOff: !!(opts && opts.pn), cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
   bc = me;
+  try { plRoomSwitch(); } catch(_){}
   me.sid = Math.random().toString(36).slice(2, 12);
   try {   // DJ 사진: 내 사진이 있으면 바꿔 걸고, 없으면 앞 방장이 남긴 사진(일주일 안)을 그대로 이어 둠
     const L = djLocal();
@@ -3623,6 +3625,7 @@ async function makeMusicRoom(){
   if (lis) stopListen(); // 듣고 있던 다른 방 정리
   stopBroadcast(false);
   if (!(await buildBc(myId, title, pw, wantCam))) return;
+  try { PL.list = []; PL.cur = null; PL.msg = ''; PL.ts = Date.now(); plSave(); plRender(); } catch(_){}   // 새 방은 항상 빈 재생목록으로 시작 (같은 화면에서 만든 이전 방의 목록이 따라오지 않게)
   $('bctitle').value = ''; $('bcpw').value = ''; openMk(false);
   enterRoom(myId, title); fillInvite(); loadLive();
   setBc('음악 방이 만들어졌습니다. 아래에서 음악 파일·마이크·PC 소리 중 하나를 골라 재생하세요.');
@@ -3656,6 +3659,7 @@ function stopBroadcast(noKeep, local){
   const lj = local ? (() => Promise.resolve()) : ljReal; // local=true: 내 화면만 정리(새 방장의 방 정보는 건드리지 않음)
   if (!bc) return;
   const me = bc; bc = null;
+  try { plRoomSwitch(); } catch(_){}
   if (me.baseTitle) document.title = me.baseTitle;
   me.timers.forEach(clearInterval);
   Object.keys(me.pcs).forEach(k => me.pcs[k].close());
@@ -5133,6 +5137,7 @@ $('bcfile').onchange = e => {
   play(); e.target.value = '';
 };
 $('mixhost').oninput = e => { const v = +e.target.value; $('mixhostv').textContent = Math.round(v * 100) + '%'; if (!bc) return; bc.mv = v; try { mixInit(bc); bc.mg.gain.value = v; } catch(x){} };
+$('mixradio').oninput = e => { const v = +e.target.value; $('mixradiov').textContent = Math.round(v * 100) + '%'; rdCastLvl = v; try { if (rdCastG) rdCastG.gain.value = rdCastDest ? v * 0.8 : v; } catch(x){} };
 $('mixguest').oninput = e => { const v = +e.target.value; $('mixguestv').textContent = Math.round(v * 100) + '%'; if (!bc) return; bc.gvAll = v; gvApply(bc); };
 // ---- 🖥 PC 소리 · 🎤 마이크 (방장 음량 아래): 체크 = 끌 때까지 계속, 버튼 = 누르고 있는 동안만 ----
 // 음악·영상 소리와 따로 섞이므로 음악을 틀면서 동시에 켤 수 있습니다. 한 번 연결해 두고 소리 크기만 0↔1로 바꿔서, 버튼을 누르는 순간 바로 나갑니다.
@@ -5225,7 +5230,7 @@ $('vurl').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isCompo
 $('vstop').onclick = hostVideoOff;
 // ---- 재생목록: 링크·검색 결과·내 영상 파일을 순서대로 담아 두면 영상이 끝날 때 다음 영상을 자동 재생 ----
 const PL = {ts: 0, cloud: '', list: [], cur: null, auto: true, loop: false, one: false, last: 0, cap: null, msg: ''};
-const PL_KEY = 'radio_playlist';
+let PL_KEY = 'radio_playlist', PL_SUF = '';   // 방장 방이 있으면 방 번호가 붙은 칸을 따로 씀 (plRoomSwitch)
 try {
   const sv = JSON.parse(localStorage.getItem(PL_KEY) || 'null');
   if (sv && Array.isArray(sv.list)){
@@ -5237,7 +5242,7 @@ try {
 // ☁ 서버(Firebase) 동기화: 「동기화 코드」를 입력한 컴퓨터끼리 같은 재생목록을 공유합니다.
 let PL_CODE = ''; try { PL_CODE = localStorage.getItem('radio_pl_code') || ''; } catch(e){}
 const plCloudOk = () => !!(typeof DB !== 'undefined' && DB && PL_CODE);
-const plUrl = () => DB + '/playlists/' + encodeURIComponent(PL_CODE) + '.json';
+const plUrl = () => DB + '/playlists/' + encodeURIComponent(PL_CODE + PL_SUF) + '.json';
 const plPack = () => ({ts: PL.ts || 0, list: PL.list.filter(x => x.u && !x.g).map(x => ({u: x.u, t: x.t, d: +x.d || 0})), loop: PL.loop, one: PL.one, auto: PL.auto});
 let plPushT = 0;
 function plCloudPush(){ clearTimeout(plPushT); if (!plCloudOk()) return; plPushT = setTimeout(async () => {
@@ -5277,6 +5282,27 @@ function plSetCode(){
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) plPull(); });
 setTimeout(plPull, 1500);
+// 🔀 방마다 재생목록 따로: 방장 방(bc.rid)이 바뀌면 그 방의 목록으로 바꿔 끼움 (방이 없을 때는 기본 목록)
+function plRoomSwitch(){
+  const rid = (typeof bc !== 'undefined' && bc && bc.rid) ? String(bc.rid) : '';
+  const key = rid ? 'radio_playlist_' + rid : 'radio_playlist';
+  if (key === PL_KEY) return;
+  try { localStorage.setItem(PL_KEY, JSON.stringify(plPack())); } catch(e){}                   // 떠나는 방 목록 보관
+  if (plCloudOk()){ try { fetch(plUrl(), {method: 'PUT', body: JSON.stringify(plPack())}).catch(() => {}); } catch(e){} }
+  clearTimeout(plPushT);
+  PL_KEY = key; PL_SUF = rid ? '_' + rid : '';
+  PL.list = []; PL.cur = null; PL.msg = ''; PL.ts = 0; PL.cloud = '';
+  try {
+    const sv = JSON.parse(localStorage.getItem(PL_KEY) || 'null');
+    if (sv && Array.isArray(sv.list)){
+      PL.list = sv.list.filter(x => x && typeof x.u === 'string' && /^https?:\/\//i.test(x.u)).slice(0, 100).map(x => ({u: x.u, t: String(x.t || x.u).slice(0, 120), d: +x.d || 0}));
+      PL.loop = !!sv.loop; PL.one = !!sv.one; PL.auto = sv.auto !== false; PL.ts = +sv.ts || 0;
+    }
+  } catch(e){}
+  try { plRender(); } catch(_){}
+  plPull();
+}
+setInterval(() => { try { plRoomSwitch(); } catch(e){} }, 1000);   // 안전망 (방 시작·종료 지점에서도 바로 호출함)
 const plMsg = t => { PL.msg = t; try { setBc(t); } catch(_){} plRender(); };
 // 지금 재생 중인 영상이 이 항목인가?
 function plSame(it){
@@ -5484,7 +5510,7 @@ plRender();
 const MVOL = {v: 0.3, mute: false}, MVOL_KEY = 'radio_media_vol';
 try { const q = parseFloat(localStorage.getItem(MVOL_KEY)); if (q >= 0 && q <= 1) MVOL.v = q; } catch(e){}
 function mvolUI(){
-  try { const q = $('rdvol'); if (q){ q.value = Math.round((MVOL.mute ? 0 : MVOL.v) * 100); $('rdmute').textContent = (MVOL.mute || MVOL.v === 0) ? '🔇' : (MVOL.v < 0.5 ? '🔉' : '🔊'); } } catch(_){}
+  try { const q = $('rdvol'); if (q){ if (+q.max >= 100) q.value = Math.round((MVOL.mute ? 0 : MVOL.v) * 100); $('rdmute').textContent = (MVOL.mute || MVOL.v === 0) ? '🔇' : (MVOL.v < 0.5 ? '🔉' : '🔊'); } } catch(_){}   // 0~1 눈금인 라디오 슬라이더는 건드리지 않음
   const r = $('mwvol'); if (!r) return;
   const pct = Math.round((MVOL.mute ? 0 : MVOL.v) * 100);
   r.value = pct; $('mwvolv').textContent = pct + '%';
@@ -5510,7 +5536,7 @@ function mvolMute(){
 }
 $('mwvol').addEventListener('input', e => mvolSet(+e.target.value / 100));
 $('mwmute').onclick = mvolMute;
-$('rdvol').addEventListener('input', e => mvolSet(+e.target.value / 100));
+$('rdvol').addEventListener('input', e => { if (+e.target.max >= 100) mvolSet(+e.target.value / 100); });   // 0~1 눈금(라디오 화면)은 라디오 소리만 조절 — 통합 볼륨을 1%로 떨어뜨리지 않게
 $('rdmute').onclick = mvolMute;
 mvolApply();
 // ---- 영상 검색 (방장이 옆에서 찾아서 클릭하면 바로 재생) ----
@@ -7531,6 +7557,7 @@ rdSync();
 
 // ===== 📻 방장: 라디오를 음악 방 사람들에게도 송출 (강의 중에는 강의 소리에 섞어서 송출) =====
 let rdCast = false, rdCastStream = null, rdCastTrk = null, rdCastSrc = '', rdCastNodes = null, rdCastDest = null;
+let rdCastG = null, rdCastLvl = 1;   // 방 사람들에게 나가는 라디오 크기 (내 스피커 음량과 별개)
 function rdCastUi(){
   try { if (bc) npTouch(); } catch(e){}
   const b = $('rdcast'); if (!b) return;
@@ -7541,7 +7568,7 @@ function rdCastReload(){ // 같은 방송국을 다시 불러와 crossOrigin 설
   if (hls || !audio.src) return;
   const u = audio.src; audio.src = u; audio.play().catch(() => {});
 }
-function rdCastDisc(){ if (rdCastNodes){ rdCastNodes.forEach(n => { try { n.disconnect(); } catch(e){} }); rdCastNodes = null; } }
+function rdCastDisc(){ rdCastG = null; if (rdCastNodes){ rdCastNodes.forEach(n => { try { n.disconnect(); } catch(e){} }); rdCastNodes = null; } }
 function rdCastCapture(){
   try {
     const cs = audio.captureStream ? audio.captureStream() : (audio.mozCaptureStream ? audio.mozCaptureStream() : null);
@@ -7549,14 +7576,18 @@ function rdCastCapture(){
     if (!t) return false;
     rdCastDisc();
     if (bc && MV.lec && MV.lec.dest){ // 강의 중: 마이크·PC 소리와 같은 믹서에 라디오를 추가
-      const n = bc.ac.createMediaStreamSource(new MediaStream([t])), g = bc.ac.createGain(); g.gain.value = 0.8;
+      const n = bc.ac.createMediaStreamSource(new MediaStream([t])), g = bc.ac.createGain(); g.gain.value = 0.8 * rdCastLvl; rdCastG = g;
       n.connect(g); g.connect(MV.lec.dest); rdCastNodes = [n, g]; rdCastDest = MV.lec.dest;
       rdCastStream = cs; rdCastTrk = t; rdCastSrc = audio.currentSrc;
       setBc('📻 라디오를 강의 소리에 섞어 방 사람들에게 송출 중입니다.');
       return true;
     }
-    rdCastDest = null; rdCastStream = cs; rdCastTrk = t; rdCastSrc = audio.currentSrc;
-    swapSource(cs); setBc('📻 라디오를 방 사람들에게 송출 중입니다.');
+    // 송출 소리를 믹서(음량 조절용)를 거쳐 내보냄: 방 사람들에게 들리는 크기를 「📻 라디오 송출」 슬라이더로 조절
+    const n2 = bc.ac.createMediaStreamSource(new MediaStream([t])), g2 = bc.ac.createGain(), d2 = bc.ac.createMediaStreamDestination();
+    g2.gain.value = rdCastLvl; rdCastG = g2; n2.connect(g2); g2.connect(d2); rdCastNodes = [n2, g2];
+    try { bc.ac.resume(); } catch(e){}
+    rdCastDest = null; rdCastStream = d2.stream; rdCastTrk = t; rdCastSrc = audio.currentSrc;
+    swapSource(d2.stream); setBc('📻 라디오를 방 사람들에게 송출 중입니다.');
     return true;
   } catch(e){ return false; }
 }
