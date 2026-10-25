@@ -872,7 +872,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="mwsize" id="lecmeter" hidden><strong style="color:var(--amber)">🎓 보내는 소리</strong><span>PC 소리 <meter id="mtsys" min="0" max="1" value="0" style="width:90px"></meter></span><span>내 마이크 <meter id="mtmic" min="0" max="1" value="0" style="width:90px"></meter></span><button class="addhome" type="button" id="lecmic" style="margin:0" title="강의 중 내 마이크만 끄거나 켭니다 (PC 소리는 계속 나갑니다)">🎤 마이크 끄기</button><span id="mtmsg" style="flex-basis:100%;font-size:13px"></span></div>
     <div class="chatnote" id="rxdiag" hidden style="margin:0 0 8px;font-size:13px"></div>
     <div class="mwsize" id="caprow" hidden><label for="capin">📜 영상 자막</label><input id="capin" maxlength="80" placeholder="글을 쓰면 영상 위로 흰 글씨가 올라갑니다" aria-label="영상 자막 글"><button class="addhome" type="button" id="capgo" style="margin:0">⬆ 올리기</button></div>
-    <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><button class="addhome" id="kbtn" type="button" hidden>🎤 노래 신청</button><button class="addhome" id="gfbtn" type="button" hidden title="내 컴퓨터의 음악·영상 파일을 방에 틀어 줍니다 (방장 허용 필요)">🎵 내 파일 틀기</button><button class="addhome" id="vqbtn" type="button" hidden title="유튜브·영상 링크를 방장 재생목록에 올립니다 (방장이 체크해야 재생)">🎬 영상 추가</button><input id="gffile" type="file" accept="audio/*,video/*" hidden><input id="klibdir" type="file" webkitdirectory multiple hidden><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div><div id="vqform" hidden style="flex-basis:100%;background:#1a0f08;border-radius:6px;padding:8px 10px"><div class="chatnote" style="margin:0 0 6px">🎬 영상 추가 — 유튜브·mp4 링크를 넣으면 방장의 재생목록에 올라갑니다. <b>방장이 체크(허용)한 영상만 재생</b>되고, 허용되지 않은 영상은 건너뜁니다. (한 사람 최대 5개)</div><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="vqu" placeholder="영상 링크 (유튜브 · mp4 · m3u8)" aria-label="추가할 영상 링크"><button class="addhome" id="vqgo" type="button" style="margin:0">➕ 추가</button></div><div id="vqmsg" class="chatnote" style="margin:6px 0 0"></div><div id="vqmine"></div></div><div id="kform" hidden style="flex-basis:100%;background:#1a0f08;border-radius:6px;padding:8px 10px"><div class="chatnote" style="margin:0 0 6px">🎤 노래 신청 — 부를 곡과 반주(노래방) 영상을 미리 골라 넣어 두세요. 순서가 되면 방장이 시작하고, 내 마이크가 자동으로 켜집니다. 마이크는 이어폰을 쓰세요.<br>📂 유튜브가 막힌 곡은 아래 「내 파일로 반주」(mp3·mp4 등)나 영상 직접 주소로 신청하세요. 내 파일 반주는 내 기기에서 재생되어 내 목소리와 함께 방에 나갑니다. (이어폰 필수)</div><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kt" maxlength="30" placeholder="곡 제목" aria-label="곡 제목" style="max-width:180px"><input id="ku" placeholder="반주 주소 (유튜브 · mp3/mp4 직접 주소)" aria-label="반주 영상 주소"></div><div id="klib" class="kbook" style="margin:6px 0"><h4>🎤 노래방 곡 목록</h4><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kq2" placeholder="🔎 제목 · 곡번호 · 초성 검색 (예: 사랑, 10023, ㅅㄹ)" aria-label="노래 검색" style="min-width:200px"><button class="addhome" id="klibreload" type="button" style="margin:0;padding:4px 10px;font-size:12px">새로고침</button></div><div id="kcats" class="kcats" hidden></div><div id="klibres" class="kres" hidden></div></div>
+    <div class="mwtalk" id="mwtalk"><button class="addhome" id="talkbtn" type="button" hidden>🎤 마이크 요청</button><button class="addhome" id="camreqbtn" type="button" hidden>📷 카메라 요청</button><span class="vxrow" id="gtctl" hidden><label class="vxck"><input type="checkbox" id="gtck" checked> 🎤 계속 켜기</label><button class="addhome vxbtn" type="button" id="gtbtn" title="체크를 풀면, 이 버튼을 누르고 있는 동안만 내 목소리가 나갑니다">🎤 누르는 동안</button><span id="gtst" style="font-size:12px;opacity:.9"></span></span><button class="addhome" id="kbtn" type="button" hidden>🎤 노래 신청</button><button class="addhome" id="gfbtn" type="button" hidden title="내 컴퓨터의 음악·영상 파일을 방에 틀어 줍니다 (방장 허용 필요)">🎵 내 파일 틀기</button><button class="addhome" id="vqbtn" type="button" hidden title="유튜브·영상 링크를 방장 재생목록에 올립니다 (방장이 체크해야 재생)">🎬 영상 추가</button><input id="gffile" type="file" accept="audio/*,video/*" hidden><input id="klibdir" type="file" webkitdirectory multiple hidden><span id="talkmsg" style="opacity:.85"></span><div id="talkhost" hidden></div><div id="vqform" hidden style="flex-basis:100%;background:#1a0f08;border-radius:6px;padding:8px 10px"><div class="chatnote" style="margin:0 0 6px">🎬 영상 추가 — 유튜브·mp4 링크를 넣으면 방장의 재생목록에 올라갑니다. <b>방장이 체크(허용)한 영상만 재생</b>되고, 허용되지 않은 영상은 건너뜁니다. (한 사람 최대 5개)</div><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="vqu" placeholder="영상 링크 (유튜브 · mp4 · m3u8)" aria-label="추가할 영상 링크"><button class="addhome" id="vqgo" type="button" style="margin:0">➕ 추가</button></div><div id="vqmsg" class="chatnote" style="margin:6px 0 0"></div><div id="vqmine"></div></div><div id="kform" hidden style="flex-basis:100%;background:#1a0f08;border-radius:6px;padding:8px 10px"><div class="chatnote" style="margin:0 0 6px">🎤 노래 신청 — 부를 곡과 반주(노래방) 영상을 미리 골라 넣어 두세요. 순서가 되면 방장이 시작하고, 내 마이크가 자동으로 켜집니다. 마이크는 이어폰을 쓰세요.<br>📂 유튜브가 막힌 곡은 아래 「내 파일로 반주」(mp3·mp4 등)나 영상 직접 주소로 신청하세요. 내 파일 반주는 내 기기에서 재생되어 내 목소리와 함께 방에 나갑니다. (이어폰 필수)</div><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kt" maxlength="30" placeholder="곡 제목" aria-label="곡 제목" style="max-width:180px"><input id="ku" placeholder="반주 주소 (유튜브 · mp3/mp4 직접 주소)" aria-label="반주 영상 주소"></div><div id="klib" class="kbook" style="margin:6px 0"><h4>🎤 노래방 곡 목록</h4><div class="chatform" style="flex-wrap:wrap;margin:0"><input id="kq2" placeholder="🔎 제목 · 곡번호 · 초성 검색 (예: 사랑, 10023, ㅅㄹ)" aria-label="노래 검색" style="min-width:200px"><button class="addhome" id="klibreload" type="button" style="margin:0;padding:4px 10px;font-size:12px">새로고침</button></div><div id="kcats" class="kcats" hidden></div><div id="klibres" class="kres" hidden></div></div>
 <div class="chatform" style="flex-wrap:wrap;margin:6px 0;align-items:center"><label class="addhome" style="margin:0;cursor:pointer">📂 내 파일로 반주 (mp3·mp4 등)<input id="kfile" type="file" accept="audio/*,video/*" hidden></label><span id="kfname" style="font-size:13px;opacity:.9"></span><button class="addhome" id="kfclr" type="button" style="margin:0;padding:2px 8px;font-size:12px" hidden>✕</button></div>
 <label class="chatnote" style="display:block;margin:6px 0"><input type="checkbox" id="ke" checked> 노래방 에코(울림) 효과</label><div class="chatform" style="margin:0"><button class="addhome" id="kgo" type="button" style="margin:0">🎤 신청하기</button><button class="addhome" id="kprevbtn" type="button" style="margin:0">🔍 영상 미리보기</button><button class="addhome" id="kcancel" type="button" style="margin:0">취소</button></div><div id="kprev" style="margin-top:6px"></div><div class="chatnote" style="margin:6px 0 0">저작권 안내: 영상·가사는 이 사이트가 저장하지 않으며, 유튜브가 허용하는 영상만 재생됩니다. 권리자가 막은 영상은 재생되지 않을 수 있습니다.</div></div></div>
     <div class="debate" id="debate" hidden></div><div id="rxfloat" aria-hidden="true"></div>
@@ -2812,13 +2812,20 @@ function memCall(k, n){
   const cs = $('chatsec'); if (cs) cs.scrollIntoView({behavior: 'smooth', block: 'center'});
   inp.focus();
 }
+const hostRec0 = () => memList.find(x => x.h && x.ok);
 function renderMembers(){
   const box = $('members'); box.innerHTML = '';
-  const t = document.createElement('div'); t.style.cssText = 'font-size:12px;opacity:.7;margin-bottom:4px'; t.textContent = '👥 방 참가자 (' + memList.length + '명) · 이름을 누르면 귓속말·채팅'; box.append(t);
+  const t = document.createElement('div'); t.style.cssText = 'font-size:12px;opacity:.7;margin-bottom:4px'; t.textContent = '👥 방 참가자 (' + memList.length + '명) · 이름을 누르면 귓속말·채팅' + (memList.some(x => x.sp || (hostRec0() && hostRec0().ok && hostRec0().ok[x.k] && hostRec0().ok[x.k].a === true)) ? ' · 🎤 마이크 허용 · 🔴 말하는 중' : '') + (isHost() && memList.some(x => x.rq && !x.h) ? ' · ✋ 요청 중(깜박임)' : ''); box.append(t);
+  const hostRec = memList.find(x => x.h && x.ok);
   memList.forEach(m => {
     const r = document.createElement('div');
     const me = m.k === myId;
-    r.textContent = (m.h ? '👑 ' : '· ') + m.n + (me ? ' (나) ✎' : (openMem === m.k ? ' ▾' : ' ✉'));
+    const gOk = hostRec && hostRec.ok && hostRec.ok[m.k] && hostRec.ok[m.k].a === true;
+    const rqNow = isHost() && !me && m.rq && !m.h && !gOk;   // 방장 화면: 마이크 요청 중인 손님
+    const mk = m.sp ? ' 🔴🎤' : (gOk ? ' 🎤' : (rqNow ? ' ✋🎤 요청' : ''));   // 🎤 = 마이크 허용됨(대기), 🔴🎤 = 지금 말하는 중
+    r.textContent = (m.h ? '👑 ' : '· ') + m.n + mk + (me ? ' (나) ✎' : (openMem === m.k ? ' ▾' : ' ✉'));
+    if (mk) r.style.color = 'var(--amber)';
+    if (rqNow){ r.classList.add('blink'); r.style.color = '#ff6b6b'; r.style.fontWeight = '700'; r.title = '마이크 요청 중 — 미디어 창에서 허용/거절하세요'; }
     r.style.cursor = 'pointer'; r.setAttribute('role', 'button'); r.tabIndex = 0;
     if (me){
       r.title = '이름 바꾸기'; r.onclick = renameMe; r.onkeydown = e => { if (e.key === 'Enter') renameMe(); };
@@ -2850,6 +2857,7 @@ function renderMembers(){
 }
 function memRec(){
   const r = {n: myNick(), h: isHost() ? 1 : 0, ts: nowS(), ku: UID};
+  try { if (talk.a === 'req') r.rq = 1; if (talk.a === 'ok' && talk.mic && gtWant()) r.sp = 1; if (isHost() && bc && bc.xt && bc.xt.mic && vxWant('mic')) r.sp = 1; } catch(e){}
   if (typeof talk !== 'undefined'){ if (talk.a) r.a = 1; if (talk.v) r.v = 1; if (talk.fm) r.fm = String(talk.fm.f.name).slice(0, 30); if (talk.a && talk.song) r.sg = talk.song; }
   if (typeof rx !== 'undefined' && liveRoom && rx.rid === liveRoom.id){ if (rx.st){ r.st = rx.st; r.sts = rx.sts; } if (rx.hd) r.hd = 1; if (rx.rl){ r.rl = rx.rl; r.rt = rx.rt; } if (Object.keys(rx.rc).length) r.rc = rx.rc; if (isHost()){ if (rx.rs) r.rs = rx.rs; if (rx.pv) r.pv = 1; if (rx.rv) r.rv = 1; } }
   if (isHost() && bc){
@@ -3863,10 +3871,11 @@ function talkUI(){
   const act = talk.a === 'req' || talk.v === 'req' || talk.a === 'ok' || talk.v === 'ok';
   m.textContent = talk.msg || (talk.a === 'req' || talk.v === 'req' ? talk.info || '요청을 보내는 중…' : (talk.a === 'ok' || talk.v === 'ok') ? '🔴 켜짐 — 마이크는 이어폰을 쓰면 울림이 없습니다' : (bm ? '🚫 ' + bm : ''));
   m.classList.toggle('blkmsg', !!bm && !act && (!talk.msg || talk.msg.indexOf('방장이') === 0));
+  try { gtUi(); } catch(e){}
 }
 function talkAttach(){
   if (!lis) return;
-  if (lis.snd){ const t = talk.a === 'ok' && talk.mic ? talk.mic.getAudioTracks()[0] : null; if (lis.snd.track !== t) lis.snd.replaceTrack(t).catch(() => {}); }
+  if (lis.snd){ const t = talk.a === 'ok' && talk.mic ? talk.mic.getAudioTracks()[0] : null; if (t){ try { t.enabled = gtWant(); } catch(e){} } if (lis.snd.track !== t) lis.snd.replaceTrack(t).catch(() => {}); }
   if (lis.vsnd){
     const t = talk.v === 'ok' && talk.cam ? talk.cam.getVideoTracks()[0] : null;
     if (lis.vsnd.track !== t) lis.vsnd.replaceTrack(t).then(() => { try { const q = lis.vsnd.getParameters(); q.encodings = q.encodings && q.encodings.length ? q.encodings : [{}]; q.encodings[0].maxBitrate = 250000; lis.vsnd.setParameters(q).catch(() => {}); } catch(e){} }).catch(() => {});
@@ -3915,7 +3924,7 @@ async function talkAcquire(kind){
 function talkKindStop(kind, msg){
   const s = kind === 'a' ? 'mic' : 'cam';
   talk[kind] = ''; try { talkAttach(); } catch(e){}
-  if (kind === 'a'){ talk.song = null; KARA.file = null; }
+  if (kind === 'a'){ talk.song = null; KARA.file = null; GT.held = false; try { $('gtck').checked = true; } catch(e){} }
   if (talk[s]){ try { karaAccStop(talk[s]); } catch(e){} const o = talk[s]._orig; if (o) o.getTracks().forEach(t => t.stop()); try { if (talk[s]._ctx) talk[s]._ctx.close(); } catch(e){} talk[s].getTracks().forEach(t => t.stop()); talk[s] = null; }
   talk.msg = msg || ''; if (msg) setBc(msg);
   if (talk.fm && !talk.a && !talk.v) guestFileStop();
@@ -3986,6 +3995,36 @@ function talkRelease(k){
 }
 function talkStop(msg){ ['a', 'v'].forEach(k => { if (talk[k]) talkKindStop(k, msg); }); talk.blk = {a: '', v: ''}; talk.msg = msg || ''; talkUI(); }
 $('talkbtn').onclick = () => { karaCtx(); if (talk.a) talkKindStop('a', ''); else talkStart('a'); };
+// ---- 🎤 허용된 손님의 마이크 조작: 체크 = 끌 때까지 계속, 버튼 = 누르고 있는 동안만 (방장과 같은 방식) ----
+// 방장이 허용한 손님은 동시에 최대 MAX_SPEAK명까지 말할 수 있고, 각자 이 조작으로 자기 목소리를 켜고 끕니다. 노래 순서·파일 재생 중에는 계속 켜짐으로 고정됩니다.
+const GT = {held: false};
+const gtLocked = () => !!(talk.kar || talk.song || talk.fm);
+const gtWant = () => !!($('gtck').checked || GT.held || gtLocked());
+function gtUi(){
+  const show = talk.a === 'ok' && !talk.fm;
+  $('gtctl').hidden = !show; if (!show) return;
+  const on = gtWant() && !!talk.mic;
+  $('gtck').disabled = gtLocked(); if (gtLocked()) $('gtck').checked = true;
+  $('gtbtn').classList.toggle('on', GT.held);
+  $('gtctl').classList.toggle('live', on);
+  $('gtst').textContent = on ? '🔴 말하는 중' : '🔇 대기 — 체크하거나 버튼을 누르고 말하세요';
+}
+let gtLast = 0;
+function gtApply(){ try { talkAttach(); } catch(e){} gtUi(); const n = Date.now(); if (n - gtLast > 700){ gtLast = n; try { talkBeat(); } catch(e){} } else { clearTimeout(gtApply.t); gtApply.t = setTimeout(() => { gtLast = Date.now(); try { talkBeat(); } catch(e){} }, 700); } }
+{
+  const b = $('gtbtn');
+  const press = () => { if (GT.held) return; GT.held = true; gtApply(); };
+  const release = () => { if (!GT.held) return; GT.held = false; gtApply(); };
+  $('gtck').onchange = gtApply;
+  b.addEventListener('pointerdown', e => { if (e.button) return; e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch(_){} press(); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n => b.addEventListener(n, release));
+  b.addEventListener('contextmenu', e => e.preventDefault());
+  b.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat){ e.preventDefault(); press(); } });
+  b.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); release(); } });
+  b.addEventListener('blur', release);
+  addEventListener('blur', release);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) release(); });
+}
 // ===== 🎤 노래방 (음악 방): 손님이 곡·유튜브 반주를 정해 신청 → 방장이 시작하면 영상 재생 + 마이크 허용 =====
 const KARA = {echo: true, file: null, vol: 0.8};
 const KURL_OK = /^https?:\/\/[^\s]+\.(mp4|webm|m3u8|mp3|m4a|ogg|mov)(\?[^\s]*)?$/i; // 노래 신청 직접 주소는 영상·음악 파일만 허용
