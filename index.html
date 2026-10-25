@@ -571,6 +571,18 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <div class="vres" id="tvlist" style="max-height:60vh"></div>
     </div>
   </section>
+  <section class="chat" id="rsssec" aria-label="실시간 소식(RSS)">
+    <div class="chathead"><strong>📰 실시간 소식 (RSS)</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="rssadm">➕ RSS 추가</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="rssref">🔄 새로고침</button></span></div>
+    <div class="gate" id="rssadmin" hidden style="text-align:left;margin-bottom:8px">
+      <div style="color:var(--amber);font-weight:700;font-size:14px;margin-bottom:6px">RSS 등록 — 관리자 전용 · 등록하면 모든 접속자 화면에 실시간으로 나옵니다</div>
+      <div class="chatform" style="flex-wrap:wrap"><input id="rssn" maxlength="30" placeholder="이름 (예: 이진주방산업 블로그)" aria-label="RSS 이름"><input id="rssu" placeholder="RSS 주소 (예: https://rss.blog.naver.com/fb1234.xml)" aria-label="RSS 주소"></div>
+      <div class="chatform"><button id="rssadd" class="addhome" style="margin:0" type="button">＋ 추가</button><button id="rssout" class="addhome" style="margin:0" type="button">🔒 관리자 로그인</button></div>
+      <div class="chatnote" id="rssmsg"></div>
+      <div id="rsslist"></div>
+    </div>
+    <div class="chatlog" id="rssitems" style="height:auto;max-height:300px"><div class="empty" style="margin:14px 0">불러오는 중…</div></div>
+    <div class="chatnote" id="rssnote"></div>
+  </section>
   <section class="chat" id="krinfo" aria-label="한국 교통·날씨">
     <div class="chathead"><strong>🚦 교통 CCTV · 🌤 지역별 날씨 (한국)</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="kiref">🔄 새로고침</button></span></div>
     <div class="kiw" id="kiw"><div class="msg">날씨를 불러오는 중…</div></div>
@@ -5760,6 +5772,117 @@ $('tvaadd').onclick = async () => {
   } finally { btn.disabled = false; }
 };
 admShow();
+
+// ===== 📰 실시간 소식(RSS): 관리자가 RSS 주소를 등록하면 모든 접속자 화면에 실시간으로 나옵니다 =====
+const RSS_PROXY = 'https://a01042731972.dothome.co.kr/jin_rss.php';   // 네이버 등은 브라우저가 직접 못 읽어서 이 중계 파일을 거칩니다 (주소는 올린 곳에 맞게)
+const RSS_EVERY = 180000;   // 자동 갱신 간격(ms): 3분
+const rssLocal = () => { try { return JSON.parse(localStorage.getItem('radio_rssfeeds') || '[]'); } catch(e){ return []; } };
+const rssLocalSave = a => { try { localStorage.setItem('radio_rssfeeds', JSON.stringify(a.slice(-20))); } catch(e){} };
+const rssFmt = t => { if (!t) return ''; const d = new Date(t), z = n => String(n).padStart(2, '0'); return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + z(d.getHours()) + ':' + z(d.getMinutes()); };
+let RSSF = [], rssBusy = false;
+async function rssFeeds(){
+  let out = [];
+  try { const j = await lj('rssfeeds', 'GET'); out = Object.entries(j || {}).map(([id, v]) => ({id, name: String(v.name || '').slice(0, 30), u: String(v.u || ''), ts: +v.ts || 0})); } catch(e){}
+  rssLocal().forEach(v => out.push(v));
+  return out.filter(x => x.name && /^https:\/\//i.test(x.u)).sort((a, b) => a.ts - b.ts);
+}
+async function rssGet(u){
+  const T = p => { const ac = new AbortController(); setTimeout(() => ac.abort(), 9000); return fetch(p, {signal: ac.signal}); };
+  try { const r = await T(RSS_PROXY + '?url=' + encodeURIComponent(u)); if (r.ok){ const j = await r.json(); if (j && j.items && j.items.length) return j.items; } } catch(e){}
+  try {   // 중계가 안 되면 직접 시도 (그 사이트가 읽기를 허용한 경우만 성공)
+    const r = await T(u); if (!r.ok) return [];
+    const d = new DOMParser().parseFromString(await r.text(), 'text/xml');
+    return [...d.querySelectorAll('item, entry')].slice(0, 8).map(n => {
+      const g = t => ((n.querySelector(t) || {}).textContent || ''), l = n.querySelector('link');
+      return {title: g('title').trim(), link: ((l && (l.getAttribute('href') || l.textContent)) || '').trim(), date: g('pubDate') || g('published') || g('updated'), summary: g('description').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)};
+    });
+  } catch(e){ return []; }
+}
+function rssAdmShow(){
+  const a = tvIsAdm(); $('rssout').textContent = a ? '🔓 관리자 끝내기' : '🔒 관리자 로그인';
+  ['rssn', 'rssu', 'rssadd'].forEach(id => { $(id).disabled = !a; });
+  $('rssn').placeholder = a ? '이름 (예: 이진주방산업 블로그)' : '관리자만 추가할 수 있습니다';
+  rssListAdm();
+}
+function rssListAdm(){
+  const box = $('rsslist'); box.innerHTML = '';
+  RSSF.forEach(f => {
+    const r = document.createElement('div'); r.style.cssText = 'display:flex;gap:8px;align-items:center;padding:4px 0;font-size:13px';
+    const t = document.createElement('span'); t.style.cssText = 'flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'; t.textContent = f.name + ' · ' + f.u; r.append(t);
+    if (tvIsAdm()){
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:3px 8px;font-size:12px'; b.textContent = '🗑 삭제';
+      b.onclick = async () => {
+        if (!confirm('"' + f.name + '" RSS를 삭제할까요?')) return;
+        if (String(f.id || '').startsWith('L')) rssLocalSave(rssLocal().filter(v => v.id !== f.id));
+        else { try { await lj('rssfeeds/' + f.id, 'DELETE'); } catch(e){ alert('지우지 못했습니다. 인터넷 연결을 확인하세요.'); return; } }
+        rssLoad();
+      };
+      r.append(b);
+    }
+    box.append(r);
+  });
+}
+async function rssLoad(){
+  if (rssBusy) return; rssBusy = true;
+  const box = $('rssitems'), note = $('rssnote');
+  try {
+    note.textContent = '불러오는 중…';
+    RSSF = await rssFeeds(); rssListAdm();
+    if (!RSSF.length){ box.innerHTML = ''; const e = document.createElement('div'); e.className = 'empty'; e.style.margin = '14px 0'; e.textContent = '등록된 RSS가 없습니다. 관리자가 ➕ RSS 추가에서 등록하면 여기에 나옵니다.'; box.append(e); note.textContent = ''; return; }
+    const res = await Promise.all(RSSF.map(async f => ({f, items: await rssGet(f.u)})));
+    let all = [], fail = 0;
+    res.forEach(r => { if (!r.items.length) fail++; r.items.forEach(it => all.push({src: r.f.name, title: it.title, link: it.link, date: it.date, summary: it.summary, t: Date.parse(it.date) || 0})); });
+    all.sort((a, b) => b.t - a.t); all = all.slice(0, 20);
+    box.innerHTML = '';
+    if (!all.length){ const e = document.createElement('div'); e.className = 'empty'; e.style.margin = '14px 0'; e.textContent = '글을 불러오지 못했습니다. 잠시 후 새로고침을 눌러 주세요.'; box.append(e); }
+    all.forEach(it => {
+      const row = document.createElement('div'); row.style.cssText = 'padding:7px 0;border-top:1px dashed #b99a5b55';
+      const ok = /^https?:\/\//i.test(it.link || ''), h = document.createElement(ok ? 'a' : 'span');
+      h.textContent = (it.t && Date.now() - it.t < 6 * 3600000 ? '🆕 ' : '') + (it.title || '(제목 없음)');
+      h.style.cssText = 'color:var(--amber);font-weight:700;text-decoration:none';
+      if (ok){ h.href = it.link; h.target = '_blank'; h.rel = 'noopener noreferrer'; }
+      const m = document.createElement('div'); m.style.cssText = 'font-size:12px;opacity:.65;margin:2px 0'; m.textContent = it.src + (it.t ? ' · ' + rssFmt(it.t) : '');
+      row.append(h, m);
+      if (it.summary){ const d = document.createElement('div'); d.style.cssText = 'font-size:13px;opacity:.85'; d.textContent = it.summary; row.append(d); }
+      box.append(row);
+    });
+    note.textContent = rssFmt(Date.now()) + ' 기준 · ' + Math.round(RSS_EVERY / 60000) + '분마다 자동 갱신' + (fail ? ' · ' + fail + '곳은 불러오지 못했어요' : '');
+  } finally { rssBusy = false; }
+}
+$('rssadm').onclick = () => { $('rssadmin').hidden = !$('rssadmin').hidden; rssAdmShow(); };
+$('rssref').onclick = rssLoad;
+$('rssout').onclick = async () => {
+  if (tvIsAdm()){ try { sessionStorage.removeItem('radio_admin'); } catch(e){} admShow(); rssAdmShow(); refreshTvLists(); return; }
+  const pw = prompt('관리자 비밀번호를 입력하세요.');
+  if (pw === null) return;
+  let ok = false;
+  try { ok = (await pwHash(pw.trim())) === TV_ADMIN_HASH; } catch(e){ alert('이 주소에서는 비밀번호를 확인할 수 없습니다. https:// 주소로 열어 주세요.'); return; }
+  if (!ok){ alert('비밀번호가 맞지 않습니다.'); return; }
+  try { sessionStorage.setItem('radio_admin', '1'); } catch(e){}
+  admShow(); rssAdmShow(); refreshTvLists();
+};
+$('rssadd').onclick = async () => {
+  const name = $('rssn').value.trim(), u = $('rssu').value.trim(), m = $('rssmsg');
+  if (!tvIsAdm()){ m.textContent = 'RSS 추가는 관리자만 할 수 있습니다. 먼저 \'관리자 로그인\'을 해 주세요.'; return; }
+  if (!name){ m.textContent = '이름을 넣어 주세요.'; return; }
+  if (!/^https:\/\//i.test(u)){ m.textContent = '주소는 https:// 로 시작해야 합니다.'; return; }
+  const btn = $('rssadd'); btn.disabled = true;
+  try {
+    if ((await rssFeeds()).some(v => v.u === u)){ m.textContent = '이미 등록된 RSS 주소입니다.'; return; }
+    m.textContent = '글이 읽히는지 확인 중… (최대 10초)';
+    const items = await rssGet(u);
+    if (!items.length){ m.textContent = '글을 읽지 못해 추가하지 않았습니다. 주소를 확인하거나, 중계 파일(jin_rss.php)이 올라가 있는지 확인해 주세요.'; return; }
+    const id = 'r' + Date.now().toString(36) + Math.floor(Math.random() * 1000), rec = {name: name.slice(0, 30), u, ts: Date.now()};
+    let shared = true;
+    try { await lj('rssfeeds/' + id, 'PUT', rec); } catch(e){ shared = false; const a = rssLocal(); a.push(Object.assign({id: 'L' + id}, rec)); rssLocalSave(a); }
+    $('rssn').value = ''; $('rssu').value = '';
+    m.textContent = '글 ' + items.length + '개 확인됨. ' + (shared ? '추가했습니다. 모든 접속자 화면에 나옵니다.' : '서버에 저장하지 못해 이 기기에만 저장했습니다.');
+    rssLoad();
+  } finally { btn.disabled = false; }
+};
+rssAdmShow();
+setTimeout(rssLoad, 2500);   // 접속 직후 바쁘지 않게 조금 뒤에 첫 불러오기
+setInterval(() => { if (!document.hidden) rssLoad(); }, RSS_EVERY);
 
 [['전체', ''], ['뉴스', 'news|뉴스|ytn|jtbc|nhk|bbc|cnn|al jazeera|france 24|dw'], ['스포츠', 'sport|스포츠|espn|golf|soccer|football'], ['음악', 'music|뮤직|mtv|kpop|k-pop|vevo|radio'], ['영화', 'movie|cinema|film|영화|drama|드라마'], ['어린이', 'kids|kid|cartoon|children|junior|baby|어린이'], ['다큐', 'documentary|discovery|history|nature|geographic|science|다큐'], ['날씨', 'weather|날씨']].forEach(([n, q]) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:4px 10px;font-size:13px'; b.textContent = n;
