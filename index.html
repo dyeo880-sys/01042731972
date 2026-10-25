@@ -933,6 +933,21 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <button class="addhome" style="margin:0" type="button" id="vtv">📺 TV 채널 목록</button>
         <button class="addhome" style="margin:0" type="button" id="vfind">🔍 검색</button>
       </div>
+        <details id="ytkeybox" style="margin:8px 0;background:#1a0f08;border:1px solid #b99a5b88;border-radius:8px;padding:8px 10px">
+          <summary style="cursor:pointer;font-size:13px;color:var(--amber)">🔑 내 유튜브 키 넣기 <span id="ytkst" style="opacity:.75;margin-left:6px"></span></summary>
+          <div style="font-size:12px;line-height:1.6;opacity:.85;margin:8px 0">
+            유튜브 검색은 하루 사용량(할당량)이 정해져 있어, 키를 안 넣으면 모두가 함께 쓰는 공용 키로 검색합니다.<br>
+            내 키를 넣으면 <b>내 키를 먼저</b> 쓰고, 이 기기(브라우저)에만 저장됩니다. 검색 1번에 100씩 쓰며, 기본 하루 10,000이라 약 100번 검색할 수 있습니다.
+            (매일 한국 시간 오후 4~5시경 초기화) 발급: <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener" style="color:var(--amber)">Google Cloud ↗</a> → YouTube Data API v3 사용 설정 → 사용자 인증 정보 → API 키
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <input id="ytkin" type="password" autocomplete="off" spellcheck="false" placeholder="AIza 로 시작하는 키 붙여넣기" aria-label="유튜브 API 키" style="flex:1;min-width:180px;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:7px 10px">
+            <button class="addhome" style="margin:0" type="button" id="ytksave">저장</button>
+            <button class="addhome" style="margin:0" type="button" id="ytktest" title="사용량 1만 쓰는 간단한 확인입니다">확인</button>
+            <button class="addhome" style="margin:0" type="button" id="ytkdel">삭제</button>
+          </div>
+          <div id="ytkmsg" role="status" style="font-size:12px;margin-top:6px;min-height:16px"></div>
+        </details>
         <div class="vres" id="vres" hidden></div>
       </div>
       <div class="tp" id="p-vshare" hidden>
@@ -5624,7 +5639,7 @@ async function srcPb(q){
 // 유튜브 검색 키 (비워 두면 처음 검색할 때 물어봅니다). 키는 Google Cloud에서 YouTube Data API v3만 허용하도록 제한해 두세요.
 const YT_KEY = 'AIzaSyB4hUFw8JSPNjfcR_ZUqkhRE5T03TAYy7g';
 async function srcYt(q){
-  const k = kload('yt') || YT_KEY || needKey('yt', '유튜브(YouTube Data API v3)', 'https://console.cloud.google.com/apis/library/youtube.googleapis.com');
+  const k = kload('yt') || YT_KEY; if (!k){ ytkOpen(); throw new Error('nokey'); }   // 내 키 → 공용 키 순서. 둘 다 없으면 키 입력 칸을 열어 줌
   const j = await jget('https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&maxResults=20&q=' + encodeURIComponent(q) + '&key=' + encodeURIComponent(k));
   const dec = t => { const e = document.createElement('textarea'); e.innerHTML = t || ''; return e.value; };
   return (j.items || []).filter(it => it.id && it.id.videoId).map(it => ({title: dec(it.snippet.title), sub: '유튜브 · ' + dec(it.snippet.channelTitle), pick: () => { const t = dec(it.snippet.title); return hostLink('https://www.youtube.com/watch?v=' + it.id.videoId).then(() => mwUpdate('▶ ' + t.slice(0, 40))); }}));
@@ -5740,12 +5755,43 @@ async function searchVideos(){
   } catch(e){
     const m = String(e && e.message);
     if (m === 'nokey') vResMsg('API 키를 입력하지 않아 검색하지 않았습니다.');
-    else if ((key === 'px' || key === 'pb' || key === 'yt') && /^(400|401|403)$/.test(m)){ ksave(key, ''); vResMsg(key === 'yt' ? '유튜브 키가 맞지 않거나 오늘 사용량을 다 썼습니다. 다시 검색하면 키를 새로 물어봅니다.' : 'API 키가 맞지 않습니다. 다시 검색하면 키를 새로 물어봅니다.'); }
+    else if (key === 'yt' && /^(400|401|403)$/.test(m)){ ytkOpen(); vResMsg(kload('yt') ? '내 유튜브 키가 맞지 않거나 오늘 사용량을 다 썼습니다. 위 🔑 칸에서 [확인]으로 점검하거나 키를 바꿔 주세요.' : '공용 유튜브 키의 오늘 사용량이 다 찼거나 키가 막혔습니다. 위 🔑 칸에 내 키를 넣으면 바로 검색됩니다.'); }
+    else if ((key === 'px' || key === 'pb') && /^(400|401|403)$/.test(m)){ ksave(key, ''); vResMsg('API 키가 맞지 않습니다. 다시 검색하면 키를 새로 물어봅니다.'); }
     else if (key === 'tv') vResMsg('이 나라의 TV 목록을 불러오지 못했습니다. 인터넷 연결을 확인하거나 다른 나라를 골라 보세요.');
     else vResMsg('검색하지 못했습니다. 인터넷 연결을 확인하거나 다른 검색처를 골라 보세요.');
   }
 }
 $('vfind').onclick = searchVideos;
+// ---- 유튜브 키 입력 칸 (방장마다 자기 키 저장 · 비우면 공용 키) ----
+function ytkOpen(){ try { const b = $('ytkeybox'); b.open = true; $('p-vfind').hidden = false; setTimeout(() => $('ytkin').focus(), 50); } catch(e){} }
+function ytkShow(t, bad){ const m = $('ytkmsg'); m.textContent = t; m.style.color = bad ? '#ff9a8a' : '#8fe39a'; }
+function ytkRefresh(){
+  const k = kload('yt');
+  $('ytkst').textContent = k ? '· 내 키 사용 중 (' + k.slice(0, 4) + '…' + k.slice(-3) + ')' : '· 공용 키 사용 중';
+}
+$('ytksave').onclick = () => {
+  const v = $('ytkin').value.replace(/\s+/g, '');
+  if (!v){ ytkShow('키를 붙여 넣어 주세요.', true); return; }
+  if (v.length < 20){ ytkShow('키가 너무 짧습니다. 전체를 복사했는지 확인해 주세요.', true); return; }
+  ksave('yt', v); $('ytkin').value = ''; ytkRefresh(); ytkShow('저장했습니다. 이제 내 키로 검색합니다. [확인]을 눌러 작동하는지 볼 수 있습니다.');
+};
+$('ytkdel').onclick = () => { ksave('yt', ''); $('ytkin').value = ''; ytkRefresh(); ytkShow('내 키를 지웠습니다. 다시 공용 키로 검색합니다.'); };
+$('ytktest').onclick = async () => {
+  const k = $('ytkin').value.replace(/\s+/g, '') || kload('yt') || YT_KEY;
+  if (!k){ ytkShow('확인할 키가 없습니다.', true); return; }
+  ytkShow('확인하는 중…');
+  try {
+    const r = await fetch('https://www.googleapis.com/youtube/v3/videos?part=id&id=dQw4w9WgXcQ&key=' + encodeURIComponent(k));
+    if (r.ok){ ytkShow('✅ 키가 정상입니다.'); return; }
+    let why = ''; try { const j = await r.json(); why = (j.error && j.error.errors && j.error.errors[0] && j.error.errors[0].reason) || ''; } catch(e){}
+    if (why === 'quotaExceeded' || why === 'dailyLimitExceeded' || why === 'rateLimitExceeded') ytkShow('⚠ 키는 맞지만 오늘 사용량을 다 썼습니다. 한국 시간 오후 4~5시경 초기화됩니다.', true);
+    else if (why === 'keyInvalid' || r.status === 400) ytkShow('❌ 키가 올바르지 않습니다. 다시 복사해 보세요.', true);
+    else if (r.status === 403) ytkShow('❌ 이 키로는 쓸 수 없습니다. YouTube Data API v3 사용 설정과 키 제한을 확인하세요.', true);
+    else ytkShow('확인하지 못했습니다 (오류 ' + r.status + ').', true);
+  } catch(e){ ytkShow('인터넷 연결을 확인해 주세요.', true); }
+};
+ytkRefresh();
+
 $('vtv').onclick = () => tvBrowse();
 
 // ---- 방 없이 혼자 보는 TV ----
