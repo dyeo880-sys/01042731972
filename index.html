@@ -3492,7 +3492,7 @@ function stopBroadcast(noKeep, local){
   try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep){ lj('livereg/' + me.rid, 'DELETE').catch(() => {}); lj('livekeep/' + me.rid, 'DELETE').catch(() => {}); }
-  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: (me.pw || me.lock) ? 1 : 0, c: 0, e: nowS() + Math.min(43200, me.hold || 10080) * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap, dj: me.dj || 0, dn: me.dn || ''}).catch(() => {});
+  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: (me.pw || me.lock) ? 1 : 0, c: 0, e: nowS() + KEEP_MIN * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap, dj: me.dj || 0, dn: me.dn || ''}).catch(() => {});
   if (noKeep || !me.dj) lj('djpic/' + me.rid, 'DELETE').catch(() => {});   // 사진은 방이 남아 있는 동안(30일, 누가 들어오면 다시 30일) 그대로 유지
   lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
