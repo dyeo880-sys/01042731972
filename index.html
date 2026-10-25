@@ -186,6 +186,12 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 .mixrow input[type=range]{width:100%;min-width:0;accent-color:var(--brass)}
 .mixrow .mv{text-align:right;color:var(--amber)}
 .mixrow small{opacity:.7}
+.vxbox{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:4px;padding-top:8px;border-top:1px dashed #b99a5b55}
+.vxt{font-size:13px;font-weight:700;color:var(--amber)}.vxt small{font-weight:400;opacity:.7}
+.vxrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}.vxn{min-width:92px}
+.vxck{display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.vxbtn{margin:0;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}.vxbtn.on{background:var(--amber);color:#2a1a08;font-weight:700}
+.vxrow.live .vxn{color:var(--amber);font-weight:700}
 .mwsize[hidden]{display:none}
 #roomview.mini .hbfull,#roomview.mini .hbl{display:none!important}
 #roomview.mini .mwctl{margin-top:6px;padding:6px}
@@ -944,6 +950,12 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         <div class="mixrow" id="mixrow">
           <label title="내가 틀어 주는 음악·반주·영상 소리와 내 마이크의 크기"><span>🎚 방장 소리 <small>(음악·반주)</small></span><input id="mixhost" type="range" min="0" max="2" step="0.05" value="1"><span id="mixhostv" class="mv">100%</span></label>
           <label title="마이크를 켠 손님 모두의 목소리 크기 (손님 한 명씩은 아래 요청 목록에서 조절)"><span>🎤 손님 마이크 전체</span><input id="mixguest" type="range" min="0" max="2" step="0.05" value="1"><span id="mixguestv" class="mv">100%</span></label>
+        </div>
+        <div class="vxbox" id="vxbox">
+          <div class="vxt">📡 PC 소리 · 마이크 <small>(체크 = 끌 때까지 계속 · 버튼 = 누르고 있는 동안만)</small></div>
+          <div class="vxrow" id="vxsysrow"><span class="vxn">🖥 PC 소리</span><label class="vxck"><input type="checkbox" id="vxsysck"> 계속 켜기</label><button class="addhome vxbtn" type="button" id="vxsysbtn" title="누르고 있는 동안만 PC 소리가 방으로 나갑니다 (손을 떼면 바로 멈춤)">🖥 누르는 동안</button></div>
+          <div class="vxrow" id="vxmicrow"><span class="vxn">🎤 마이크</span><label class="vxck"><input type="checkbox" id="vxmicck"> 계속 켜기</label><button class="addhome vxbtn" type="button" id="vxmicbtn" title="누르고 있는 동안만 내 마이크가 방으로 나갑니다 (손을 떼면 바로 멈춤)">🎤 누르는 동안</button></div>
+          <div class="chatnote" id="vxmsg" style="margin:0">PC 소리는 처음 한 번 공유 창에서 '시스템 오디오 공유'를 체크해 주세요. 그 뒤로는 체크·버튼으로 바로 켜고 끕니다.</div>
         </div>
       </div>
                 <div class="tp" id="p-rs" hidden>
@@ -3609,6 +3621,7 @@ function stopBroadcast(noKeep, local){
   Object.keys(me.pcs).forEach(k => me.pcs[k].close());
   me.stream.getTracks().forEach(t => t.stop());
   if (me.src) me.src.getTracks().forEach(t => t.stop());
+  try { vxReset(me); } catch(e){}
   try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep){ lj('livereg/' + me.rid, 'DELETE').catch(() => {}); lj('livekeep/' + me.rid, 'DELETE').catch(() => {}); }
@@ -5050,6 +5063,91 @@ $('bcfile').onchange = e => {
 };
 $('mixhost').oninput = e => { const v = +e.target.value; $('mixhostv').textContent = Math.round(v * 100) + '%'; if (!bc) return; bc.mv = v; try { mixInit(bc); bc.mg.gain.value = v; } catch(x){} };
 $('mixguest').oninput = e => { const v = +e.target.value; $('mixguestv').textContent = Math.round(v * 100) + '%'; if (!bc) return; bc.gvAll = v; gvApply(bc); };
+// ---- 🖥 PC 소리 · 🎤 마이크 (방장 음량 아래): 체크 = 끌 때까지 계속, 버튼 = 누르고 있는 동안만 ----
+// 음악·영상 소리와 따로 섞이므로 음악을 틀면서 동시에 켤 수 있습니다. 한 번 연결해 두고 소리 크기만 0↔1로 바꿔서, 버튼을 누르는 순간 바로 나갑니다.
+const VX = {sys: {ck: 'vxsysck', btn: 'vxsysbtn', row: 'vxsysrow', nm: 'PC 소리', held: false}, mic: {ck: 'vxmicck', btn: 'vxmicbtn', row: 'vxmicrow', nm: '마이크', held: false}};
+const vxMsg = t => { const e = $('vxmsg'); if (e) e.textContent = t; };
+const vxWant = k => !!($(VX[k].ck).checked || VX[k].held);
+function vxUi(k){
+  const on = vxWant(k) && !!(bc && bc.xt && bc.xt[k]);
+  $(VX[k].btn).classList.toggle('on', VX[k].held);
+  $(VX[k].row).classList.toggle('live', on);
+}
+function vxSummary(){
+  const a = ['sys', 'mic'].filter(k => bc && bc.xt && bc.xt[k] && vxWant(k)).map(k => VX[k].nm);
+  vxMsg(a.length ? '🔊 지금 방으로 나가는 중: ' + a.join(' + ') : '꺼져 있습니다. 체크하면 계속, 버튼은 누르고 있는 동안만 나갑니다.');
+}
+async function vxAcquire(me, k){
+  let stream;
+  if (k === 'mic') stream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: true, noiseSuppression: true, autoGainControl: true}});
+  else {
+    const d = await navigator.mediaDevices.getDisplayMedia({video: true, audio: true});
+    const at = d.getAudioTracks(); d.getVideoTracks().forEach(t => t.stop());
+    if (!at.length){ d.getTracks().forEach(t => t.stop()); throw new Error('noaudio'); }
+    stream = new MediaStream(at);
+  }
+  if (bc !== me){ stream.getTracks().forEach(t => t.stop()); throw new Error('gone'); }
+  const m = mixInit(me); try { me.ac.resume(); } catch(e){}
+  const node = me.ac.createMediaStreamSource(stream), g = me.ac.createGain();
+  g.gain.value = 0; node.connect(g); g.connect(m.dest);   // 음악 슬라이더(me.mg)를 거치지 않고 바로 섞음
+  const x = me.xt[k] = {stream, node, g};
+  stream.getAudioTracks().forEach(t => { t.onended = () => {   // 공유를 끝냈거나 마이크가 끊기면 정리
+    if (me.xt[k] !== x) return; delete me.xt[k];
+    try { node.disconnect(); g.disconnect(); } catch(e){}
+    VX[k].held = false; $(VX[k].ck).checked = false; vxUi(k); vxSummary();
+    vxMsg('⚠ ' + VX[k].nm + ' 연결이 끝났습니다. 다시 쓰려면 체크하거나 버튼을 눌러 주세요.');
+  }; });
+  return x;
+}
+async function vxApply(k){
+  const me = bc, c = VX[k];
+  if (!me){
+    if (vxWant(k)) vxMsg('먼저 "음악 방 만들기"로 방을 만들어 주세요.');
+    c.held = false; $(c.ck).checked = false; vxUi(k); return;
+  }
+  me.xt = me.xt || {}; me.xtp = me.xtp || {};
+  let x = me.xt[k];
+  if (!x && vxWant(k)){
+    try {
+      if (!me.xtp[k]) me.xtp[k] = vxAcquire(me, k).finally(() => { delete me.xtp[k]; });
+      x = await me.xtp[k];
+    } catch(e){
+      c.held = false; $(c.ck).checked = false; vxUi(k);
+      vxMsg(e && e.message === 'noaudio' ? '공유 창에서 "시스템 오디오(또는 탭 오디오) 공유"를 체크해 주세요. (PC의 Chrome/Edge에서만 가능)'
+        : k === 'mic' ? '마이크를 사용할 수 없습니다. 브라우저 마이크 권한을 확인하세요 (https 주소 필요).'
+        : 'PC 소리 공유를 사용할 수 없습니다. 컴퓨터의 Chrome/Edge에서 시도하세요.');
+      return;
+    }
+  }
+  if (!x || bc !== me){ vxUi(k); return; }
+  const on = vxWant(k);   // 연결을 기다리는 사이 버튼에서 손을 뗐을 수 있어 다시 확인
+  try { x.g.gain.setTargetAtTime(on ? 1 : 0, me.ac.currentTime, 0.01); } catch(e){ x.g.gain.value = on ? 1 : 0; }
+  vxUi(k); vxSummary();
+}
+function vxReset(me){   // 방이 끝나면 연결·체크 모두 해제
+  ['sys', 'mic'].forEach(k => {
+    const x = me && me.xt && me.xt[k];
+    if (x){ x.stream.getTracks().forEach(t => { t.onended = null; try { t.stop(); } catch(e){} }); try { x.node.disconnect(); x.g.disconnect(); } catch(e){} }
+    VX[k].held = false; $(VX[k].ck).checked = false; $(VX[k].btn).classList.remove('on'); $(VX[k].row).classList.remove('live');
+  });
+  if (me) { me.xt = {}; me.xtp = {}; }
+  vxMsg('PC 소리는 처음 한 번 공유 창에서 \'시스템 오디오 공유\'를 체크해 주세요. 그 뒤로는 체크·버튼으로 바로 켜고 끕니다.');
+}
+['sys', 'mic'].forEach(k => {
+  const c = VX[k], b = $(c.btn);
+  $(c.ck).onchange = () => vxApply(k);
+  const press = () => { if (c.held) return; c.held = true; vxApply(k); };
+  const release = () => { if (!c.held) return; c.held = false; vxApply(k); };
+  b.addEventListener('pointerdown', e => { if (e.button) return; e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch(_){} press(); });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n => b.addEventListener(n, release));
+  b.addEventListener('contextmenu', e => e.preventDefault());
+  b.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat){ e.preventDefault(); press(); } });
+  b.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); release(); } });
+  b.addEventListener('blur', release);
+});
+// 창을 벗어나거나 다른 앱으로 넘어가면 버튼 눌림은 풀어서 소리가 계속 새지 않게 함 (체크한 것은 그대로 유지)
+addEventListener('blur', () => ['sys', 'mic'].forEach(k => { if (VX[k].held){ VX[k].held = false; vxApply(k); } }));
+document.addEventListener('visibilitychange', () => { if (document.hidden) ['sys', 'mic'].forEach(k => { if (VX[k].held){ VX[k].held = false; vxApply(k); } }); });
 $('bcvfile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) hostFile(f); };
 $('vgo').onclick = () => hostLink($('vurl').value);
 $('vurl').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) hostLink($('vurl').value); });
