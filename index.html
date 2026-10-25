@@ -3625,7 +3625,6 @@ async function makeMusicRoom(){
   if (lis) stopListen(); // 듣고 있던 다른 방 정리
   stopBroadcast(false);
   if (!(await buildBc(myId, title, pw, wantCam))) return;
-  try { PL.list = []; PL.cur = null; PL.msg = ''; PL.ts = Date.now(); plSave(); plRender(); } catch(_){}   // 새 방은 항상 빈 재생목록으로 시작 (같은 화면에서 만든 이전 방의 목록이 따라오지 않게)
   $('bctitle').value = ''; $('bcpw').value = ''; openMk(false);
   enterRoom(myId, title); fillInvite(); loadLive();
   setBc('음악 방이 만들어졌습니다. 아래에서 음악 파일·마이크·PC 소리 중 하나를 골라 재생하세요.');
