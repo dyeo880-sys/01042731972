@@ -941,7 +941,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
               <img id="djprev" alt="DJ 사진 미리보기" hidden style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--amber)">
               <input type="file" id="djfile" accept="image/*" hidden>
               <button class="addhome" style="margin:0" type="button" id="djpick">📷 사진 고르기</button><button class="addhome" style="margin:0" type="button" id="djdel">지우기</button>
-              <div class="chatnote" id="djmsg" style="margin:0;flex-basis:100%">사진은 자동으로 작게(약 240px, 십수 KB) 줄여 저장합니다. 방 목록에 작은 동그라미로 나오고, 누르면 크게 볼 수 있습니다. 방장이 나가도 방이 남아 있는 동안(한 달, 누가 들어오면 다시 한 달) 그대로 남고, 다른 사람이 새 사진으로 바꾸기 전까지 유지됩니다. 내가 올린 사진은 「지우기」 또는 사진을 눌러 「내리기」로 언제든 내릴 수 있습니다.</div></div>
+              <div class="chatnote" id="djmsg" style="margin:0;flex-basis:100%">사진은 자동으로 작게(약 240px, 십수 KB) 줄여 저장합니다. 방 목록에 작은 동그라미로 나오고, 누르면 크게 볼 수 있습니다. 방장이 나가도 방이 남아 있는 동안(한 달, 누가 들어오면 다시 한 달) 그대로 남고, 다른 사람이 새 사진으로 바꾸기 전까지 유지됩니다. 방을 나갈 때 사진을 내릴지 물어보고, 그때 안 내렸어도 「지우기」를 누르면 내가 걸어 둔 모든 방에서 강제로 내려갑니다. 사진을 눌러 「내리기」를 해도 됩니다.</div></div>
             <div class="sgrp" style="flex-basis:100%"><input id="rsname" maxlength="20" placeholder="새 방 이름 (최대 20자)" aria-label="새 방 이름" style="width:200px"><button class="addhome" style="margin:0" type="button" id="rsnameok">✏ 이름 변경</button></div>
             <div class="sgrp" style="flex-basis:100%"><strong>⏰ 멘트 예약</strong>
               <textarea id="anlinks" rows="3" maxlength="600" placeholder="멘트로 나올 유튜브 링크 (줄마다 1개, 최대 5개 · 여러 개면 돌아가며 나옵니다 · mp3 직접 링크도 가능)" aria-label="멘트 링크" style="width:100%;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"></textarea>
@@ -4883,6 +4883,10 @@ $('rvleave').onclick = () => {
   if (!liveRoom){ hideRoomView(); return; }
   if (isHost()){
     if (!confirm('방을 나가면 지금 방에 있는 사람 중 한 명이 새 방장이 됩니다. (아무도 없어도 방은 ' + fmtMin((bc && bc.hold) || 10080) + ' 동안 빈 방으로 남아 누구나 들어와 방장이 될 수 있습니다. 방을 없애는 것은 관리자만 할 수 있습니다.) 나갈까요?')) return;
+    try {   // 내가 올린 DJ 사진이 걸려 있으면: 나가면서 같이 내릴지 물어봄 (안 내리면 방이 남아 있는 동안 그대로 남음)
+      const c = bc && bc.dj && DJC[bc.rid];
+      if (c && c.o === djOwner() && confirm('내가 올린 DJ 사진도 같이 내릴까요?\n\n[확인] 사진을 내립니다\n[취소] 사진을 그대로 남깁니다 (방이 남아 있는 동안, 다른 DJ가 바꾸기 전까지 유지)')){ bc.dj = 0; bc.dn = ''; delete DJC[bc.rid]; }
+    } catch(_){}
     stopBroadcast();
   } else { stopListen(); if (liveRoom) leaveRoom(); setStatus('정지'); }
 };
