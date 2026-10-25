@@ -143,6 +143,8 @@ body.hidebad .vr.bad{display:none}
 #rdonly{display:none!important}
 .mricon{width:28px;height:28px;flex:none;border-radius:4px;background:linear-gradient(135deg,#4a3a72,#1c1233);display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1}
 .st.mroom.closed{opacity:.5}
+.djav{width:30px;height:30px;flex:none;border-radius:50%;padding:0;border:2px solid var(--amber);background:#241610;overflow:hidden;margin:0 6px 0 2px;cursor:pointer;display:inline-flex;vertical-align:middle}
+.djav img{width:100%;height:100%;object-fit:cover;display:block}
 .mrgo{font-size:13px;white-space:nowrap;padding:5px 10px;margin:0 4px;border:1px solid var(--brass);border-radius:6px;color:var(--amber);background:#241610}
 .mrgo:hover{background:#b99a5b33}
 .st.bad{opacity:.45}.st.bad .n{text-decoration:line-through}
@@ -935,6 +937,11 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
         </div>
       </div>
                 <div class="tp" id="p-rs" hidden>
+            <div class="sgrp" style="flex-basis:100%"><strong>📸 DJ 얼굴 사진</strong>
+              <img id="djprev" alt="DJ 사진 미리보기" hidden style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--amber)">
+              <input type="file" id="djfile" accept="image/*" hidden>
+              <button class="addhome" style="margin:0" type="button" id="djpick">📷 사진 고르기</button><button class="addhome" style="margin:0" type="button" id="djdel">지우기</button>
+              <div class="chatnote" id="djmsg" style="margin:0;flex-basis:100%">사진은 자동으로 작게(약 240px, 십수 KB) 줄여 저장합니다. 방 목록에 작은 동그라미로 나오고, 누르면 크게 볼 수 있습니다. 방장이 나가도 방이 남아 있는 동안(한 달, 누가 들어오면 다시 한 달) 그대로 남고, 다른 사람이 새 사진으로 바꾸기 전까지 유지됩니다. 내가 올린 사진은 「지우기」 또는 사진을 눌러 「내리기」로 언제든 내릴 수 있습니다.</div></div>
             <div class="sgrp" style="flex-basis:100%"><input id="rsname" maxlength="20" placeholder="새 방 이름 (최대 20자)" aria-label="새 방 이름" style="width:200px"><button class="addhome" style="margin:0" type="button" id="rsnameok">✏ 이름 변경</button></div>
             <div class="sgrp" style="flex-basis:100%"><strong>⏰ 멘트 예약</strong>
               <textarea id="anlinks" rows="3" maxlength="600" placeholder="멘트로 나올 유튜브 링크 (줄마다 1개, 최대 5개 · 여러 개면 돌아가며 나옵니다 · mp3 직접 링크도 가능)" aria-label="멘트 링크" style="width:100%;background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:5px 8px;font-size:13px"></textarea>
@@ -2561,6 +2568,164 @@ let bc = null, lis = null, memTimer = null;
 // keepalive 요청은 본문 약 64KB 제한이 있어, 큰 본문(노래 목록 등)은 keepalive 없이 보냅니다.
 const lj = (p, m, b) => { const body = b ? JSON.stringify(b) : undefined; return fetch(`${DB}/chat/${p}.json`, {method: m, body, keepalive: !body || new Blob([body]).size < 60000}).then(r => r.ok ? r.json() : Promise.reject(r.status)); };
 const ljReal = lj;
+
+// ===== 📸 DJ(방장) 얼굴 사진: 약 240px JPEG로 작게 줄여 별도 경로(djpic/방ID)에 저장 — 방 목록(livereg)은 가볍게 두고 사진은 필요할 때만 불러옴 =====
+const DJ_KEY = 'radio_djpic';
+const djLocal = () => { try { const r = JSON.parse(localStorage.getItem(DJ_KEY) || 'null'); return r && r.c && /^data:image\/jpeg;base64,/.test(r.i || '') ? r : null; } catch(e){ return null; } };   // 내 사진 {i: 데이터주소, ts}
+const DJC = {};   // 방ID → {ts, i, o}  (불러온 사진 보관)
+const djOwner = () => { try { let o = localStorage.getItem('radio_djowner'); if (!o){ o = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem('radio_djowner', o); } return o; } catch(e){ return myId; } };   // 사진 올린 사람 표시(이 기기 고정)
+const djRooms = () => { try { return JSON.parse(localStorage.getItem('radio_djrooms') || '[]').filter(x => typeof x === 'string'); } catch(e){ return []; } };   // 내가 사진을 걸어 둔 방들
+const djRoomAdd = id => { try { const a = djRooms().filter(x => x !== id); a.push(id); localStorage.setItem('radio_djrooms', JSON.stringify(a.slice(-40))); } catch(e){} };
+function djShrink(file){
+  return new Promise((ok, no) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => {
+      try {
+        const S = 240, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
+        const w = im.naturalWidth, h = im.naturalHeight, m = Math.min(w, h);
+        x.fillStyle = '#000'; x.fillRect(0, 0, S, S);
+        x.drawImage(im, (w - m) / 2, (h - m) * 0.25, m, m, 0, 0, S, S);   // 가운데 정사각형 (세로 사진은 얼굴이 있는 위쪽으로 살짝)
+        let q = 0.72, d = c.toDataURL('image/jpeg', q);
+        while (d.length > 24000 && q > 0.3){ q -= 0.08; d = c.toDataURL('image/jpeg', q); }
+        URL.revokeObjectURL(url); ok(d);
+      } catch(e){ URL.revokeObjectURL(url); no(e); }
+    };
+    im.onerror = () => { URL.revokeObjectURL(url); no(new Error('img')); };
+    im.src = url;
+  });
+}
+async function djGet(id, ts){
+  const c = DJC[id]; if (c && c.i && (!ts || c.ts === ts)) return c;
+  try { const r = await lj('djpic/' + id, 'GET'); if (r && typeof r.i === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(r.i) && r.i.length < 60000){ DJC[id] = {ts: +r.ts || 0, i: r.i, o: String(r.o || '')}; return DJC[id]; } } catch(e){}
+  return null;
+}
+function djOpen(src, nick, onDel){
+  const old = $('djmodal'); if (old) old.remove();
+  const o = document.createElement('div'); o.id = 'djmodal'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'DJ 사진');
+  o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px;cursor:pointer';
+  const im = new Image(); im.src = src; im.alt = 'DJ 사진';
+  im.style.cssText = 'width:min(80vw,320px);height:min(80vw,320px);object-fit:cover;border-radius:14px;border:2px solid var(--amber);box-shadow:0 8px 30px rgba(0,0,0,.6)';
+  const t = document.createElement('div'); t.textContent = '🎙 DJ ' + nick; t.style.cssText = 'color:#fff;font-weight:700;font-size:17px';
+  const x = document.createElement('div'); x.textContent = '화면을 누르면 닫힙니다'; x.style.cssText = 'color:#fff;opacity:.6;font-size:12px';
+  const k = ev => { if (ev.key === 'Escape') close(); };
+  const close = () => { o.remove(); document.removeEventListener('keydown', k); };
+  o.onclick = close; document.addEventListener('keydown', k);
+  o.append(im, t);
+  if (onDel){
+    const d = document.createElement('button'); d.type = 'button'; d.className = 'addhome'; d.textContent = '🗑 이 사진 내리기';
+    d.style.cssText = 'margin:0;border-color:#e57373;color:#ff9c9c';
+    d.onclick = ev => { ev.stopPropagation(); if (!confirm('이 DJ 사진을 내릴까요? 모든 사람 화면에서 사라집니다.')) return; close(); onDel(); };
+    o.append(d);
+  }
+  o.append(x); document.body.append(o);
+}
+async function djView(id, nick, ts){
+  const c = await djGet(id, ts); if (!c) return;
+  const can = (c.o && c.o === djOwner()) || rmAdm();   // 올린 사람 본인(또는 관리자)만 강제로 내릴 수 있음
+  djOpen(c.i, nick, can ? () => djDrop(id) : null);
+}
+async function djDrop(id, mineOnly){   // 방 사진 내리기: 올린 사람(또는 관리자)만
+  let r = null; try { r = await lj('djpic/' + id, 'GET'); } catch(e){ return false; }
+  if (!r) return false;
+  if (!((r.o && r.o === djOwner()) || (!mineOnly && rmAdm()))) return false;
+  try { await lj('djpic/' + id, 'DELETE'); } catch(e){ return false; }
+  lj('livereg/' + id, 'PATCH', {dj: 0, dn: ''}).catch(() => {});
+  delete DJC[id];
+  if (bc && bc.rid === id){ bc.dj = 0; bc.dn = ''; try { bc.reg(); } catch(_){} }
+  try { roomHead(); } catch(_){} try { loadLive(); } catch(_){}
+  return true;
+}
+function djAvatar(id, d){   // 방 목록·방 화면에 넣는 작은 동그란 사진 (방장이 있고 사진이 있을 때만)
+  if (!d || !d.dj) return null;
+  const nick = String(d.dn || d.h || '방장').slice(0, 12), ts = +d.dj || 0;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'djav';
+  b.title = 'DJ ' + nick + ' 사진 크게 보기'; b.setAttribute('aria-label', b.title);
+  const im = document.createElement('img'); im.alt = ''; b.append(im);
+  const c = DJC[id];
+  if (c && c.i && c.ts === ts) im.src = c.i; else djGet(id, ts).then(r => { if (r) im.src = r.i; else b.remove(); });
+  b.onclick = e => { e.stopPropagation(); djView(id, nick, ts); };
+  return b;
+}
+function djHead(){   // 방 화면 제목 앞에 DJ 사진
+  try {
+    if (!liveRoom) return; const host = isHost();
+    const dj = host ? (bc && bc.dj) : MV.djc; if (!dj) return;
+    const av = djAvatar(liveRoom.id, {dj, h: host ? (bc.dn || myNick()) : MV.dh});
+    if (av) $('roomtitle').prepend(av);
+  } catch(_){}
+}
+function djPrev(){
+  const L = djLocal(), p = $('djprev'); if (!p) return;
+  if (L){ p.src = L.i; p.hidden = false; } else { p.hidden = true; p.removeAttribute('src'); }
+  $('djdel').disabled = !L;
+}
+function djPush(me){   // 방을 열고 있는 중에 사진을 바꾸면 바로 반영
+  if (!me || me !== bc) return;
+  const L = djLocal();
+  if (L){ me.dj = L.ts; me.dn = myNick(); DJC[me.rid] = {ts: L.ts, i: L.i, o: djOwner()}; djRoomAdd(me.rid); lj('djpic/' + me.rid, 'PUT', {i: L.i, ts: L.ts, n: me.dn, o: djOwner()}).catch(() => {}); }
+  else { try { roomHead(); } catch(_){} return; }
+  try { me.reg(); } catch(_){}
+  try { roomHead(); } catch(_){}
+}
+let djConsentAt = 0;
+function djConsent(){   // 사진을 올리기 전 동의 확인 (모두 체크해야 진행)
+  return new Promise(res => {
+    const old = $('djconsent'); if (old) old.remove();
+    const o = document.createElement('div'); o.id = 'djconsent'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true'); o.setAttribute('aria-label', '사진 올리기 동의');
+    o.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:14px';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#241610;color:var(--ink);border:1px solid var(--amber);border-radius:12px;max-width:430px;width:100%;max-height:90vh;overflow:auto;padding:16px;font-size:14px;line-height:1.55';
+    const h = document.createElement('div'); h.textContent = '📸 DJ 사진 올리기 전에 확인해 주세요'; h.style.cssText = 'font-weight:700;color:var(--amber);font-size:16px;margin-bottom:8px';
+    box.append(h);
+    const items = [
+      '이 사진은 내 얼굴 사진이거나, 사진 속 모든 사람에게 올려도 된다는 허락을 받은 사진입니다. (다른 사람의 사진·연예인 사진·도용한 사진은 올리지 않습니다.)',
+      '올린 사진은 이 사이트에 접속하는 누구에게나 공개되고, 목록에서 누르면 크게 보이며, 다른 사람이 저장하거나 캡처할 수 있다는 것을 알고 있습니다.',
+      '내가 방을 나가도 방이 남아 있는 동안(최대 한 달, 누군가 들어오면 다시 한 달) 사진이 그대로 남고, 다른 DJ가 새 사진으로 바꾸기 전까지 유지된다는 것을 이해했습니다.',
+      '음란·폭력·불법 사진이나 미성년자의 사진은 올리지 않으며, 문제가 있으면 관리자가 사진을 내릴 수 있다는 것에 동의합니다. 내가 올린 사진은 언제든 「지우기」로 내릴 수 있습니다.'
+    ];
+    const cbs = items.map(t => {
+      const l = document.createElement('label'); l.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin:7px 0;cursor:pointer';
+      const c = document.createElement('input'); c.type = 'checkbox'; c.style.cssText = 'margin-top:4px;flex:none;width:18px;height:18px';
+      const sp = document.createElement('span'); sp.textContent = t;
+      l.append(c, sp); box.append(l); return c;
+    });
+    const all = document.createElement('label'); all.style.cssText = 'display:flex;gap:8px;align-items:center;margin:10px 0 4px;padding-top:8px;border-top:1px dashed #b99a5b66;font-weight:700;cursor:pointer';
+    const ac = document.createElement('input'); ac.type = 'checkbox'; ac.style.cssText = 'width:18px;height:18px;flex:none';
+    const at = document.createElement('span'); at.textContent = '위 내용을 모두 읽고 동의합니다'; all.append(ac, at); box.append(all);
+    const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:12px';
+    const no = document.createElement('button'); no.type = 'button'; no.className = 'addhome'; no.style.margin = '0'; no.textContent = '취소';
+    const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'addhome'; ok.style.cssText = 'margin:0;border-color:var(--amber);color:var(--amber);font-weight:700'; ok.textContent = '동의하고 사진 고르기'; ok.disabled = true;
+    row.append(no, ok); box.append(row); o.append(box); document.body.append(o);
+    const sync = () => { ok.disabled = !cbs.every(c => c.checked); ac.checked = cbs.every(c => c.checked); };
+    cbs.forEach(c => c.onchange = sync);
+    ac.onchange = () => { cbs.forEach(c => { c.checked = ac.checked; }); sync(); };
+    const k = ev => { if (ev.key === 'Escape') done(false); };
+    const done = v => { document.removeEventListener('keydown', k); o.remove(); if (v) djConsentAt = Date.now(); res(v); };
+    document.addEventListener('keydown', k);
+    no.onclick = () => done(false); ok.onclick = () => { if (!ok.disabled) done(true); };
+    o.onclick = ev => { if (ev.target === o) done(false); };
+  });
+}
+$('djpick').onclick = async () => { if (await djConsent()) $('djfile').click(); };
+$('djfile').onchange = async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = ''; if (!f) return;
+  const m = $('djmsg'), consentAt = djConsentAt; djConsentAt = 0;
+  if (!consentAt){ m.textContent = '동의 확인 후에 사진을 올릴 수 있습니다. 「사진 고르기」를 다시 눌러 주세요.'; return; }
+  if (!/^image\//.test(f.type)){ m.textContent = '사진 파일을 골라 주세요.'; return; }
+  let i; try { i = await djShrink(f); } catch(err){ m.textContent = '사진을 읽지 못했습니다. 다른 사진으로 해 보세요.'; return; }
+  try { localStorage.setItem(DJ_KEY, JSON.stringify({i, ts: Date.now(), c: consentAt})); } catch(err){ m.textContent = '이 기기에 사진을 저장하지 못했습니다 (저장 공간 부족).'; return; }
+  m.textContent = '✅ 저장했습니다 (약 ' + Math.max(1, Math.round(i.length * 0.75 / 1024)) + 'KB).' + (bc ? ' 지금 열고 있는 방에 바로 반영됩니다.' : ' 방을 열면 함께 나옵니다.');
+  djPrev(); djPush(bc);
+};
+$('djdel').onclick = async () => {
+  try { localStorage.removeItem(DJ_KEY); } catch(e){}
+  djPrev(); $('djmsg').textContent = '지우는 중…';
+  const ids = djRooms(); if (bc && !ids.includes(bc.rid)) ids.push(bc.rid);
+  let n = 0; for (const id of ids){ try { if (await djDrop(id, true)) n++; } catch(e){} }
+  try { localStorage.removeItem('radio_djrooms'); } catch(e){}
+  $('djmsg').textContent = '✅ 내 사진을 지웠습니다.' + (n ? ' (걸려 있던 방 ' + n + '곳에서도 내렸습니다)' : '');
+};
+djPrev();
 // 서버 시각 보정: 기기 시계가 틀려도 참가자 목록·영상 위치·방장 승계가 어긋나지 않게 함
 let SKEW = 0;
 const nowS = () => Date.now() + SKEW;
@@ -2748,7 +2913,7 @@ function roomHead(){
   if (!liveRoom) return;
   const host = isHost();
   $('rvtitle').textContent = '🎵 ' + liveRoom.name + (host && bc && bc.pw ? ' 🔒' : '');
-  $('roomtitle').textContent = host ? '👑 내가 방장입니다' : '음악 방에 참여 중';
+  $('roomtitle').textContent = host ? '👑 내가 방장입니다' : '음악 방에 참여 중'; djHead();
   $('rstat').style.display = host ? 'none' : '';
   try { $('rvforce').hidden = !(rmAdm() && !host); } catch(e){}
 }
@@ -3032,6 +3197,7 @@ async function mvPoll(){
   if (!liveRoom || liveRoom.id !== id) return;
   { let hh = null; Object.keys(gg || {}).forEach(k => { const m = gg[k]; if (m && m.h && (!hh || m.ts > hh.ts)) hh = m; }); guestSet(hh && hh.g ? {n: hh.g} : null); }
   if (reg && reg.ts !== MV.regTs){ MV.regTs = reg.ts; MV.regAt = Date.now(); }
+  if (reg){ const dj = +reg.dj || 0, dh = String(reg.dn || reg.h || ''); if (dj !== (MV.djc || 0) || (dj && dh !== MV.dh)){ MV.djc = dj; MV.dh = dh; roomHead(); } }
   if (reg){ MV.hd = reg.hd; MV.hs = reg.hs; MV.al = reg.al; MV.an = reg.an; if (reg.n && String(reg.n) !== liveRoom.name){ liveRoom.name = String(reg.n); roomHead(); } }
   if (!reg || reg.e || Date.now() - (MV.regAt || Date.now()) > 90000){
     // 방장이 나간 것으로 보이는 동안에는 지금 재생 중인 영상을 멈추지 않고 그대로 둠 (새 방장이 정해질 때까지)
@@ -3208,6 +3374,7 @@ function stopOtherMedia(){
 function enterRoom(id, name){
   stopOtherMedia();
   liveRoom = {id, name, host: !!(bc && bc.rid === id)};
+  MV.djc = 0; MV.dh = '';
   if (RDONLY.on && !liveRoom.host){ RDONLY.on = false; liveRoom.only = true; document.body.classList.add('onlybox'); mwOpen(false); return; } // 🎧 소리만 듣기: 방 화면·채팅·참가자 기록 없이 소리만
   renderRooms('b:' + id); $('room').onchange();
   $('roomwrap').hidden = false; $('hostctl').hidden = !liveRoom.host; $('leavebtn').hidden = true; showRoomView(); mwOpen(liveRoom.host);
@@ -3246,6 +3413,18 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
   const me = {holdSet: true, hold: 43200, alone: false, an: (opts && opts.an) || null, aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : ((opts && opts.lk) || ''), title, src: null, pvOff: !!(opts && opts.pn), cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
   bc = me;
   me.sid = Math.random().toString(36).slice(2, 12);
+  try {   // DJ 사진: 내 사진이 있으면 바꿔 걸고, 없으면 앞 방장이 남긴 사진(일주일 안)을 그대로 이어 둠
+    const L = djLocal();
+    if (L){ me.dj = L.ts; me.dn = myNick(); DJC[rid] = {ts: L.ts, i: L.i, o: djOwner()}; djRoomAdd(rid); lj('djpic/' + rid, 'PUT', {i: L.i, ts: L.ts, n: me.dn, o: djOwner()}).catch(() => {}); }
+    else {
+      me.dj = 0; me.dn = '';
+      lj('djpic/' + rid, 'GET').then(r => {
+        if (bc !== me || me.dj || !r || !r.i) return;
+        me.dj = +r.ts || 0; me.dn = String(r.n || '').slice(0, 12); DJC[rid] = null;
+        try { me.reg(); roomHead(); } catch(_){}
+      }).catch(() => {});
+    }
+  } catch(_){}
   me.reg = async () => {
     if (me.regd){ // 오래 끊겼다 돌아왔는데 다른 사람이 이미 방장을 이어받았다면 스스로 물러남 (방장 둘 방지)
       try {
@@ -3258,7 +3437,7 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
     }
     if (bc !== me) return;
     me.regd = true; try { kpSave(me); } catch(_){}
-    return lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: nowS(), s: me.sid, p: (me.pw || me.lock) ? 1 : 0, lk: me.lock || '', pn: me.pvOff ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length, hd: me.hold, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, an: me.an || null, np: npText(), nk: npKind()}).catch(() => {});
+    return lj('livereg/' + rid, 'PUT', {n: me.title, h: myNick(), ts: nowS(), s: me.sid, p: (me.pw || me.lock) ? 1 : 0, lk: me.lock || '', pn: me.pvOff ? 1 : 0, c: Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length, hd: me.hold, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, an: me.an || null, np: npText(), nk: npKind(), dj: me.dj || 0, dn: me.dn || ''}).catch(() => {});
   };
   await me.reg(); if (!keepState) mvPut({k: hasCam ? 'cam' : ''});
   me.timers.push(setInterval(me.reg, 15000), setInterval(bcPoll, 2000), setInterval(bcWatch, 6000));
@@ -3288,7 +3467,7 @@ function kpSave(me){
   const now = nowS();
   lj('livekeep/' + me.rid, 'PUT', {x: now + KEEP_MIN * 60000, ts: now, n: me.title, p: (me.pw || me.lock) ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: v || null}).catch(() => {});
 }
-function kpWipe(id){ ['livereg/', 'sig_', 'roommem_', 'roommedia_', 'livekeep/'].forEach(k => lj(k + id, 'DELETE').catch(() => {})); }
+function kpWipe(id){ ['livereg/', 'djpic/', 'sig_', 'roommem_', 'roommedia_', 'livekeep/'].forEach(k => lj(k + id, 'DELETE').catch(() => {})); }
 function kpTouch(id){ try { lj('livereg/' + id, 'PATCH', {e: nowS() + KEEP_MIN * 60000}).catch(() => {}); } catch(_){} }
 async function kpRescue(id, r, now){
   let k = null; try { k = await lj('livekeep/' + id, 'GET'); } catch(_){}
@@ -3296,6 +3475,7 @@ async function kpRescue(id, r, now){
   if (x <= now) return null;
   const rec = {n: String(r.n || (k && k.n) || ''), h: '', ts: now, p: (r.p || (k && k.p)) ? 1 : 0, c: 0, e: x, hd: KEEP_MIN, hs: 1, al: 0, pn: (r.pn || (k && k.pn)) ? 1 : 0, lk: (k && k.lk) || r.lk || '', an: r.an || (k && k.an) || null};
   if (k && k.v) rec.v = k.v;
+  if (r.dj){ rec.dj = r.dj; rec.dn = r.dn || ''; }
   try { await lj('livereg/' + id, 'PUT', rec); } catch(_){ return r; }
   return rec;
 }
@@ -3312,7 +3492,8 @@ function stopBroadcast(noKeep, local){
   try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep){ lj('livereg/' + me.rid, 'DELETE').catch(() => {}); lj('livekeep/' + me.rid, 'DELETE').catch(() => {}); }
-  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: (me.pw || me.lock) ? 1 : 0, c: 0, e: nowS() + Math.min(43200, me.hold || 10080) * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap}).catch(() => {});
+  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: (me.pw || me.lock) ? 1 : 0, c: 0, e: nowS() + Math.min(43200, me.hold || 10080) * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap, dj: me.dj || 0, dn: me.dn || ''}).catch(() => {});
+  if (noKeep || !me.dj) lj('djpic/' + me.rid, 'DELETE').catch(() => {});   // 사진은 방이 남아 있는 동안(30일, 누가 들어오면 다시 30일) 그대로 유지
   lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
   leaveRoom(); setBc(''); loadLive();
@@ -4200,7 +4381,7 @@ async function loadLive(){
       const star = document.createElement('button'); star.className = 'fav'; star.type = 'button';
       const paint = () => { const on = !!mhFind(id, String(d[id].n)); star.classList.toggle('on', on); star.textContent = on ? '★' : '☆'; star.title = on ? '마이홈에서 빼기' : '마이홈에 저장'; star.setAttribute('aria-label', star.title); };
       star.onclick = () => { mhToggle(id, d[id]); paint(); };
-      paint(); row.append(star, b);
+      paint(); row.append(star); { const av = djAvatar(id, d[id]); if (av) row.append(av); } row.append(b);
       if (!(bc && bc.rid === id) && !d[id].e){
         const m = document.createElement('button'); m.className = 'fav'; m.type = 'button';
         m.style.cssText = 'font-size:13px;white-space:nowrap;padding:0 10px';
@@ -4324,7 +4505,7 @@ async function forceBomb(id, name){
   if (!rmAdm()) return;
   if (!confirm('관리자 권한으로 「' + name + '」 방을 강제 폭파합니다.\n안에 있는 사람도 모두 방에서 나오게 됩니다. 진행할까요?')) return;
   try { await lj('roomclosed_' + id, 'PUT', {ts: Date.now(), f: 1}); } catch(e){}
-  ['livereg/', 'livekeep/', 'sig_', 'roommedia_', 'roommem_', 'talkreq_', 'talkok_', 'kalib_', 'kq_', 'roomguest_'].forEach(k => lj(k + id, 'DELETE').catch(() => {}));
+  ['livereg/', 'livekeep/', 'djpic/', 'sig_', 'roommedia_', 'roommem_', 'talkreq_', 'talkok_', 'kalib_', 'kq_', 'roomguest_'].forEach(k => lj(k + id, 'DELETE').catch(() => {}));
   if (bc && bc.rid === id) stopBroadcast(true);
   else if (liveRoom && liveRoom.id === id){ if (lis) stopListen(); else leaveRoom(); }
   setBc('💣 「' + name + '」 방을 강제 폭파했습니다.'); loadLive();
@@ -4408,6 +4589,7 @@ function pinRow(id, d, hit, now, noOnly){
     setTimeout(() => { try { renderLivePin(); } catch(e){} }, 400);
     setTimeout(() => { try { renderLivePin(); } catch(e){} }, 1800);
   };
+  { const av = djAvatar(id, d); if (av) row.append(av); }
   row.append(b);
   row.append(mrStar(id, d));
   if (rmAdm()) row.append(rmForceBtn(id, String(d.n)));
@@ -4443,6 +4625,7 @@ function pinRowOld(id, d, hit, now, noOnly){
   n.textContent = '🎵 ' + String(d.n).slice(0, 24) + (d.p ? ' 🔒' : '') + '' + (mine ? ' (내 방)' : '');
   b.append(n);
   if (!mine) b.onclick = d.e ? () => claimEmptyRoom(id, d) : () => listenFav(id, d);
+  { const av = djAvatar(id, d); if (av) row.append(av); }
   row.append(b);
   if (!mine && (!d.e || d.v) && !noOnly) row.append(rmOnlyBtn(id, d));
   if (rmAdm()) row.append(rmForceBtn(id, String(d.n)));
@@ -5787,16 +5970,30 @@ async function rssFeeds(){
   return out.filter(x => x.name && /^https:\/\//i.test(x.u)).sort((a, b) => a.ts - b.ts);
 }
 async function rssGet(u){
-  const T = p => { const ac = new AbortController(); setTimeout(() => ac.abort(), 9000); return fetch(p, {signal: ac.signal}); };
-  try { const r = await T(RSS_PROXY + '?url=' + encodeURIComponent(u)); if (r.ok){ const j = await r.json(); if (j && j.items && j.items.length) return j.items; } } catch(e){}
-  try {   // 중계가 안 되면 직접 시도 (그 사이트가 읽기를 허용한 경우만 성공)
-    const r = await T(u); if (!r.ok) return [];
-    const d = new DOMParser().parseFromString(await r.text(), 'text/xml');
+  const T = (p, ms) => { const ac = new AbortController(); const t = setTimeout(() => ac.abort(), ms || 9000); return fetch(p, {signal: ac.signal, cache: 'no-store'}).finally(() => clearTimeout(t)); };
+  const enc = encodeURIComponent(u);
+  const parse = txt => {   // RSS(item) / Atom(entry) 둘 다 읽기
+    const d = new DOMParser().parseFromString(txt, 'text/xml');
+    if (d.querySelector('parsererror')) return [];
     return [...d.querySelectorAll('item, entry')].slice(0, 8).map(n => {
       const g = t => ((n.querySelector(t) || {}).textContent || ''), l = n.querySelector('link');
-      return {title: g('title').trim(), link: ((l && (l.getAttribute('href') || l.textContent)) || '').trim(), date: g('pubDate') || g('published') || g('updated'), summary: g('description').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)};
-    });
-  } catch(e){ return []; }
+      return {title: g('title').trim(), link: ((l && (l.getAttribute('href') || l.textContent)) || '').trim(), date: g('pubDate') || g('published') || g('updated') || g('dc\\:date'), summary: (g('description') || g('summary') || g('content')).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)};
+    }).filter(x => x.title);
+  };
+  const tries = [
+    async () => { const r = await T(RSS_PROXY + '?url=' + enc); if (!r.ok) return []; const j = await r.json(); return (j && j.items) || []; },
+    async () => { const r = await T(u); return r.ok ? parse(await r.text()) : []; },   // 직접 (그 사이트가 허용한 경우만)
+    async () => { const r = await T('https://api.allorigins.win/raw?url=' + enc); return r.ok ? parse(await r.text()) : []; },
+    async () => { const r = await T('https://corsproxy.io/?' + enc); return r.ok ? parse(await r.text()) : []; },
+    async () => { const r = await T('https://api.codetabs.com/v1/proxy?quest=' + enc); return r.ok ? parse(await r.text()) : []; },
+    async () => {
+      const r = await T('https://api.rss2json.com/v1/api.json?rss_url=' + enc); if (!r.ok) return [];
+      const j = await r.json();
+      return (j.items || []).slice(0, 8).map(i => ({title: String(i.title || '').trim(), link: i.link || '', date: i.pubDate || '', summary: String(i.description || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)}));
+    }
+  ];
+  for (const f of tries){ try { const it = await f(); if (it && it.length) return it; } catch(e){} }
+  return [];
 }
 function rssAdmShow(){
   const a = tvIsAdm(); $('rssout').textContent = a ? '🔓 관리자 끝내기' : '🔒 관리자 로그인';
