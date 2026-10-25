@@ -86,9 +86,10 @@ body.onlybox #roomview[hidden]{display:block!important;position:fixed;left:-1000
 #mwnow{font-size:13px;opacity:.85;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mwscreen{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:#120a05;border-radius:8px;min-height:84px;padding:8px}
 .mwscreen{--mws:1;overflow:auto;max-height:85vh;position:relative}
+#mwscreen.capon{min-height:min(300px,45vh)}
 #capov{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6;border-radius:8px}
-#capov .cap{position:absolute;left:6%;right:6%;top:100%;text-align:center;color:#fff;font-family:'Jua','Noto Sans KR','Malgun Gothic',sans-serif;font-size:clamp(20px,4.2vw,40px);line-height:1.35;letter-spacing:.02em;word-break:keep-all;text-shadow:0 0 6px #000,0 2px 4px #000c,0 0 18px #0009;animation:capup var(--cd,9s) linear forwards;will-change:transform}
-@keyframes capup{from{transform:translateY(0)}to{transform:translateY(calc(-100% - var(--ch,300px)))}}
+#capov .cap{position:absolute;left:6%;right:6%;bottom:6%;text-align:center;color:#fff;font-family:'Jua','Noto Sans KR','Malgun Gothic',sans-serif;font-size:clamp(20px,4.2vw,40px);line-height:1.35;letter-spacing:.02em;word-break:keep-all;text-shadow:0 0 6px #000,0 2px 4px #000c,0 0 18px #0009;animation:capup var(--cd,9s) linear forwards;will-change:transform}
+@keyframes capup{0%{opacity:0;transform:translateY(0)}12%{opacity:1}55%{opacity:1}100%{opacity:0;transform:translateY(calc(var(--ch,300px) * -.55))}}
 #caprow{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
 #caprow input{flex:1;min-width:160px}
 #guestTile{position:absolute;right:8px;bottom:8px;width:min(34%,calc(200px * var(--mws)));background:#000;border:2px solid var(--amber);border-radius:8px;overflow:hidden;z-index:2;cursor:pointer;user-select:none;-webkit-user-select:none;box-shadow:0 2px 10px #000a}#guestTile[hidden]{display:none}#guestTile.big{width:min(72%,calc(440px * var(--mws)))}#guestTile video{width:100%;display:block;max-height:none!important;border-radius:0!important}#guestTile small{position:absolute;left:4px;top:4px;background:#000b;color:var(--amber);padding:1px 7px;border-radius:6px;font-size:11px}#roomview.mini #guestTile{width:96px}
@@ -1402,7 +1403,7 @@ function renderChat(forceBottom){
   log.innerHTML = '';
   let all = chat.concat(pending);
   try { const bk = roomPath(); if (BOT && BOT.on && BOT.msgs.length && botKeyOk(bk)){ const bm = BOT.msgs.filter(m => m.r === bk); if (bm.length){ all = all.concat(bm); all.sort((a, b) => (a.ts || 0) - (b.ts || 0)); } } } catch(e){}   // 🤖 가상 손님(이 기기에서만)
-  all = all.filter(c => !isBlockedMsg(c));
+  all = all.filter(c => !isBlockedMsg(c) && !c.cp);
   try { if (liveRoom && $('room').value === 'b:' + liveRoom.id) all = all.filter(c => !(c.k && c.k !== UID && !c.h && ctlMuted(c.k))); } catch(e){}
   if (!all.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
   const isDmRoom = $('room').value.indexOf('u:') === 0;
@@ -2869,12 +2870,16 @@ async function ctlPoll(){
   }
   if (JSON.stringify(CTL.map) !== prev){ try { renderChat(); } catch(e){} if (isHost()) renderMembers(); }
 }
+async function ctlPut(path, rec){
+  try { const r = await fetch(`${DB}/chat/${path}.json`, {method: 'PUT', body: JSON.stringify(rec)}); if (!r.ok) throw new Error(r.status); return true; }
+  catch(e){ memToast('⚠ 저장 실패 — Firebase 규칙에서 roomctl_ 경로 쓰기를 허용하세요', true); return false; }
+}
 async function ctlMute(m, on){
   if (!isHost() || !liveRoom || !m.ku) return;
   const ck = ctlKey(m.ku), old = CTL.map[ck] || {};
   const rec = Object.assign({}, old, {m: on ? 1 : 0, n: String(m.n).slice(0, 12)});
   CTL.map[ck] = rec;
-  try { await lj('roomctl_' + liveRoom.id + '/' + ck, 'PUT', rec); } catch(e){}
+  await ctlPut('roomctl_' + liveRoom.id + '/' + ck, rec);
   memToast((on ? '🔇 ' : '🔊 ') + String(m.n).slice(0, 12) + (on ? '님을 입막음했습니다' : '님의 입막음을 풀었습니다'), on);
   renderMembers(); try { renderChat(); } catch(e){}
 }
@@ -2884,7 +2889,7 @@ async function ctlKick(m){
   const ck = ctlKey(m.ku), old = CTL.map[ck] || {};
   const rec = Object.assign({}, old, {k: nowS(), n: String(m.n).slice(0, 12)});
   CTL.map[ck] = rec;
-  try { await lj('roomctl_' + liveRoom.id + '/' + ck, 'PUT', rec); } catch(e){}
+  await ctlPut('roomctl_' + liveRoom.id + '/' + ck, rec);
   try { await lj('roommem_' + liveRoom.id + '/' + m.k, 'DELETE'); } catch(e){}
   memList = memList.filter(x => x.k !== m.k);
   memToast('🚪 ' + String(m.n).slice(0, 12) + '님을 강퇴했습니다', true);
@@ -2894,7 +2899,7 @@ async function ctlUnkick(ck){
   if (!isHost() || !liveRoom) return;
   const rec = Object.assign({}, CTL.map[ck] || {}); delete rec.k;
   CTL.map[ck] = rec;
-  try { await lj('roomctl_' + liveRoom.id + '/' + ck, 'PUT', rec); } catch(e){}
+  await ctlPut('roomctl_' + liveRoom.id + '/' + ck, rec);
   renderMembers();
 }
 setInterval(ctlPoll, 3000);
@@ -2903,10 +2908,13 @@ const CAP = {rid: '', seen: {}, first: true};
 function capShow(t){
   const ov = $('capov'); if (!ov) return;
   const d = document.createElement('div'); d.className = 'cap'; d.textContent = t;
+  const sc = $('mwscreen'); if (sc) sc.classList.add('capon');   // 소리만 있는 방은 화면이 낮아서 글이 안 보이므로 자막 동안 화면을 키움
+  clearTimeout(capShow.tm);
   const h = ov.clientHeight || 300;
-  d.style.setProperty('--ch', h + 'px'); d.style.setProperty('--cd', Math.max(7, Math.min(14, h / 40 + 3)) + 's');
+  d.style.setProperty('--ch', h + 'px'); d.style.setProperty('--cd', '5s');
   while (ov.children.length > 6) ov.firstChild.remove();
-  ov.append(d); d.addEventListener('animationend', () => d.remove());
+  ov.append(d);
+  d.addEventListener('animationend', () => { d.remove(); if (!ov.children.length){ capShow.tm = setTimeout(() => { if (sc && !ov.children.length) sc.classList.remove('capon'); }, 800); } });
 }
 async function capSend(){
   const inp = $('capin'), t = inp.value.trim();
@@ -2914,19 +2922,23 @@ async function capSend(){
   { const bm = badMsg([t]); if (bm){ alert(bm); return; } }
   inp.value = '';
   const ts = nowS(); capShow(t);
-  try { const r = await fetch(`${DB}/chat/roomcap_${liveRoom.id}.json`, {method: 'POST', body: JSON.stringify({t, ts})}); const j = await r.json(); if (j && j.name) CAP.seen[j.name] = 1; } catch(e){}
+  try {
+    const r = await fetch(`${DB}/chat/live_${liveRoom.id}.json`, {method: 'POST', body: JSON.stringify({n: myNick(), t, ts: Date.now(), u: myId, k: UID, h: 1, cp: 1, cs: ts})});
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json(); if (j && j.name) CAP.seen[j.name] = 1;
+  } catch(e){ memToast('⚠ 자막을 보내지 못했습니다 (DB 쓰기 규칙 확인)', true); }
 }
 async function capPoll(){
   const row = $('caprow'); if (row) row.hidden = !(liveRoom && isHost());
   if (!liveRoom || !DB){ CAP.rid = ''; return; }
   const id = liveRoom.id;
   if (CAP.rid !== id){ CAP.rid = id; CAP.seen = {}; CAP.first = true; }
-  let d = null; try { const r = await fetch(`${DB}/chat/roomcap_${id}.json?orderBy="$key"&limitToLast=5`); d = await r.json(); } catch(e){ return; }
+  let d = null; try { const r = await fetch(`${DB}/chat/live_${id}.json?orderBy="$key"&limitToLast=8`); d = await r.json(); } catch(e){ return; }
   if (!liveRoom || liveRoom.id !== id) return;
   const now = nowS();
   Object.keys(d || {}).sort().forEach(k => {
     if (CAP.seen[k]) return; CAP.seen[k] = 1;
-    const c = d[k]; if (!c || !c.t || CAP.first && now - c.ts > 4000 || now - c.ts > 15000) return;   // 처음 들어왔을 때 옛 글은 건너뜀
+    const c = d[k]; if (!c || !c.cp || !c.h || !c.t) return; const cs = c.cs || c.ts; if (CAP.first && now - cs > 4000 || now - cs > 15000) return;   // 처음 들어왔을 때 옛 글은 건너뜀
     capShow(String(c.t).slice(0, 80));
   });
   CAP.first = false;
