@@ -1395,6 +1395,7 @@ function renderChat(forceBottom){
   let all = chat.concat(pending);
   try { const bk = roomPath(); if (BOT && BOT.on && BOT.msgs.length && botKeyOk(bk)){ const bm = BOT.msgs.filter(m => m.r === bk); if (bm.length){ all = all.concat(bm); all.sort((a, b) => (a.ts || 0) - (b.ts || 0)); } } } catch(e){}   // 🤖 가상 손님(이 기기에서만)
   all = all.filter(c => !isBlockedMsg(c));
+  try { if (liveRoom && $('room').value === 'b:' + liveRoom.id) all = all.filter(c => !(c.k && c.k !== UID && !c.h && ctlMuted(c.k))); } catch(e){}
   if (!all.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
   const isDmRoom = $('room').value.indexOf('u:') === 0;
   all.forEach(c => {
@@ -1478,6 +1479,7 @@ async function sendChat(){
   const inp = $('chatin'), text = inp.value.trim();
   if (!text) return;
   { const bm = badMsg([text, $('nick').value]); if (bm){ alert(bm); return; } }
+  if (liveRoom && !isHost() && $('room').value === 'b:' + liveRoom.id && ctlMuted(UID)){ $('chatnote').textContent = '🔇 방장이 입막음해서 이 방에서는 채팅할 수 없습니다.'; return; }
   if (!$('nick').value.trim()) $('nick').value = fakeNick();
   const msg = {n: $('nick').value.trim(), t: text, ts: Date.now(), u: myId, k: UID};
   if (isHost() && $('room').value === 'b:' + liveRoom.id) msg.h = 1;
@@ -2808,12 +2810,24 @@ function renderMembers(){
       const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 8px 14px';
       const mk = (txt, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:4px 10px;font-size:13px'; b.textContent = txt; b.onclick = () => { openMem = ''; renderMembers(); fn(); }; return b; };
       row.append(mk('✉ 귓속말', () => memWhisper(m.k, m.n)), mk('💬 채팅', () => memCall(m.k, m.n)));
+      if (isHost() && m.ku){
+        row.append(mk(ctlMuted(m.ku) ? '🔊 입막음 해제' : '🔇 입막음', () => ctlMute(m, !ctlMuted(m.ku))), mk('🚪 강퇴', () => ctlKick(m)));
+      }
       box.append(row);
     }
   });
+  if (isHost()){
+    Object.keys(CTL.map).forEach(ck => {
+      const c = CTL.map[ck]; if (!ctlBanned(c)) return;
+      const r = document.createElement('div'); r.style.cssText = 'font-size:13px;opacity:.85;margin-top:4px';
+      r.append('🚫 강퇴됨: ' + String(c.n || '?').slice(0, 12) + ' ');
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:2px 8px;font-size:12px'; b.textContent = '강퇴 해제'; b.onclick = () => ctlUnkick(ck);
+      r.append(b); box.append(r);
+    });
+  }
 }
 function memRec(){
-  const r = {n: myNick(), h: isHost() ? 1 : 0, ts: nowS()};
+  const r = {n: myNick(), h: isHost() ? 1 : 0, ts: nowS(), ku: UID};
   if (typeof talk !== 'undefined'){ if (talk.a) r.a = 1; if (talk.v) r.v = 1; if (talk.fm) r.fm = String(talk.fm.f.name).slice(0, 30); if (talk.a && talk.song) r.sg = talk.song; }
   if (typeof rx !== 'undefined' && liveRoom && rx.rid === liveRoom.id){ if (rx.st){ r.st = rx.st; r.sts = rx.sts; } if (rx.hd) r.hd = 1; if (rx.rl){ r.rl = rx.rl; r.rt = rx.rt; } if (Object.keys(rx.rc).length) r.rc = rx.rc; if (isHost()){ if (rx.rs) r.rs = rx.rs; if (rx.pv) r.pv = 1; if (rx.rv) r.rv = 1; } }
   if (isHost() && bc){
@@ -2826,6 +2840,56 @@ function memRec(){
   }
   return r;
 }
+// ===== 방장 강퇴 · 입막음 (UID 기준이라 새로고침해도 유지) =====
+const CTL = {rid: '', map: {}};
+const ctlKey = u => String(u || '').replace(/[.#$\[\]\/]/g, '_');
+const ctlMuted = u => { const c = CTL.map[ctlKey(u)]; return !!(c && c.m); };
+const ctlBanned = c => !!(c && c.k && nowS() - c.k < 1800000);   // 강퇴는 30분간 재입장 불가
+async function ctlPoll(){
+  if (!liveRoom || !DB){ CTL.rid = ''; CTL.map = {}; return; }
+  const id = liveRoom.id;
+  let d = null; try { d = await lj('roomctl_' + id, 'GET'); } catch(e){ return; }
+  if (!liveRoom || liveRoom.id !== id) return;
+  const prev = JSON.stringify(CTL.map);
+  CTL.rid = id; CTL.map = d || {};
+  if (!isHost()){
+    if (ctlBanned(CTL.map[ctlKey(UID)])){
+      memToast('🚪 방장에 의해 강퇴되었습니다', true);
+      if (lis) stopListen(); else leaveRoom();
+      return;
+    }
+  }
+  if (JSON.stringify(CTL.map) !== prev){ try { renderChat(); } catch(e){} if (isHost()) renderMembers(); }
+}
+async function ctlMute(m, on){
+  if (!isHost() || !liveRoom || !m.ku) return;
+  const ck = ctlKey(m.ku), old = CTL.map[ck] || {};
+  const rec = Object.assign({}, old, {m: on ? 1 : 0, n: String(m.n).slice(0, 12)});
+  CTL.map[ck] = rec;
+  try { await lj('roomctl_' + liveRoom.id + '/' + ck, 'PUT', rec); } catch(e){}
+  memToast((on ? '🔇 ' : '🔊 ') + String(m.n).slice(0, 12) + (on ? '님을 입막음했습니다' : '님의 입막음을 풀었습니다'), on);
+  renderMembers(); try { renderChat(); } catch(e){}
+}
+async function ctlKick(m){
+  if (!isHost() || !liveRoom || !m.ku) return;
+  if (!confirm('「' + m.n + '」님을 강퇴할까요?\n30분 동안 다시 들어올 수 없습니다.')) return;
+  const ck = ctlKey(m.ku), old = CTL.map[ck] || {};
+  const rec = Object.assign({}, old, {k: nowS(), n: String(m.n).slice(0, 12)});
+  CTL.map[ck] = rec;
+  try { await lj('roomctl_' + liveRoom.id + '/' + ck, 'PUT', rec); } catch(e){}
+  try { await lj('roommem_' + liveRoom.id + '/' + m.k, 'DELETE'); } catch(e){}
+  memList = memList.filter(x => x.k !== m.k);
+  memToast('🚪 ' + String(m.n).slice(0, 12) + '님을 강퇴했습니다', true);
+  renderMembers();
+}
+async function ctlUnkick(ck){
+  if (!isHost() || !liveRoom) return;
+  const rec = Object.assign({}, CTL.map[ck] || {}); delete rec.k;
+  CTL.map[ck] = rec;
+  try { await lj('roomctl_' + liveRoom.id + '/' + ck, 'PUT', rec); } catch(e){}
+  renderMembers();
+}
+setInterval(ctlPoll, 3000);
 async function memBeat(){
   if (!liveRoom || !DB) return;
   const id = liveRoom.id;
@@ -3467,7 +3531,7 @@ function kpSave(me){
   const now = nowS();
   lj('livekeep/' + me.rid, 'PUT', {x: now + KEEP_MIN * 60000, ts: now, n: me.title, p: (me.pw || me.lock) ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: v || null}).catch(() => {});
 }
-function kpWipe(id){ ['livereg/', 'djpic/', 'sig_', 'roommem_', 'roommedia_', 'livekeep/'].forEach(k => lj(k + id, 'DELETE').catch(() => {})); }
+function kpWipe(id){ ['livereg/', 'djpic/', 'sig_', 'roommem_', 'roommedia_', 'livekeep/', 'roomctl_'].forEach(k => lj(k + id, 'DELETE').catch(() => {})); }
 function kpTouch(id){ try { lj('livereg/' + id, 'PATCH', {e: nowS() + KEEP_MIN * 60000}).catch(() => {}); } catch(_){} }
 async function kpRescue(id, r, now){
   let k = null; try { k = await lj('livekeep/' + id, 'GET'); } catch(_){}
@@ -3494,7 +3558,7 @@ function stopBroadcast(noKeep, local){
   if (noKeep){ lj('livereg/' + me.rid, 'DELETE').catch(() => {}); lj('livekeep/' + me.rid, 'DELETE').catch(() => {}); }
   else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: (me.pw || me.lock) ? 1 : 0, c: 0, e: nowS() + KEEP_MIN * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap, dj: me.dj || 0, dn: me.dn || ''}).catch(() => {});
   if (noKeep || !me.dj) lj('djpic/' + me.rid, 'DELETE').catch(() => {});   // 사진은 방이 남아 있는 동안(30일, 누가 들어오면 다시 30일) 그대로 유지
-  lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {});
+  lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {}); lj('roomctl_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
   leaveRoom(); setBc(''); loadLive();
 }
@@ -3645,6 +3709,7 @@ async function talkPoll(me){
   d = d || {}; const now = Date.now(); me.rq = {};
   Object.keys(d).forEach(u => {
     const r = d[u]; if (!r || r.h || u === myId || !(r.a || r.v)) return;
+    if (r.ku && ctlMuted(r.ku)) return;
     const sn = me.seen2[u]; if (!sn || sn.ts !== r.ts) me.seen2[u] = {ts: r.ts, at: now};
     if (now - me.seen2[u].at < 25000) me.rq[u] = r;
   });
@@ -3748,6 +3813,7 @@ function talkNotify(kind){
 // 요청부터 보내고, 방장이 허락하면 그때 장치를 켬 (장치가 없어도 요청은 전달됨)
 async function talkStart(kind){
   const nm = kind === 'a' ? '마이크' : '카메라';
+  if (ctlMuted(UID)){ talk.msg = '🔇 방장이 입막음해서 ' + nm + ' 요청을 할 수 없습니다.'; talkUI(); return; }
   if (!lis || !liveRoom || isHost()){ talk.msg = '방에 연결된 뒤에 요청할 수 있습니다.'; talkUI(); return; }
   if (!talk.fm && !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){ talk.msg = '이 주소에서는 ' + nm + '를 쓸 수 없습니다. https:// 주소(또는 파일로 직접 열기)로 접속하세요.'; talkUI(); return; }
   if (!talk.fm) try { const dv = await navigator.mediaDevices.enumerateDevices(); if (dv.length && !dv.some(d => d.kind === (kind === 'a' ? 'audioinput' : 'videoinput'))){ talk.msg = '이 기기에서 ' + nm + ' 장치를 찾을 수 없습니다.'; talkUI(); return; } } catch(e){}
@@ -4218,6 +4284,7 @@ setInterval(rxPoll, 3000);
 async function listen(bid, name, locked, presetPw){
   if (!DB || !chatAllowed){ setBc('채팅 접속 인원이 가득 차서 지금은 음악 방에 들어갈 수 없습니다. 잠시 후 다시 시도하세요.'); return; }
   if (bc && bc.rid === bid) return;
+  try { const c = await lj('roomctl_' + bid + '/' + ctlKey(UID), 'GET'); if (ctlBanned(c)){ setBc('🚪 방장에 의해 강퇴되어 30분 동안 이 방에 들어갈 수 없습니다.'); return; } } catch(e){}
   let pw = '', pv = false, adm = false;
   if (locked){
     pw = presetPw || '';
@@ -4505,7 +4572,7 @@ async function forceBomb(id, name){
   if (!rmAdm()) return;
   if (!confirm('관리자 권한으로 「' + name + '」 방을 강제 폭파합니다.\n안에 있는 사람도 모두 방에서 나오게 됩니다. 진행할까요?')) return;
   try { await lj('roomclosed_' + id, 'PUT', {ts: Date.now(), f: 1}); } catch(e){}
-  ['livereg/', 'livekeep/', 'djpic/', 'sig_', 'roommedia_', 'roommem_', 'talkreq_', 'talkok_', 'kalib_', 'kq_', 'roomguest_'].forEach(k => lj(k + id, 'DELETE').catch(() => {}));
+  ['livereg/', 'livekeep/', 'djpic/', 'sig_', 'roommedia_', 'roommem_', 'talkreq_', 'talkok_', 'kalib_', 'kq_', 'roomguest_', 'roomctl_'].forEach(k => lj(k + id, 'DELETE').catch(() => {}));
   if (bc && bc.rid === id) stopBroadcast(true);
   else if (liveRoom && liveRoom.id === id){ if (lis) stopListen(); else leaveRoom(); }
   setBc('💣 「' + name + '」 방을 강제 폭파했습니다.'); loadLive();
