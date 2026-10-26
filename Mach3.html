@@ -1,0 +1,972 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Mach3 쉬운 설명서</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 레이아웃: 위에 고정 검색줄, 왼쪽 목차(넓은 화면), 오른쪽 본문. 큰 글씨, 한 화면에 한 가지 설명. */
+:root{
+  --bg:#f2f5f6; --surface:#ffffff; --fg:#1a2428; --muted:#56646b; --line:#d5dde1;
+  --accent:#0a6b6b; --accent-fg:#ffffff; --accent-soft:#dcf0ee;
+  --warn:#8a4b00; --warn-bg:#fff2d6; --warn-line:#f0c46c;
+  --bad:#a32117; --bad-bg:#fde8e5; --bad-line:#f1aaa3;
+  --ok:#17692f; --ok-bg:#e1f4e6; --ok-line:#9fd4ae;
+  --c-power:#c2410c; --c-sig:#0a6b6b; --c-motor:#6d3fc0; --code-bg:#e9eef0;
+  --font:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  --fs:17px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#11181b; --surface:#192226; --fg:#e5ecee; --muted:#9bacb2; --line:#2b383d;
+  --accent:#5cc9c0; --accent-fg:#0c1517; --accent-soft:#17312f;
+  --warn:#f2b862; --warn-bg:#352a12; --warn-line:#6b5420;
+  --bad:#ff9087; --bad-bg:#3a1a17; --bad-line:#753029;
+  --ok:#7ad394; --ok-bg:#15301c; --ok-line:#2f6b41;
+  --c-power:#fb923c; --c-sig:#5cc9c0; --c-motor:#b69cff; --code-bg:#243136; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11181b; --surface:#192226; --fg:#e5ecee; --muted:#9bacb2; --line:#2b383d;
+  --accent:#5cc9c0; --accent-fg:#0c1517; --accent-soft:#17312f;
+  --warn:#f2b862; --warn-bg:#352a12; --warn-line:#6b5420;
+  --bad:#ff9087; --bad-bg:#3a1a17; --bad-line:#753029;
+  --ok:#7ad394; --ok-bg:#15301c; --ok-line:#2f6b41;
+  --c-power:#fb923c; --c-sig:#5cc9c0; --c-motor:#b69cff; --code-bg:#243136; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:calc(88px + env(safe-area-inset-top,0px))}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:var(--fs);line-height:1.75;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px;word-break:keep-all;overflow-wrap:anywhere}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+a{color:var(--accent)}
+code,kbd{font-family:var(--mono);font-size:.88em;background:var(--code-bg);padding:.1em .45em;border-radius:4px;white-space:nowrap}
+kbd{border:1px solid var(--line);border-bottom-width:2px}
+h1,h2,h3{line-height:1.35;text-wrap:balance;margin:0}
+p{margin:0 0 .9em}
+ul,ol{margin:0 0 .9em;padding-left:1.3em}
+li{margin-bottom:.35em}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);
+  margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.top-in{max-width:1180px;margin:0 auto;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:900;font-size:1.05rem;white-space:nowrap}
+.brand small{font-weight:500;color:var(--muted);margin-left:.4em}
+.search{flex:1 1 260px;min-width:0;position:relative}
+.search input{width:100%;font:inherit;padding:.6em 2.4em .6em 1em;border:2px solid var(--line);border-radius:999px;background:var(--bg);color:var(--fg)}
+.search input:focus{border-color:var(--accent);outline:none}
+.search button{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:.2em .5em}
+.fs{display:flex;gap:4px}
+.fs button,.chip{font:inherit;font-size:.9rem;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:.35em .7em;cursor:pointer}
+.fs button:hover,.chip:hover{border-color:var(--accent)}
+.status{max-width:1180px;margin:6px auto 0;font-size:.9rem;color:var(--muted);min-height:1.4em}
+.quick{max-width:1180px;margin:6px auto 0;display:flex;gap:6px;flex-wrap:wrap}
+
+.wrap{max-width:1180px;margin:24px auto 0;display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px;align-items:start}
+nav.toc{position:sticky;top:calc(96px + env(safe-area-inset-top,0px));max-height:calc(100vh - 120px);overflow:auto;font-size:.92rem;padding-right:4px}
+nav.toc a{display:block;padding:.35em .7em;border-radius:8px;text-decoration:none;color:var(--fg);line-height:1.45}
+nav.toc a:hover{background:var(--accent-soft)}
+nav.toc a.on{background:var(--accent-soft);color:var(--accent);font-weight:700}
+nav.toc a.dim{opacity:.35}
+nav.toc .grp{font-size:.78rem;letter-spacing:.06em;color:var(--muted);margin:14px .7em 4px;font-weight:700}
+details.mtoc{display:none}
+main{min-width:0}
+
+section.sec{margin-bottom:56px}
+section.sec>header{margin-bottom:16px;padding-bottom:10px;border-bottom:3px solid var(--accent)}
+.kicker{font-family:var(--mono);font-size:.78rem;color:var(--accent);letter-spacing:.08em;font-weight:600}
+section.sec h2{font-size:1.65rem;font-weight:900;margin-top:2px}
+.lead{color:var(--muted);margin:6px 0 0}
+.s{margin-bottom:16px}
+h3{font-size:1.2rem;font-weight:700;margin-bottom:.5em}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.card h3{margin-bottom:.4em}
+
+.note,.warn,.bad,.ok{border-radius:10px;padding:12px 16px;border:1px solid;margin:0 0 16px}
+.note{background:var(--accent-soft);border-color:var(--accent);}
+.warn{background:var(--warn-bg);border-color:var(--warn-line)}
+.bad{background:var(--bad-bg);border-color:var(--bad-line)}
+.ok{background:var(--ok-bg);border-color:var(--ok-line)}
+.note>b:first-child,.warn>b:first-child,.bad>b:first-child,.ok>b:first-child{display:block;margin-bottom:2px}
+.warn>b:first-child{color:var(--warn)} .bad>b:first-child{color:var(--bad)} .ok>b:first-child{color:var(--ok)} .note>b:first-child{color:var(--accent)}
+.note>*:last-child,.warn>*:last-child,.bad>*:last-child,.ok>*:last-child{margin-bottom:0}
+
+.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0}
+.flow>div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;position:relative;font-size:.92rem;line-height:1.5}
+.flow>div b{display:block;font-size:1rem;color:var(--accent)}
+.flow>div i{display:block;font-style:normal;color:var(--muted);font-size:.84rem;margin-top:4px}
+.flow>div:not(:last-child)::after{content:"▶";position:absolute;right:-12px;top:50%;transform:translateY(-50%);color:var(--accent);font-size:.8rem;z-index:2}
+
+.steps{counter-reset:st;list-style:none;padding:0;margin:0 0 16px}
+.steps>li{counter-increment:st;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px 14px 62px;margin-bottom:10px}
+.steps>li::before{content:counter(st);position:absolute;left:14px;top:12px;width:36px;height:36px;border-radius:50%;background:var(--accent);color:var(--accent-fg);font-weight:900;display:grid;place-items:center}
+.steps>li>b{display:block;font-size:1.05rem;margin-bottom:2px}
+.steps>li p:last-child,.steps>li ul:last-child{margin-bottom:0}
+
+.tblwrap{overflow-x:auto;margin-bottom:16px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.95rem}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--accent-soft);font-weight:700}
+tr:last-child td{border-bottom:0}
+
+.check{list-style:none;padding:0}
+.check li{margin:0}
+.check label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:8px;cursor:pointer}
+.check input{width:22px;height:22px;margin-top:3px;flex:none;accent-color:var(--accent)}
+.check input:checked+span{color:var(--muted);text-decoration:line-through}
+
+.fig{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;overflow-x:auto;margin-bottom:16px}
+.fig svg{display:block;min-width:700px;width:100%;height:auto}
+.fig figcaption,.cap{font-size:.88rem;color:var(--muted);margin-top:6px}
+svg text{font-family:var(--font);fill:var(--fg)}
+svg .box{fill:var(--surface);stroke:var(--line);stroke-width:2}
+svg .boxA{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+svg .t-s{font-size:12px} svg .t-m{font-size:14px;font-weight:700} svg .t-mut{fill:var(--muted);font-size:12px}
+svg .w-p{stroke:var(--c-power);stroke-width:3;fill:none} svg .w-s{stroke:var(--c-sig);stroke-width:3;fill:none}
+svg .w-m{stroke:var(--c-motor);stroke-width:3;fill:none} svg .w-d{stroke:var(--muted);stroke-width:2;fill:none;stroke-dasharray:6 5}
+svg .dot{fill:var(--fg)}
+
+/* 버튼 카드 */
+.screens{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.screens .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px}
+.bcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0;margin:0}
+.bcard .nm{font-weight:900;font-size:1.1rem;line-height:1.35}
+.bcard .en{font-family:var(--mono);font-size:.78rem;color:var(--muted);margin:2px 0 8px;word-break:break-all}
+.bcard .tag{display:inline-block;font-size:.74rem;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:.05em .7em;font-weight:700;margin-bottom:6px}
+.bcard dl{margin:0}
+.bcard dt{font-size:.8rem;font-weight:700;color:var(--accent);margin-top:8px}
+.bcard dd{margin:0}
+.bcard dd.w{color:var(--warn)}
+.bcard.hide{display:none}
+.scrhead{grid-column:1/-1;margin:14px 0 0;font-size:1.15rem;font-weight:900;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.scrhead small{font-weight:500;color:var(--muted);font-size:.9rem;margin-left:.4em}
+
+details.faq{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:10px}
+details.faq>summary{cursor:pointer;padding:12px 16px;font-weight:700;list-style:none;display:flex;gap:10px}
+details.faq>summary::before{content:"＋";color:var(--accent);flex:none}
+details.faq[open]>summary::before{content:"－"}
+details.faq>div{padding:0 16px 14px 42px}
+details.faq>div>*:last-child{margin-bottom:0}
+
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px}
+.calc label{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:.95rem}
+.calc input,.calc select{font:inherit;padding:.5em .7em;border:2px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);min-width:0;width:100%}
+.calc input:focus,.calc select:focus{border-color:var(--accent);outline:none}
+.result{background:var(--accent-soft);border:2px solid var(--accent);border-radius:12px;padding:14px 18px}
+.result .big{font-size:1.9rem;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums}
+
+.gl{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
+.gl>div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.gl b{display:block}
+.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+::highlight(hit){background:#ffd54a;color:#111}
+.sr{position:absolute;left:-9999px}
+
+@media (max-width:960px){
+  .wrap{grid-template-columns:minmax(0,1fr)}
+  nav.toc{display:none}
+  details.mtoc{display:block;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:16px}
+  details.mtoc>summary{padding:12px 16px;font-weight:700;cursor:pointer}
+  details.mtoc nav{padding:0 8px 10px;font-size:.95rem}
+  details.mtoc a{display:block;padding:.4em .7em;text-decoration:none;color:var(--fg)}
+  details.mtoc .grp{font-size:.78rem;color:var(--muted);margin:10px .7em 2px;font-weight:700}
+}
+@media (max-width:640px){
+  .flow{grid-template-columns:1fr}
+  .flow>div:not(:last-child)::after{content:"▼";right:auto;left:50%;top:auto;bottom:-14px;transform:translateX(-50%)}
+  section.sec h2{font-size:1.4rem}
+  .brand small{display:none}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">Mach3 쉬운 설명서<small>이진주방산업</small></div>
+    <div class="search">
+      <label class="sr" for="q">설명서 안에서 찾기</label>
+      <input id="q" type="search" placeholder="찾을 말을 쓰세요 (예: 리셋, 배선, 스텝, 비상정지)" autocomplete="off">
+      <button id="qx" type="button" aria-label="검색어 지우기" hidden>✕</button>
+    </div>
+    <div class="fs" role="group" aria-label="글자 크기">
+      <button type="button" id="fsm" aria-label="글자 작게">가−</button>
+      <button type="button" id="fsp" aria-label="글자 크게">가＋</button>
+    </div>
+  </div>
+  <div class="quick" id="quick"></div>
+  <div class="status" id="status" aria-live="polite"></div>
+</header>
+
+<div class="wrap">
+<nav class="toc" id="toc" aria-label="목차"></nav>
+<main id="main">
+<details class="mtoc"><summary>목차 열기</summary><nav id="mtoc"></nav></details>
+
+<!-- ===================== 0 ===================== -->
+<section class="sec" id="start" data-t="처음 읽는 법" data-g="먼저 읽기">
+  <header><div class="kicker">먼저 읽기</div><h2>이 설명서 보는 법</h2>
+  <p class="lead">컴퓨터로 기계를 움직이는 일이 처음이어도 괜찮아요. 순서대로 따라 하면 됩니다.</p></header>
+
+  <div class="s note"><b>이렇게 쓰세요</b>
+    <ul>
+      <li>위의 <b>찾기 칸</b>에 낱말을 쓰면 관련된 설명만 남아요. 예: <code>리셋</code>, <code>배선</code>, <code>스텝</code></li>
+      <li>글씨가 작으면 오른쪽 위 <b>가＋</b>를 누르세요.</li>
+      <li>"순서" 상자는 위에서부터 차례로 하세요. 건너뛰면 고장 나거나 다칠 수 있어요.</li>
+      <li>영어 이름은 괄호에 같이 적었어요. 화면에 영어가 남아 있어도 찾을 수 있어요.</li>
+    </ul>
+  </div>
+
+  <div class="s bad"><b>꼭 지켜 주세요 (안전)</b>
+    <ul>
+      <li>배선을 만지기 전에는 <b>전원 플러그를 뽑으세요.</b> 스위치만 끄는 것으로는 부족해요.</li>
+      <li>기계가 움직이는 동안 <b>손을 기계 안에 넣지 마세요.</b></li>
+      <li>처음 시험할 때는 <b>칼날(공구)과 소재를 빼고</b> 하세요.</li>
+      <li><b>비상정지 버튼</b>에 항상 손이 닿는 자리에서 작업하세요.</li>
+      <li>전기(220V)가 어렵다면 전기 기술자에게 맡기세요. 이 설명서는 일반적인 방법이에요. 부품마다 다를 수 있어서, 사 온 <b>부품 설명서가 항상 먼저</b>예요.</li>
+    </ul>
+  </div>
+
+  <div class="s">
+    <h3>전체 순서 한눈에 보기</h3>
+    <ol class="steps">
+      <li><b>이해하기</b>기계가 어떻게 움직이는지 비유로 알아봐요. (1장)</li>
+      <li><b>부품 준비</b>필요한 것을 사요. 체크 목록이 있어요. (2장)</li>
+      <li><b>모터 달기</b>스텝모터를 기계에 고정해요. (3장)</li>
+      <li><b>배선</b>전기선을 연결해요. 그림이 있어요. (4장)</li>
+      <li><b>Mach3 설치</b>컴퓨터에 프로그램을 깔아요. (5장)</li>
+      <li><b>설정</b>"모터가 한 바퀴 돌면 몇 mm 가는지" 알려 줘요. 계산기가 있어요. (6장)</li>
+      <li><b>버튼 배우기</b>화면의 버튼이 각각 무엇인지 알아요. (7장)</li>
+      <li><b>공중 시험 가동</b>소재 없이 처음 돌려 봐요. (8장)</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ===================== 1 ===================== -->
+<section class="sec" id="basic" data-t="1. 기계가 움직이는 원리" data-g="준비">
+  <header><div class="kicker">1장</div><h2>기계가 움직이는 원리 (그림으로 쉽게)</h2>
+  <p class="lead">전문 용어는 나중에 알아도 돼요. 먼저 "누가 누구에게 말하는지"만 알면 됩니다.</p></header>
+
+  <div class="s">
+    <div class="flow">
+      <div><b>컴퓨터 (Mach3)</b>"X축 10mm 가!"<i>비유: 사령관</i></div>
+      <div><b>모션 컨트롤러</b>명령을 전기 신호로 바꿔요<i>비유: 통역사</i></div>
+      <div><b>스텝 드라이버</b>신호를 큰 힘의 전기로 키워요<i>비유: 힘 키우는 앰프</i></div>
+      <div><b>스텝모터</b>전기를 받아 조금씩 돌아요<i>비유: 근육</i></div>
+      <div><b>기계</b>나사가 돌아 테이블이 움직여요<i>비유: 팔다리</i></div>
+    </div>
+  </div>
+
+  <div class="s card"><h3>스텝모터가 뭐예요?</h3>
+    <p>신호 한 번(펄스)에 <b>딱 정해진 만큼만</b> 돌아가는 모터예요. 많이 쓰는 모터는 신호 200번에 한 바퀴를 돌아요. 한 번에 1.8도씩 도는 거예요. 그래서 "몇 번 신호를 보냈는지"만 세면 얼마나 움직였는지 알 수 있어요.</p>
+    <p>컨트롤러는 <b>두 가지 신호</b>를 드라이버에 보내요.</p>
+    <ul>
+      <li><b>펄스 (PUL, STEP)</b>: "한 칸 움직여!" 신호. 많이 보낼수록 많이 가고, 빨리 보낼수록 빨라요.</li>
+      <li><b>방향 (DIR)</b>: "앞으로냐 뒤로냐" 신호.</li>
+      <li><b>가능 (ENA, Enable)</b>: 모터 힘을 켜고 끄는 신호. 처음에는 연결하지 않아도 되는 드라이버가 많아요.</li>
+    </ul>
+  </div>
+
+  <div class="s card"><h3>축(軸)이 뭐예요?</h3>
+    <p>기계가 움직이는 방향이에요. 보통 <b>X = 좌우, Y = 앞뒤, Z = 위아래</b>예요. 축 하나마다 <b>모터 1개 + 드라이버 1개</b>가 필요해요. 3축 기계면 모터 3개, 드라이버 3개예요.</p>
+  </div>
+
+  <div class="s card"><h3>"스텝당 거리"가 제일 중요해요</h3>
+    <p>컴퓨터는 "신호 몇 번 = 몇 mm"를 몰라요. 사람이 알려 줘야 해요. 이걸 <b>단위당 스텝 (Steps per)</b>이라고 해요. 값이 틀리면 10mm를 시켜도 8mm만 가요. 6장에 <b>자동 계산기</b>를 만들어 두었어요.</p>
+  </div>
+
+  <div class="s warn"><b>알아 두세요: 컴퓨터와 컨트롤러</b>
+    <p>Mach3는 오래된 프로그램이라 <b>32비트 윈도우</b>에서 가장 안정적이에요. 컴퓨터 본체에 25핀 포트(패럴렐 포트)가 있으면 컨트롤러 없이 선으로 직접 연결하기도 해요. 요즘 컴퓨터에는 이 포트가 없으니 <b>USB나 이더넷으로 연결하는 모션 컨트롤러 카드</b>를 사는 것이 쉬워요. 카드마다 Mach3용 <b>플러그인(드라이버 파일)</b>이 따로 있으니 판매처 설명서를 꼭 확인하세요.</p>
+  </div>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="sec" id="parts" data-t="2. 필요한 부품" data-g="준비">
+  <header><div class="kicker">2장</div><h2>필요한 부품 체크 목록</h2>
+  <p class="lead">사거나 준비하면 눌러서 체크하세요. 이 브라우저에 기억돼요.</p></header>
+
+  <ul class="check s" id="partlist"></ul>
+
+  <div class="s card"><h3>모터와 드라이버는 짝이 맞아야 해요</h3>
+    <ul>
+      <li>모터 설명서에서 <b>정격 전류(A)</b>를 보세요. 드라이버는 이 전류를 낼 수 있어야 해요. 예: 모터 3A → 드라이버 4A급.</li>
+      <li>전원 전압은 드라이버가 견디는 범위 안에서 정해요. 작은 기계는 24V, 힘이 필요하면 36~48V를 많이 써요. <b>드라이버의 최대 전압을 넘기면 바로 타요.</b></li>
+      <li>전원장치(SMPS)의 전류는 <b>모터 정격 전류 × 모터 개수 × 0.7</b> 이상이면 보통 충분해요.</li>
+      <li>같은 이름이어도 모델마다 단자 이름과 스위치 설정이 달라요. 이 설명서는 가장 흔한 형태 기준이에요.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="sec" id="mount" data-t="3. 스텝모터 달기" data-g="설치">
+  <header><div class="kicker">3장</div><h2>스텝모터 장착 방법</h2>
+  <p class="lead">전기는 아직 연결하지 않아요. 손으로 먼저 부드럽게 돌아가는지 확인하는 단계예요.</p></header>
+
+  <ol class="steps s">
+    <li><b>기계 손으로 돌려 보기</b>
+      <p>모터를 달기 전에 이송 나사(볼스크류)를 손으로 돌려 보세요. 끝에서 끝까지 걸리는 곳 없이 돌아가야 해요. 뻑뻑하면 모터가 힘을 못 써요. 그리스(윤활유)를 바르고 레일 이물질을 닦으세요.</p></li>
+    <li><b>모터 브래킷(받침) 고정</b>
+      <p>모터 앞면에 맞는 판(브래킷)을 기계에 단단히 고정해요. 볼트는 대각선 순서로 조금씩 조여요.</p></li>
+    <li><b>커플링 끼우기</b>
+      <p>모터 축과 나사 축을 잇는 부품이 커플링이에요. 두 축의 굵기를 먼저 재서 맞는 것을 사세요(예: 8mm ↔ 10mm). <b>유연 커플링</b>(스파이더 타입)이 쉬워요. 세트 나사는 축의 평평한 면(D컷)에 맞춰 조여요.</p></li>
+    <li><b>일직선 맞추기 (가장 중요)</b>
+      <p>모터 축과 나사 축이 <b>삐뚤어지면</b> 진동, 소음, 베어링 파손이 생겨요. 자(직각자)를 대고 맞추고, 커플링 양쪽 틈은 1~2mm 정도 남겨요. 축을 억지로 당기거나 밀지 마세요.</p></li>
+    <li><b>모터 볼트 최종 조임</b>
+      <p>모터를 끼운 채 손으로 나사를 돌려 보세요. 처음과 느낌이 같아야 해요. 더 뻑뻑해졌다면 정렬이 틀린 거예요.</p></li>
+    <li><b>이동 거리 끝 확인</b>
+      <p>테이블이 끝까지 가도 모터 브래킷, 케이블, 커버에 부딪히지 않는지 손으로 돌려서 확인해요.</p></li>
+    <li><b>한계(리밋) 스위치와 원점(홈) 스위치 달기</b>
+      <p>각 축의 양 끝에 리밋 스위치를 달아요. 기계가 끝까지 가서 부서지는 것을 막아 줘요. 원점 스위치는 보통 한쪽 끝에 달아요. 스위치는 <b>이동판이 확실하게 눌러 주는 위치</b>에 고정하세요.</p></li>
+  </ol>
+
+  <div class="s note"><b>모터 선이 몇 가닥이에요?</b>
+    <p>4가닥, 6가닥, 8가닥이 있어요. 처음이면 <b>4가닥</b>이 가장 쉬워요. 6가닥이나 8가닥은 드라이버 설명서의 연결 그림을 따라야 해요.</p>
+    <p><b>4가닥 선 짝 찾기</b>: 모터 선은 2개씩 짝(코일)이에요. 멀티미터로 저항을 재서 <b>몇 Ω이 나오는 두 선이 한 짝</b>이에요(안 나오면 다른 짝). 저항계가 없으면 두 선을 서로 붙인 채 축을 손으로 돌려 보세요. 확 뻑뻑해지는 두 선이 한 짝이에요.</p>
+  </div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="sec" id="wiring" data-t="4. 배선 연결" data-g="설치">
+  <header><div class="kicker">4장</div><h2>배선 연결 (그림 보면서 따라 하기)</h2>
+  <p class="lead">축 1개의 연결 그림이에요. 나머지 축도 똑같이 반복하면 돼요.</p></header>
+
+  <div class="s bad"><b>배선 전에 꼭</b>
+    <ul>
+      <li>모든 전원 플러그를 뽑았나요?</li>
+      <li>전원장치(DC)의 <b>+와 −는 반대로 연결하면 드라이버가 타요.</b></li>
+      <li>전원이 켜진 채로 <b>모터 선을 뽑거나 꽂지 마세요.</b> 드라이버가 고장 나요.</li>
+    </ul>
+  </div>
+
+  <figure class="fig s">
+    <svg viewBox="0 0 820 430" role="img" aria-label="축 1개 배선도: 콘센트, DC 전원, 드라이버, 모션 컨트롤러, 모터, 컴퓨터가 선으로 이어진 그림">
+      <rect class="box" x="20" y="20" width="170" height="60" rx="8"/>
+      <text class="t-m" x="105" y="48" text-anchor="middle">콘센트 220V</text><text class="t-mut" x="105" y="66" text-anchor="middle">차단기·퓨즈 포함</text>
+      <rect class="box" x="250" y="20" width="240" height="60" rx="8"/>
+      <text class="t-m" x="370" y="48" text-anchor="middle">DC 전원장치 (24~48V)</text><text class="t-mut" x="370" y="66" text-anchor="middle">V+ 와 V− 로 직류 내보냄</text>
+      <path class="w-p" d="M190 50H250"/>
+      <text class="t-mut" x="195" y="40">220V</text>
+
+      <rect class="boxA" x="340" y="130" width="200" height="230" rx="10"/>
+      <text class="t-m" x="440" y="152" text-anchor="middle">스텝 드라이버</text>
+      <path class="w-p" d="M390 80V130"/><path class="w-p" d="M450 80V130" stroke-opacity=".55"/>
+      <text class="t-s" x="396" y="110">V+ (빨강)</text><text class="t-s" x="456" y="110">V− (검정)</text>
+      <circle class="dot" cx="390" cy="130" r="4"/><circle class="dot" cx="450" cy="130" r="4"/>
+
+      <g class="t-s">
+        <text x="350" y="185">PUL+</text><text x="350" y="210">PUL−</text>
+        <text x="350" y="235">DIR+</text><text x="350" y="260">DIR−</text>
+        <text x="350" y="285">ENA+</text><text x="350" y="310">ENA−</text>
+        <text x="500" y="185" text-anchor="end">A+</text><text x="500" y="215" text-anchor="end">A−</text>
+        <text x="500" y="245" text-anchor="end">B+</text><text x="500" y="275" text-anchor="end">B−</text>
+      </g>
+      <text class="t-mut" x="440" y="345" text-anchor="middle">전류 스위치(DIP)도 설정</text>
+
+      <rect class="box" x="20" y="150" width="230" height="190" rx="10"/>
+      <text class="t-m" x="135" y="172" text-anchor="middle">모션 컨트롤러</text>
+      <text class="t-mut" x="135" y="188" text-anchor="middle">(또는 BOB 보드)</text>
+      <g class="t-s">
+        <text x="150" y="215">5V (+)</text><text x="150" y="240">X축 STEP</text>
+        <text x="150" y="265">X축 DIR</text><text x="150" y="290">ENABLE (처음엔 생략)</text>
+      </g>
+      <path class="w-s" d="M250 210H300V185H340"/>
+      <path class="w-s" d="M300 210V235H340"/>
+      <path class="w-s" d="M300 235V285H340"/>
+      <path class="w-s" d="M250 240H280V210H340" />
+      <path class="w-s" d="M250 265H270V260H340"/>
+      <path class="w-d" d="M250 290H262V310H340"/>
+      <text class="t-mut" x="258" y="330">점선=선택</text>
+
+      <rect class="box" x="640" y="160" width="160" height="130" rx="10"/>
+      <text class="t-m" x="720" y="186" text-anchor="middle">스텝모터</text>
+      <text class="t-mut" x="720" y="204" text-anchor="middle">(4선 기준)</text>
+      <text class="t-s" x="650" y="235">코일 A : 선 2개</text><text class="t-s" x="650" y="262">코일 B : 선 2개</text>
+      <path class="w-m" d="M500 180H600V228H640"/><path class="w-m" d="M500 210H590V235H640"/>
+      <path class="w-m" d="M500 240H590V258H640"/><path class="w-m" d="M500 270H600V265H640"/>
+
+      <rect class="box" x="20" y="385" width="230" height="38" rx="8"/>
+      <text class="t-m" x="135" y="409" text-anchor="middle">컴퓨터 (Mach3)</text>
+      <path class="w-d" d="M135 340V385"/>
+      <text class="t-mut" x="145" y="368">USB·이더넷·25핀 케이블</text>
+
+      <g transform="translate(560 340)">
+        <path class="w-p" d="M0 8H30"/><text class="t-s" x="38" y="12">전원선 (강한 전기)</text>
+        <path class="w-s" d="M0 30H30"/><text class="t-s" x="38" y="34">신호선 (약한 전기)</text>
+        <path class="w-m" d="M0 52H30"/><text class="t-s" x="38" y="56">모터선</text>
+      </g>
+    </svg>
+    <figcaption>※ 그림은 이해를 돕기 위한 예시예요. 단자 이름과 순서는 드라이버마다 달라요. 꼭 내 드라이버 윗면이나 옆면 글씨를 확인하세요. 컨트롤러 출력이 5V인 경우를 그렸어요.</figcaption>
+  </figure>
+
+  <h3 class="s">순서대로 연결하기</h3>
+  <ol class="steps s">
+    <li><b>드라이버 설정 스위치(DIP) 먼저 맞추기</b>
+      <p>드라이버 옆면의 작은 스위치 줄이에요. 설명서 표를 보고 두 가지를 정해요.</p>
+      <ul>
+        <li><b>전류</b>: 모터 정격 전류에 맞춰요. 표에 "피크(Peak)"와 "실효(RMS)"가 같이 있으면 모터 설명서의 값과 같은 종류인지 확인하세요. 모르겠으면 정격보다 조금 낮게 시작해요.</li>
+        <li><b>세분화 (Microstep, 마이크로스텝)</b>: 1/8이나 1/16을 많이 써요. 이 숫자는 <b>Mach3 설정에도 똑같이</b> 넣어야 해요. 메모해 두세요.</li>
+      </ul></li>
+    <li><b>모터선 → 드라이버 (A+, A−, B+, B−)</b>
+      <p>같은 코일 짝끼리 묶어서 A쪽, B쪽에 연결해요. 짝을 잘못 맞추면 모터가 <b>떨기만 하고 돌지 않아요</b>. 한쪽 짝의 두 선을 서로 바꾸면 방향이 반대로 돼요.</p></li>
+    <li><b>컨트롤러 신호선 → 드라이버 (PUL, DIR, ENA)</b>
+      <p>드라이버 입력은 <b>+ 와 − 두 개씩</b>이에요. 컨트롤러의 5V를 PUL+, DIR+(ENA+)에 연결하고, 컨트롤러의 STEP 핀을 PUL−, DIR 핀을 DIR−에 연결하는 방식이 가장 흔해요(보드 설명서를 꼭 확인). ENA는 처음에는 <b>연결하지 않아도</b> 돼요.</p>
+      <div class="warn"><b>주의: 신호 전압</b>드라이버 신호 입력이 5V용인데 12V나 24V를 넣으면 고장 나요. 컨트롤러 출력이 24V라면 드라이버 설명서의 저항(직렬 저항) 값을 따르세요.</div></li>
+    <li><b>전원 → 드라이버 (V+, V−)</b>
+      <p>DC 전원장치의 + 를 V+, − 를 V−에 연결해요. 선 굵기는 너무 가늘지 않게 하고, 단자는 드라이버로 단단히 조여요. <b>이 단계는 마지막에 해요.</b> 전원장치를 콘센트에 꽂는 것도 마지막이에요.</p></li>
+    <li><b>비상정지 버튼 연결</b>
+      <p>빨간 버튼(NC, 평소에 연결된 접점)을 컨트롤러의 비상정지 입력에 연결해요. 눌렀을 때 신호가 끊기는 방식이 안전해요. 모터 전원도 함께 끊는 구조(마그네트 스위치)를 쓰면 더 안전해요. 컴퓨터 프로그램만 믿으면 안 돼요.</p></li>
+    <li><b>리밋·홈 스위치 연결</b>
+      <p>각 스위치의 한쪽을 GND(−), 다른 쪽을 컨트롤러의 입력 핀에 연결해요. 평소에 연결되어 있다가 눌리면 끊기는 <b>NC 접점</b>이 선이 빠져도 알 수 있어서 안전해요. 근접센서(24V)는 5V 입력에 직접 연결하지 마세요. 전압을 맞춰 주는 보드를 쓰세요.</p></li>
+    <li><b>접지와 노이즈 방지</b>
+      <p>기계 몸체와 전원장치 접지(PE)를 연결해요. 신호선은 <b>차폐(실드) 케이블</b>을 쓰고, 모터선·전원선과 나란히 묶지 마세요. 스핀들(인버터) 쪽 선이 제일 시끄러워요. 신호가 흔들리면 모터가 멋대로 움직여요.</p></li>
+  </ol>
+
+  <div class="s ok"><b>전원 켜기 전 마지막 점검</b>
+    <ul class="check" id="prelist" style="margin-bottom:0"></ul>
+  </div>
+
+  <div class="s card"><h3>스핀들(공구 돌리는 모터)은 나중에</h3>
+    <p>처음에는 <b>스핀들은 연결하지 않고</b> 축 이동만 시험하세요. 스핀들 인버터를 쓸 때는 릴레이로 켜고 끄는 신호(M3, M5)와 속도 신호(0~10V)를 따로 연결해야 해요. 인버터 설명서를 따라 하세요.</p>
+  </div>
+</section>
+
+<!-- ===================== 5 ===================== -->
+<section class="sec" id="install" data-t="5. Mach3 설치" data-g="설치">
+  <header><div class="kicker">5장</div><h2>컴퓨터에 Mach3 설치하기</h2></header>
+
+  <ol class="steps s">
+    <li><b>컴퓨터 정리</b>
+      <ul><li>전원 옵션을 "<b>고성능</b>"으로, 절전·화면보호기·자동 잠금은 <b>끄기</b>로 해요. 가공 중에 컴퓨터가 잠들면 사고가 나요.</li>
+      <li>윈도우 자동 업데이트와 백신의 자동 검사는 가공 중에 돌지 않게 해요.</li>
+      <li>가공용 컴퓨터는 <b>이 일만 하게</b> 두세요. 다른 프로그램을 많이 열지 마세요.</li></ul></li>
+    <li><b>Mach3 설치 파일 실행</b>
+      <p>설치 프로그램을 실행하고 <b>기본 폴더 <code>C:\Mach3</code></b>에 설치해요. 중간에 "<b>드라이버 설치</b>"를 묻는 창이 나오면 허용하세요(패럴렐 포트용 드라이버예요). 설치가 끝나면 컴퓨터를 <b>다시 시작</b>해요.</p></li>
+    <li><b>컨트롤러 플러그인 설치</b>
+      <p>USB·이더넷 컨트롤러 카드를 쓰면 판매처가 주는 <b>Mach3 플러그인 파일</b>(보통 <code>.dll</code>)을 <code>C:\Mach3\PlugIns</code> 폴더에 넣어요. 방법은 카드마다 달라서 카드 설명서를 따르세요.</p></li>
+    <li><b>정품 인증 파일(라이선스)</b>
+      <p>인증 전에는 G코드를 <b>500줄까지만</b> 쓸 수 있어요. 정품 라이선스 파일을 <code>C:\Mach3</code> 폴더에 넣으면 제한이 풀려요.</p></li>
+    <li><b>한글 패치 적용</b>
+      <p>따로 받은 <code>그림_한글패치_적용.bat</code>과 <code>한글패치_적용.bat</code>을 <b>Mach3를 완전히 끈 상태</b>에서 <b>마우스 오른쪽 → 관리자 권한으로 실행</b>해요. 원래대로 되돌릴 때는 <code>원복.bat</code>을 써요.</p></li>
+    <li><b>바탕화면 아이콘으로 실행</b>
+      <p>Mach3는 항상 <code>C:\Mach3</code> 폴더 안에서 실행해야 해요. 패치 폴더에서 바로 실행하면 <b>Enable40.dll 없음</b> 오류가 나요. 바탕화면 아이콘으로 실행하세요.</p></li>
+    <li><b>처음 실행할 때</b>
+      <p>실행하면 <b>"프로파일 선택"</b> 창이 나와요. 기계용 이름(예: <code>Mach3Mill</code>)을 고르면 돼요. 설정을 따로 저장하는 "내 설정 파일"이에요. 기계 설정을 다 끝낸 뒤에는 이 파일을 <b>다른 곳에 복사해서 보관</b>하세요.</p></li>
+  </ol>
+</section>
+
+<!-- ===================== 6 ===================== -->
+<section class="sec" id="config" data-t="6. 기계에 맞게 설정" data-g="설정">
+  <header><div class="kicker">6장</div><h2>기계에 맞게 설정하기</h2>
+  <p class="lead">메뉴 이름은 <b>설정 (Config)</b> 안에 있어요. 아래 순서대로 하나씩 하세요.</p></header>
+
+  <ol class="steps s">
+    <li><b>단위 정하기 (mm)</b>
+      <p>메뉴 <b>설정 → 기본 단위 선택</b>에서 <b>mm</b>를 골라요. 이 설정은 한 번 정하면 바꾸지 않아요.</p></li>
+    <li><b>포트와 핀 (Ports &amp; Pins)</b>
+      <p>메뉴 <b>설정 → 포트와 핀</b>. 이 창이 제일 중요해요. 탭이 여러 개예요.</p>
+      <ul>
+        <li><b>포트 설정 &amp; 축 선택 (Port Setup and Axis Selection)</b>: 내 컨트롤러 종류(패럴렐이면 주소 <code>0x378</code>, 커널 속도 <code>25000Hz</code>)를 정해요. USB 카드는 카드 설명서대로 플러그인을 선택해요.</li>
+        <li><b>모터 출력 (Motor Outputs)</b>: X, Y, Z 축을 "사용(Enabled)"으로 하고, <b>STEP 핀 번호</b>와 <b>DIR 핀 번호</b>를 컨트롤러 배선대로 써 넣어요. 포트 번호는 1.</li>
+        <li><b>입력 신호 (Input Signals)</b>: 리밋(X++ / X−−), 홈(Home), 비상정지(EStop)를 사용으로 하고 핀 번호를 써요. 스위치 종류에 따라 <b>활성 저(Active Low)</b> 체크를 맞춰요.</li>
+        <li><b>출력 신호 (Output Signals)</b>: 스핀들 릴레이, 냉각수 릴레이를 연결했다면 여기에서 핀을 정해요.</li>
+      </ul>
+      <p>핀 번호를 입력한 뒤에는 꼭 <b>적용(Apply)</b> → <b>확인(OK)</b>을 누르세요.</p></li>
+    <li><b>신호가 들어오는지 확인 (진단 화면)</b>
+      <p>화면 위쪽 탭 <b>진단 (Alt-7)</b>을 열어요. 리밋/홈 스위치를 손으로 눌러 보세요. 해당 <b>LED 표시등이 켜지면</b> 배선이 맞아요. 안 켜지면 4장을 다시 확인하세요.</p></li>
+    <li><b>모터 튜닝 (Motor Tuning)</b>
+      <p>메뉴 <b>설정 → 모터 튜닝</b>. 왼쪽에서 X축 하나를 골라서 아래 세 가지를 입력해요.</p>
+      <ul>
+        <li><b>단위당 스텝 (Steps per)</b>: 아래 계산기로 구해요.</li>
+        <li><b>속도 (Velocity)</b>: 처음엔 <b>1000 mm/분</b>쯤 낮게 시작해요.</li>
+        <li><b>가속도 (Acceleration)</b>: 처음엔 <b>100 mm/초²</b>쯤 낮게 시작해요.</li>
+      </ul>
+      <p>입력한 뒤 <b>축 설정 저장 (Save Axis Settings)</b>을 누르세요. 다음 축으로 넘어가기 전에 저장하지 않으면 지워져요.</p></li>
+    <li><b>시험 이동 &amp; 거리 보정</b>
+      <p>자나 다이얼게이지를 세워 두고 X축을 100mm 보내 봐요. 실제로 간 거리를 재서 아래 식으로 새 값을 구해요.</p>
+      <p><b>새 스텝 값 = 지금 스텝 값 × 시킨 거리 ÷ 실제로 간 거리</b></p>
+      <p>예: 100mm를 시켰는데 98mm 갔다면 → 지금 값 × 100 ÷ 98. 설정 화면의 <b>축 보정 (Axis Calibration)</b> 버튼을 쓰면 이 계산을 자동으로 해 줘요.</p></li>
+    <li><b>속도를 조금씩 올려요</b>
+      <p>속도를 올리다가 모터가 <b>"우웅" 소리와 함께 멈추거나 떨면</b> 한계예요(탈조). 그 값에서 <b>30%쯤 낮춘 값</b>을 최종값으로 쓰세요. 가속도도 같은 방법으로 해요.</p></li>
+    <li><b>방향이 반대일 때</b>
+      <p>화살표 키를 눌렀는데 반대로 가면 <b>모터 출력</b> 탭에서 해당 축의 <b>DIR 활성 저(DirLowActive)</b> 체크를 바꾸세요. 선을 바꾸지 않아도 돼요.</p></li>
+    <li><b>소프트 리밋 &amp; 원점 복귀 설정</b>
+      <p>메뉴 <b>설정 → 원점 / 리밋 (Homing/Limits)</b>. 소프트 리밋(Soft Limits)의 최대·최소 값을 기계 이동 범위보다 <b>조금 작게</b> 넣어요. 리밋 스위치에 닿기 전에 프로그램이 먼저 멈춰 줘요. <b>원점 복귀</b>의 방향과 속도도 여기서 정해요.</p></li>
+  </ol>
+
+  <div class="s card" id="calc">
+    <h3>스텝 자동 계산기</h3>
+    <p>값을 넣으면 <b>Mach3의 "단위당 스텝"</b>에 넣을 숫자가 바로 나와요.</p>
+    <div class="calc">
+      <label for="c-type">이송 방식
+        <select id="c-type"><option value="screw">볼스크류·리드스크류 (나사)</option><option value="belt">타이밍 벨트</option><option value="rack">랙 &amp; 피니언</option></select></label>
+      <label for="c-steps">모터 1회전 스텝 수
+        <select id="c-steps"><option value="200" selected>200 (1.8°, 가장 흔함)</option><option value="400">400 (0.9°)</option></select></label>
+      <label for="c-micro">드라이버 세분화 (1/N)
+        <select id="c-micro"><option>1</option><option>2</option><option>4</option><option selected>8</option><option>16</option><option>32</option><option>64</option></select></label>
+      <label for="c-gear">감속비 (없으면 1)
+        <input id="c-gear" type="number" inputmode="decimal" value="1" min="0.01" step="any"></label>
+      <label for="c-p1" id="c-l1">나사 피치 (mm / 1회전)
+        <input id="c-p1" type="number" inputmode="decimal" value="5" min="0.01" step="any"></label>
+      <label for="c-p2" id="c-l2" hidden>벨트 피치 (mm)
+        <input id="c-p2" type="number" inputmode="decimal" value="2" min="0.01" step="any"></label>
+      <label for="c-v">내가 원하는 최고 속도 (mm/분)
+        <input id="c-v" type="number" inputmode="decimal" value="3000" min="1" step="any"></label>
+    </div>
+    <div class="result" aria-live="polite">
+      <div>단위당 스텝 (Steps per)</div>
+      <div class="big" id="r-spu">320</div>
+      <div id="r-note"></div>
+    </div>
+    <p class="cap">피치 = 나사가 1바퀴 돌 때 가는 거리예요. 5mm 피치 볼스크류를 많이 써요. 벨트는 "풀리 잇수 × 벨트 피치"가 1바퀴 거리예요. 랙&amp;피니언은 "피니언 잇수 × 모듈 × 3.1416"이 1회전 거리예요(방식을 고르면 입력 칸이 그 값으로 바뀌어요). 벨트는 풀리 잇수와 벨트 피치를 각각 넣어요.</p>
+  </div>
+</section>
+
+<!-- ===================== 7 ===================== -->
+<section class="sec" id="buttons" data-t="7. 화면 버튼 설명" data-g="화면">
+  <header><div class="kicker">7장</div><h2>화면의 버튼 하나하나 설명</h2>
+  <p class="lead">화면 아래쪽 위치에 따라 이름이 달라요. 먼저 <b>화면(탭) 종류</b>를 알아보고, 버튼 설명을 찾으세요. 위 검색 칸에 버튼 글자를 써도 돼요.</p></header>
+
+  <div class="s card"><h3>화면 7개 (키보드 <kbd>Alt</kbd>+번호로 이동)</h3>
+    <div class="tblwrap" style="margin:0"><table>
+      <tr><th>화면</th><th>단축키</th><th>이럴 때 써요</th></tr>
+      <tr><td><b>프로그램 실행</b></td><td><kbd>Alt</kbd>+<kbd>1</kbd></td><td>G코드 불러오고 가공 시작할 때. 가장 많이 써요.</td></tr>
+      <tr><td><b>수동 (조그)</b></td><td><kbd>Alt</kbd>+<kbd>2</kbd></td><td>키보드로 기계를 움직여 위치 잡을 때.</td></tr>
+      <tr><td><b>MDI</b></td><td><kbd>Alt</kbd>+<kbd>3</kbd></td><td>명령을 한 줄 직접 쳐서 실행할 때.</td></tr>
+      <tr><td><b>공구경로</b></td><td><kbd>Alt</kbd>+<kbd>4</kbd></td><td>가공 경로를 그림으로 크게 볼 때.</td></tr>
+      <tr><td><b>옵셋</b></td><td><kbd>Alt</kbd>+<kbd>5</kbd></td><td>소재 기준점(0점)과 공구 길이 값을 넣을 때.</td></tr>
+      <tr><td><b>설정</b></td><td><kbd>Alt</kbd>+<kbd>6</kbd></td><td>단위, 리밋 무시 등을 켜고 끌 때.</td></tr>
+      <tr><td><b>진단</b></td><td><kbd>Alt</kbd>+<kbd>7</kbd></td><td>스위치 신호가 들어오는지, 문제가 어디인지 볼 때.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="s">
+    <h3 style="margin-bottom:8px">버튼 찾기</h3>
+    <div class="screens" id="scr" role="group" aria-label="화면별 보기"></div>
+    <div class="btngrid" id="btngrid"></div>
+  </div>
+
+  <div class="s card" id="coords"><h3>좌표가 여러 개라서 헷갈려요</h3>
+    <ul>
+      <li><b>기계 좌표 (Machine)</b>: 기계의 "진짜 자리". 원점 복귀를 하고 나면 정해져요. 바뀌지 않는 주소예요.</li>
+      <li><b>절대 좌표 (Absolute / 작업 좌표)</b>: 내가 정한 기준점에서 얼마나 떨어졌는지. 소재 모서리를 0으로 잡으면 도면 숫자 그대로 쓸 수 있어요. 화면의 큰 숫자(DRO)가 이 값이에요.</li>
+      <li><b>작업 옵셋 / 픽스처 (G54~G59)</b>: 기준점을 6개까지 저장해 두는 칸이에요. 보통 G54 하나만 써요.</li>
+    </ul>
+    <p>쉽게 말하면 <b>기계 좌표는 건물 주소</b>, <b>작업 좌표는 "여기서부터 3칸"이라는 약속</b>이에요.</p>
+  </div>
+
+  <div class="s card" id="gcode"><h3>자주 쓰는 G코드 · M코드</h3>
+    <p>G코드는 기계에 하는 말이에요. 한 줄에 한 동작이에요.</p>
+    <div class="tblwrap" style="margin:0"><table>
+      <tr><th>코드</th><th>뜻</th><th>예</th></tr>
+      <tr><td><code>G0</code></td><td>빠르게 이동 (가공 안 함)</td><td><code>G0 X10 Y20</code></td></tr>
+      <tr><td><code>G1</code></td><td>정해진 속도로 직선 가공</td><td><code>G1 X50 F300</code></td></tr>
+      <tr><td><code>G2 / G3</code></td><td>시계 / 반시계 원호</td><td><code>G2 X10 Y0 I5 J0</code></td></tr>
+      <tr><td><code>G20 / G21</code></td><td>인치 / mm 단위</td><td><code>G21</code></td></tr>
+      <tr><td><code>G90 / G91</code></td><td>절대 좌표 / 상대 좌표(지금 위치에서 얼마)</td><td><code>G90</code></td></tr>
+      <tr><td><code>G54</code></td><td>작업 옵셋 1번 사용</td><td><code>G54</code></td></tr>
+      <tr><td><code>M3 / M4 / M5</code></td><td>스핀들 정회전 / 역회전 / 정지</td><td><code>M3 S12000</code></td></tr>
+      <tr><td><code>M8 / M9</code></td><td>냉각수 켜기 / 끄기</td><td><code>M8</code></td></tr>
+      <tr><td><code>M6 T1</code></td><td>공구 교환 (1번 공구)</td><td><code>M6 T1</code></td></tr>
+      <tr><td><code>M30</code></td><td>프로그램 끝 + 맨 처음으로</td><td><code>M30</code></td></tr>
+      <tr><td><code>F</code> / <code>S</code></td><td>이송 속도 / 스핀들 회전수</td><td><code>F500</code></td></tr>
+    </table></div>
+    <p class="cap" style="margin-top:8px">화면의 <b>G코드</b> / <b>M코드</b> 버튼을 누르면 전체 목록을 볼 수 있는 도움말 창이 열려요.</p>
+  </div>
+</section>
+
+<!-- ===================== 8 ===================== -->
+<section class="sec" id="firstrun" data-t="8. 처음 돌려 보기" data-g="실전">
+  <header><div class="kicker">8장</div><h2>처음 돌려 보기 (공중 시험)</h2>
+  <p class="lead">소재와 공구를 빼고, 기계를 허공에서 움직여 봐요. 이상이 없으면 그다음에 실제로 깎아요.</p></header>
+
+  <ol class="steps s">
+    <li><b>기계 주변 정리</b>
+      <p>공구와 소재를 떼고, 테이블 위의 공구·렌치를 치워요. 비상정지 위치를 확인해요.</p></li>
+    <li><b>전원 켜는 순서</b>
+      <p>컴퓨터 켜기 → Mach3 실행 → 기계 전원 켜기 → 비상정지 버튼이 풀려 있는지 확인.</p></li>
+    <li><b>리셋 누르기</b>
+      <p>깜빡이던 <b>리셋 버튼</b>을 눌러요. 깜빡임이 멈추면 준비 끝이에요. 계속 깜빡이면 9장 문제 해결을 보세요.</p></li>
+    <li><b>수동 이동 (조그)</b>
+      <p><kbd>Alt</kbd>+<kbd>2</kbd> 수동 화면에서 <b>스텝 모드</b>로 바꾸고 아주 작은 거리(예: 1mm)부터 시작해요. <kbd>→</kbd> 키로 X축이 +방향으로 움직이는지, <kbd>PgUp</kbd>으로 Z축이 위로 가는지 확인해요.</p></li>
+    <li><b>원점 복귀</b>
+      <p>원점 복귀(Ref All Home) 버튼을 눌러요. 각 축이 홈 스위치까지 가서 멈춰요. <b>손은 비상정지 위에</b> 두고 보세요. 반대 방향으로 가면 즉시 비상정지를 누르고, 방향 설정을 바꿔요.</p></li>
+    <li><b>Z 금지로 허공 가공</b>
+      <p>설정 화면의 <b>Z 금지(Z Inhibit)</b>를 켜면 Z축이 움직이지 않아요. 이때 X, Y만 움직여서 가공 경로를 확인하는 방법이 안전해요.</p></li>
+    <li><b>G코드 불러오기 → 시뮬레이션</b>
+      <p><kbd>Alt</kbd>+<kbd>1</kbd> 화면에서 <b>G코드 불러오기</b>로 파일을 열어요. 오른쪽 <b>공구경로</b> 그림이 도면과 같은지 눈으로 먼저 확인해요.</p></li>
+    <li><b>속도를 낮추고 시작</b>
+      <p>이송속도 오버라이드를 <b>30~50%</b>로 낮추고 <b>사이클 시작</b>을 눌러요. 처음에는 <b>단일 블록</b>을 켜서 한 줄씩 보면서 가면 가장 안전해요.</p></li>
+    <li><b>이상하면 즉시</b>
+      <p>이송 정지(Feed Hold)는 잠깐 멈춤, 비상정지는 모든 것을 끊음이에요. 이상한 소리, 냄새, 연기가 나면 망설이지 말고 <b>비상정지</b>를 누르세요.</p></li>
+    <li><b>실제 가공으로</b>
+      <p>공중 시험이 정상이면 공구를 달고 소재를 단단히 고정하세요. 소재 모서리에 0점(옵셋 화면의 0점 버튼)을 잡고, Z는 소재 윗면에 공구가 살짝 닿는 자리에서 0으로 잡아요. 처음 가공은 <b>얕게(0.2~0.5mm), 천천히</b> 해요.</p></li>
+  </ol>
+
+  <div class="s warn"><b>0점 잡는 순서 (자주 틀려요)</b>
+    <p>① 수동 화면에서 공구를 소재 모서리에 가져가요 → ② <b>X 0점</b>, <b>Y 0점</b> 버튼을 눌러요 → ③ Z 방향은 종이 한 장이 살짝 끼는 높이까지 내려서 <b>Z 0점</b>을 눌러요 → ④ 공구를 위로 올려 안전한 높이로 가요. "0점" 버튼을 누르면 그 자리가 지금부터 <b>0이라고 약속</b>하는 거예요.</p>
+  </div>
+</section>
+
+<!-- ===================== 9 ===================== -->
+<section class="sec" id="trouble" data-t="9. 문제 해결" data-g="도움말">
+  <header><div class="kicker">9장</div><h2>안 될 때 (문제 해결)</h2>
+  <p class="lead">증상을 눌러서 열어 보세요. 위의 찾기 칸에 증상을 쳐도 돼요.</p></header>
+  <div id="faq"></div>
+</section>
+
+<!-- ===================== 10 ===================== -->
+<section class="sec" id="words" data-t="10. 낱말 풀이" data-g="도움말">
+  <header><div class="kicker">10장</div><h2>낱말 풀이</h2></header>
+  <div class="gl s" id="glossary"></div>
+</section>
+
+<div class="empty" id="empty" hidden><p><b>찾는 설명이 없어요.</b></p><p>다른 낱말로 써 보세요. 예: 리셋 · 배선 · 속도 · 0점 · 비상정지</p></div>
+</main>
+</div>
+
+<script>
+/* ---------- 자료 ---------- */
+var SCR = [
+ ['common','모든 화면에서 보이는 것','화면 어디서나'],
+ ['run','프로그램 실행','Alt+1'],
+ ['manual','수동 (조그)','Alt+2'],
+ ['mdi','MDI','Alt+3'],
+ ['path','공구경로','Alt+4'],
+ ['offset','옵셋','Alt+5'],
+ ['settings','설정','Alt+6'],
+ ['diag','진단','Alt+7']
+];
+/* [화면, 이름, 영어/단축키, 쉬운 설명, 언제 쓰나, 주의] */
+var BTN = [
+['common','리셋','Reset','기계를 "준비 완료" 상태로 만드는 버튼이에요. 깜빡이는 동안은 아무것도 움직이지 않아요.','Mach3를 켠 직후 한 번, 비상정지를 풀고 난 뒤 한 번 눌러요.','계속 깜빡이면 비상정지가 눌렸거나 배선·포트 설정이 틀린 거예요. 9장을 보세요.'],
+['common','사이클 시작','Cycle Start · Alt-R','불러온 G코드대로 가공을 시작해요. 일시정지한 뒤에는 이어서 가요.','가공을 시작하거나 멈춘 것을 이어 갈 때.','누르기 전에 공구, 소재, 손 위치를 꼭 확인하세요.'],
+['common','이송 정지','Feed Hold · Space','가공을 잠깐 멈춰요. 영상의 "일시정지"와 같아요. 다시 사이클 시작을 누르면 이어 가요.','소재를 확인하거나 부스러기를 치울 때.','이 버튼은 비상정지가 아니에요. 위험하면 비상정지를 누르세요.'],
+['common','정지','Stop · Alt-S','가공을 완전히 끝내고 멈춰요. 이어 가기는 어려워요.','가공을 중간에 그만둘 때.','줄 번호 입력으로 이어 가려면 "여기서 시작"을 쓰세요.'],
+['common','되돌리기','Rewind · Ctrl-W','프로그램을 맨 첫 줄로 되돌려요.','같은 가공을 한 번 더 하거나 처음부터 다시 할 때.',''],
+['common','단일 블록','Single BLK · Alt-N','켜면 사이클 시작을 한 번 누를 때마다 <b>한 줄씩만</b> 실행해요.','처음 가공할 때 한 줄씩 확인할 때.',''],
+['common','블록 삭제','Block Delete','줄 맨 앞에 <code>/</code>가 붙은 줄을 건너뛰어요.','선택 가공 줄을 켜고 끄고 싶을 때.',''],
+['common','M1 선택 정지','M1 Optional Stop','켜 두면 G코드에 M1이 나올 때 멈춰요. 꺼 두면 그냥 지나가요.','중간에 확인하는 줄을 쓸 때.',''],
+['common','스핀들 정회전','Spindle CW · F5','스핀들(공구 돌리는 모터)을 켜고 꺼요.','수동으로 스핀들을 시험할 때.','공구가 달려 있으면 반드시 안전을 확인한 뒤에 눌러요.'],
+['common','냉각수','Flood · Ctrl-F','냉각수나 에어 같은 장치(릴레이)를 켜고 꺼요.','수동 확인할 때.',''],
+['common','이송속도 / 오버라이드 %','Feedrate · Override','가공 속도를 <b>배율</b>로 바꿔요. 100%는 G코드의 속도 그대로, 50%는 반만 가요.','처음에는 30~50%로 낮춰 시작하고, 상태를 보며 올려요.','소리가 이상하면 즉시 낮추세요.'],
+['common','급속 오버라이드','Rapid Override','G0(빠른 이동)의 속도를 25%, 50%, 100% 중에서 골라요.','처음 시험할 때 25%로 해요.',''],
+['common','스핀들 속도 (S)','Spindle Speed','스핀들 회전수를 정해요. S 숫자가 G코드와 같은지 확인해요.','스핀들 속도 조절.','연결 전에는 움직이지 않아도 정상이에요.'],
+['common','조그 켬/끔','Jog ON/OFF · Ctrl-Alt-J','키보드로 기계를 움직이는 기능을 켜고 꺼요.','키보드로 안 움직이면 먼저 확인하세요. 가공 중에는 꺼 두면 실수로 누르는 것을 막아요.',''],
+['common','해석기 리셋','Reset Interpreter · Alt-I','G코드를 읽는 "머릿속"을 비워요. 단위(mm/인치), 절대/상대 같은 이전 상태를 처음으로 되돌려요.','이상한 상태가 남아서 이동이 이상할 때.',''],
+['common','단위','Units · Alt-U','화면의 mm와 인치 표시를 바꿔요.','G20/G21이 섞여서 숫자가 이상할 때.','바꾸는 것은 표시 단위예요. 기계 기본 단위는 설정 메뉴에서 정해요(6장).'],
+['common','원점 복귀','Ref All Home','모든 축을 홈 스위치까지 보내서 <b>기계의 진짜 자리</b>를 기억하게 해요.','전원을 켠 뒤 처음 한 번.','처음엔 비상정지에 손을 올리고 보세요. 반대로 가면 즉시 멈추세요.'],
+['common','원점 X / Y / Z','Ref X · Ref Y · Ref Z','축 하나만 홈 스위치로 보내요. 복귀가 끝나면 표시등이 초록으로 바뀌어요.','한 축만 다시 원점을 잡고 싶을 때.',''],
+['common','0점 (X, Y, Z)','Zero · 각 축 DRO 옆','지금 있는 자리를 <b>"여기가 0"</b>이라고 약속해요. 기계가 움직이는 게 아니에요.','소재 모서리에 기준점을 잡을 때.','이 값을 잘못 잡으면 소재가 다 틀어져요. 두 번 확인하세요.'],
+['common','절대 좌표 / 기계 좌표','Absolute · Machine','절대 좌표는 내가 정한 0점 기준, 기계 좌표는 기계 자체 주소예요.','가공할 때는 절대 좌표를, 이상 확인에는 기계 좌표를 보세요.',''],
+['common','작업 옵셋 / 픽스처 1~6','Fixture G54~G59','소재 기준점을 번호로 저장해 둬요. 보통 1번(G54)만 써요.','소재가 여러 개인 작업에서 기준점을 바꿀 때.',''],
+['common','공구경로 켬/끔','Toolpath ON/OFF','화면에 경로 그림을 그릴지 말지 정해요.','컴퓨터가 느리면 꺼서 부담을 줄여요.',''],
+['common','경과 시간 / 예상 가공 시간','Elapsed · Estimated','가공을 시작한 뒤 흐른 시간, 그리고 예상 시간이에요.','작업 시간을 가늠할 때.','예상 시간은 근사값이에요.'],
+
+['run','G코드 불러오기','Load G-Code','가공 파일(.nc, .tap, .txt 등)을 불러와요. 열면 오른쪽에 경로 그림과 코드가 보여요.','가공 전에 가장 먼저.',''],
+['run','G코드 편집','Edit G-Code','불러온 G코드를 메모장처럼 열어 고쳐요.','숫자나 속도를 잠깐 고칠 때.','저장한 뒤 다시 불러오세요.'],
+['run','G코드 닫기','Close G-Code','불러온 파일을 닫아요.','다른 파일로 바꿀 때.',''],
+['run','최근 파일','Recent File','최근에 열었던 파일 목록이에요.','자주 쓰는 파일을 빠르게 열 때.',''],
+['run','여기서 시작','Run From Here','선택한 줄부터 가공을 시작해요.','가공이 중간에 멈춰서 이어 하고 싶을 때.','시작 전에 공구 위치, 스핀들 상태, 속도가 맞는지 꼭 확인하세요. 어긋나면 충돌할 수 있어요.'],
+['run','다음 줄 설정','Set Next Line','다음에 실행할 줄을 정해요. 선택하고 이 버튼을 누르면 그 줄에서 시작할 준비가 돼요.','여기서 시작과 함께 써요.',''],
+['run','줄','Line','지금 실행 중인 줄 번호예요. 직접 입력해서 줄을 정할 수도 있어요.','진행 상황 확인.',''],
+['run','반복 횟수','Repeat','같은 프로그램을 몇 번 반복할지 정해요.','같은 모양을 여러 번 가공할 때.',''],
+['run','마법사 불러오기','Load Wizards','쉬운 질문에 답하면 G코드를 만들어 주는 도구예요. 원 파기, 평면 가공 등이 있어요.','간단한 가공을 직접 만들고 싶을 때.',''],
+['run','프로그램 시뮬레이션','Simulate Program Run','실제로 기계를 움직이지 않고, 가공이 어떻게 갈지 화면에서만 돌려 봐요.','처음 만든 G코드를 검사할 때.',''],
+
+['manual','조그 모드','Jog Mode','<b>연속</b>은 키를 누르는 동안 계속 가요. <b>스텝</b>은 한 번 누르면 정해진 거리만 가요. <b>MPG</b>는 손잡이 장치용이에요.','처음에는 스텝 모드로 작은 거리부터 해요.',''],
+['manual','조그 스텝 순환','Cycle Jog Step','스텝 거리를 0.01 → 0.1 → 1 → ... 식으로 돌려 가며 바꿔요.','정밀하게 맞출 때는 작은 값, 멀리 갈 때는 큰 값.',''],
+['manual','방향키 이동','Arrow keys · PgUp · PgDn','<kbd>←</kbd> <kbd>→</kbd>는 X축, <kbd>↑</kbd> <kbd>↓</kbd>는 Y축, <kbd>PgUp</kbd> <kbd>PgDn</kbd>은 Z축이에요. <kbd>Shift</kbd>를 함께 누르면 빠르게 가요.','공구 위치를 손으로 맞출 때.','숫자 입력 칸에 커서가 있으면 키가 안 먹혀요. 화면 빈 곳을 한 번 누르세요.'],
+['manual','조그 속도 (느린 %)','Slow Jog Rate','조그할 때 이동 속도를 정해요. 100%가 가장 빨라요.','위치를 정밀하게 맞출 때는 낮추세요.',''],
+['manual','기억 / 복귀','Remember · Return','지금 자리를 기억해 뒀다가 나중에 그 자리로 돌아와요.','공구를 교환하러 갔다가 원래 자리로 돌아올 때.',''],
+['manual','이송 정지','Feed Hold','조그 이동 중에 멈추는 버튼과 같아요.','',''],
+['manual','조이스틱','Joystick · Ctrl-S','조이스틱 장치를 켜고 꺼요.','조이스틱을 쓸 때만.',''],
+
+['mdi','입력줄 (MDI)','MDI Input','G코드를 <b>한 줄만 직접 쓰고 Enter</b>를 누르면 바로 실행돼요.','공구를 특정 위치로 가게 하거나 스핀들을 간단히 시험할 때.','예: <code>G0 X0 Y0</code>은 X0 Y0으로 이동이에요. 실행 전에 좌표를 한 번 더 읽으세요.'],
+['mdi','입력','Enter','입력줄에 쓴 명령을 실행해요.','',''],
+['mdi','기록','History','방금 실행한 MDI 명령들이 남아 있어요.','같은 명령을 다시 쓸 때.',''],
+['mdi','G코드 / M코드','G-Code · M-Code','G코드·M코드 설명 도움말 창을 열어요.','모르는 코드가 나왔을 때.',''],
+
+['path','공구경로 그림','Toolpath Display','가공 경로를 선으로 보여줘요. 마우스로 끌면 돌리고, 확대·축소 버튼이나 마우스 휠로 크기를 바꿔요(버전마다 조금 달라요).','도면과 경로가 같은지 확인할 때.',''],
+['path','재생성','Regen. Toolpath','경로 그림을 다시 그려요.','불러온 코드와 그림이 다르거나 그림이 깨졌을 때.',''],
+['path','조그 따라가기','Jog Follow','켜면 그림 위의 공구 표시가 기계 움직임을 따라 움직여요.','현재 공구 위치를 그림에서 확인할 때.',''],
+
+['offset','공구 옵셋','Tool Offsets','공구마다 <b>길이</b>와 <b>지름</b> 값을 적어 두는 표예요. G코드의 T번호에 대응해요.','공구를 바꿀 때마다 길이가 다르면 여기에 넣어요.',''],
+['offset','작업 옵셋 표','Work Offsets','G54~G59의 기준점 값이 적혀 있어요.','기준점을 숫자로 직접 고칠 때.','손으로 고칠 때는 단위(mm)를 확인하세요.'],
+['offset','Z 설정','Set Z','Z축의 0점을 정해요. 소재 윗면에 공구 끝이 닿은 자리에서 눌러요.','공구를 바꾸거나 소재를 바꿨을 때.','게이지 블록 높이를 쓰면 그만큼을 빼고 0으로 잡아요.'],
+['offset','게이지 블록 높이','Gauge Block Height','소재 위에 "높이를 아는 블록"을 올리고 Z를 잡을 때 그 높이를 적어요.','공구 끝에 소재가 직접 닿기 어려울 때.',''],
+['offset','프로브 팁 직경','Probe Tip Dia.','프로브(터치 센서) 끝의 지름이에요.','프로브를 쓸 때만.',''],
+['offset','오토 공구 0점','Auto Tool Zero','센서판에 공구를 대고 Z 높이를 자동으로 재요.','센서를 달았을 때만.','센서가 없으면 쓰지 마세요.'],
+['offset','G92 옵셋','G92 Offset','G92 명령으로 정해진 임시 기준점이에요.','이상하게 위치가 밀려 있으면 값을 확인하세요.',''],
+
+['settings','단위 (Alt-U)','Units','화면에 쓰는 mm/인치 단위를 정해요.','',''],
+['settings','리밋 무시','Ignore Limits','켜면 리밋 스위치 신호를 모르는 척 해요.','리밋 스위치 위치에 걸려 풀어야 할 때만 잠깐.','평소에는 반드시 꺼 두세요. 켜면 기계가 부딪혀도 안 멈춰요.'],
+['settings','수동 리밋 무시','Manual Limit Override','리밋에 걸렸을 때 조그로만 빠져나오게 해 줘요.','리밋에서 빠져나올 때.',''],
+['settings','Z 금지','Z Inhibit','켜면 Z축이 움직이지 않아요. X, Y만 움직여요.','허공 시험 가동할 때 공구가 파고들지 않게.','다 쓰면 꼭 꺼 두세요. 가공 전 확인하세요.'],
+['settings','접선 제어','Tangential Control','4번째 축(칼날)이 진행 방향으로 돌게 해요.','칼 커터 같은 특수 기계에서만.',''],
+['settings','CV 모드 / CV 이송속도','Constant Velocity','모서리에서 속도를 줄이지 않고 부드럽게 돌아요.','속도를 우선할 때 켜고, 정확한 모서리가 필요하면 꺼요.','모서리가 둥글게 깎일 수 있어요.'],
+['settings','공구교환 무시','Ignore Toolchange','M6 공구교환 명령을 건너뛰어요.','수동 교환 기계에서 멈추지 않고 싶을 때.',''],
+['settings','선행 읽기','Lookahead','다음 줄을 미리 읽어 두어 이동이 부드러워져요.','곡선이 많은 파일에서 숫자를 키우세요.',''],
+['settings','급속 오버라이드 속도','Rapid Override Rate','빠른 이동 속도(단위/분)를 정해요.','기계 최대 속도를 정할 때.',''],
+['settings','축 보정','Axis Calibration','"시킨 거리와 실제 거리"를 넣으면 스텝 값을 자동으로 고쳐 줘요.','거리가 맞지 않을 때.','자세한 방법은 6장 6번.'],
+['settings','스핀들 풀리','Spindle Pulley','스핀들 변속 단계마다 최소·최대 회전수를 넣어요.','벨트 풀리 변속 기계에서.',''],
+
+['diag','입력 신호 상태 표시등','Input Signals','리밋, 홈, 입력 1~4, 비상정지 신호가 <b>들어오면 불이 켜져요</b>.','스위치를 손으로 눌러 보며 배선을 확인해요.','불이 늘 켜져 있으면 선이 쇼트됐거나 Active Low 설정이 반대일 수 있어요.'],
+['diag','출력 신호 상태','Output Signals','Mach3가 내보내는 출력(스핀들, 냉각수 등) 상태예요.','릴레이가 켜지지 않을 때 신호가 나가는지 확인해요.',''],
+['diag','포트 1 핀 상태','Port 1 Pins','컨트롤러 핀 1~17의 지금 신호예요.','핀 번호 배선이 맞는지 확인해요.',''],
+['diag','펄스 주파수','Pulse Frequency','모터에 보내는 신호의 속도예요. 값이 클수록 빨라요.','속도의 한계를 알아볼 때.',''],
+['diag','엔코더 위치','Encoder Position','엔코더(위치 센서)를 쓰는 경우 위치 값이에요.','엔코더를 쓸 때만.',''],
+['diag','버퍼 부하 / 큐 깊이','Buffer · Queue','Mach3가 컨트롤러로 보내는 일감이 얼마나 쌓였는지 보여줘요.','가공이 끊길 때 컴퓨터 성능을 판단할 때.',''],
+['diag','CPU 속도 / 하트비트','CPU Speed · Heartbeat','컴퓨터 성능, 컨트롤러와 연락이 되고 있는지를 보여줘요.','연결 문제를 확인할 때.',''],
+['diag','비상정지 / 오류','E-Stop · Error','마지막에 일어난 오류와 비상정지 상태를 보여줘요.','리셋이 안 될 때 원인을 찾아요.','']
+];
+
+var PARTS = [
+ '컴퓨터 (윈도우, USB 단자 또는 이더넷 포트)',
+ '모션 컨트롤러 카드 또는 BOB 보드 + 연결 케이블',
+ '스텝모터 (축 수만큼. NEMA 23 또는 34 등)',
+ '스텝 드라이버 (모터와 같은 개수, 전류 맞춤)',
+ 'DC 전원장치 (24~48V, 전류 충분한 것)',
+ '비상정지 버튼 (빨간 버섯 모양, NC 접점)',
+ '리밋 스위치 / 원점 센서 (축마다)',
+ '모터 커플링, 볼스크류 또는 이송 나사, 지지 베어링',
+ '차폐(실드) 케이블 (신호용) 과 모터용 케이블',
+ '전선 단자(페룰), 터미널 블록, 케이블 타이, 접지선',
+ '멀티미터 (전압과 연결 확인용)',
+ '십자·육각 렌치, 스트리퍼, 드라이버 세트',
+ '차단기, 퓨즈, 전원 스위치 (전원 입구 보호)',
+ '(나중에) 스핀들 모터와 인버터, 공구, 고정 클램프'
+];
+var PRE = [
+ '모든 연결 단자가 단단히 조여졌고, 풀린 선이 없다',
+ '전원 + 와 − 가 맞게 연결되었다 (극성 확인)',
+ '전원 전압이 드라이버 허용 범위 안이다',
+ '드라이버 전류 스위치가 모터 정격에 맞다',
+ '모터선이 코일 짝에 맞게 연결되었다',
+ '신호선(약한 전기)과 모터·전원선(강한 전기)이 따로 떨어져 있다',
+ '비상정지 버튼에 손이 닿는다',
+ '기계 위에 공구와 물건이 없다',
+ '손으로 테이블을 끝까지 밀어 봐도 걸리는 곳이 없다'
+];
+var FAQ = [
+ ['리셋 버튼이 계속 깜빡여요 (눌러도 안 꺼져요)',
+  '<ul><li><b>비상정지 버튼이 눌려 있는지</b> 확인하세요. 눌려 있으면 돌려서 풀어요.</li><li>진단 화면에서 <b>비상정지 신호 표시등</b>이 켜져 있는지 보세요. 켜져 있으면 비상정지 입력 핀 설정이 틀렸을 수 있어요. 포트와 핀의 <b>비상정지 (EStop) 활성 저</b> 체크를 반대로 바꿔 보세요.</li><li>컨트롤러 전원과 USB·이더넷 연결을 확인해요.</li><li>리밋 스위치가 눌려 있거나 선이 빠진 경우에도 리셋이 안 돼요.</li></ul>'],
+ ['모터가 전혀 안 움직여요',
+  '<ul><li>리셋을 눌러 깜빡임이 멈추었는지 확인해요.</li><li>드라이버 전원 표시등이 켜졌는지 보세요.</li><li><b>모터 출력</b> 탭에서 STEP, DIR 핀 번호가 배선과 맞는지 확인해요.</li><li>진단 화면의 <b>포트 1 핀</b> 표시가 움직일 때 바뀌는지 봐요. 바뀌면 Mach3는 정상이고 <b>배선이나 드라이버 문제</b>예요.</li><li><b>Z 금지</b>가 켜져 있는지, <b>조그 켬/끔</b>이 켜져 있는지 확인해요.</li></ul>'],
+ ['모터가 "징—" 소리만 내고 떨어요 (돌지 않아요)',
+  '<ul><li>모터 선의 <b>코일 짝이 틀렸을</b> 가능성이 커요. 짝을 다시 확인해요.</li><li>속도가 너무 빠르거나 가속도가 너무 높아요. 모터 튜닝에서 <b>낮춰</b> 보세요.</li><li>전류 설정이 너무 낮거나 전원 전압이 부족해요.</li><li>기계가 뻑뻑해서 모터가 못 돌릴 수 있어요. 손으로 돌려 보세요.</li></ul>'],
+ ['한 방향으로만 가요 / 방향이 거꾸로예요',
+  '<p>모터 출력 탭의 <b>DIR 활성 저(DirLowActive)</b> 체크를 바꾸면 방향이 뒤집혀요. 한쪽으로만 가면 DIR 선이 빠졌을 수 있어요.</p>'],
+ ['10mm를 시켰는데 이동 거리가 달라요',
+  '<p>"단위당 스텝" 값이 틀린 거예요. 6장의 <b>계산기</b>로 다시 구하세요. 세분화(1/N) 숫자와 나사 피치가 맞는지 확인해요. 그래도 틀리면 <b>축 보정</b>으로 고쳐요.</p>'],
+ ['가공 중에 모터가 멈추거나 위치가 점점 밀려요 (탈조)',
+  '<ul><li>속도와 가속도를 낮추세요.</li><li>커플링이 헛돌지 않는지, 세트 나사가 조여졌는지 확인해요.</li><li>전원 전압을 올리거나(드라이버 한도 안에서), 전류 설정을 올려요.</li><li>기계가 뻑뻑한지, 구리스가 부족한지 확인해요.</li><li>노이즈(스핀들·인버터)가 신호선에 들어오지 않는지 확인해요.</li></ul>'],
+ ['리밋 스위치가 눌리지 않았는데 계속 걸렸다고 나와요',
+  '<p>진단 화면에서 해당 LED가 켜져 있는지 보세요. 항상 켜져 있으면 <b>활성 저(Active Low)</b> 체크를 반대로 바꿔 보세요. 선이 끊어졌거나 센서 전원이 빠진 경우도 많아요.</p>'],
+ ['원점 복귀를 누르면 반대로 가요',
+  '<p>바로 비상정지를 누르세요. 메뉴 설정 → 원점/리밋에서 해당 축의 <b>방향 반전(Reversed)</b>을 바꾸고, 모터 방향 설정도 확인해요.</p>'],
+ ['키보드 화살표로 기계가 안 움직여요',
+  '<ul><li><b>조그 켬/끔</b>(Ctrl-Alt-J)이 켜져 있는지 확인해요.</li><li>숫자 입력칸에 커서가 있으면 안 돼요. 화면 빈 곳을 한 번 누르세요.</li><li>수동 화면으로 바꿔서 시도하세요.</li></ul>'],
+ ['G코드를 불러왔는데 500줄까지만 돼요',
+  '<p>정품 인증이 안 된 상태예요. 정품 라이선스 파일을 <code>C:\\Mach3</code> 폴더에 넣어요.</p>'],
+ ['Enable40.dll 이 없다는 오류가 떠요',
+  '<p>패치 폴더에서 Mach3.exe를 바로 실행해서 생긴 문제예요. 반드시 <code>C:\\Mach3</code> 안의 파일이나 바탕화면 아이콘으로 실행하세요. 패치는 <b>한글패치_적용.bat</b>을 눌러서 설치된 폴더에 복사해야 해요.</p>'],
+ ['화면 글자가 깨져요 / 한글이 네모로 나와요',
+  '<p>윈도우 한국어 환경인지 확인하고, <code>한글패치_적용.bat</code>을 <b>관리자 권한</b>으로 다시 실행해 보세요. 그래도 안 되면 <code>원복.bat</code>으로 되돌린 뒤 다시 적용해요.</p>'],
+ ['가공 중에 컴퓨터가 멈추거나 이동이 덜컥거려요',
+  '<ul><li>다른 프로그램, 백신 검사, 윈도우 업데이트가 돌고 있는지 확인해요.</li><li>진단 화면의 <b>CPU 속도</b>가 너무 낮은지 보세요. 낮으면 컴퓨터 성능이 부족하거나 절전 설정 때문이에요.</li><li>공구경로 그림을 끄면 부담이 줄어요.</li></ul>'],
+ ['비상정지를 눌렀는데 기계가 완전히 안 멈춰요',
+  '<p>매우 위험해요. 비상정지는 <b>모터 전원 자체를 끊는 회로</b>가 있어야 안전해요. 가공을 멈추고 전원 플러그를 뽑은 뒤 전기 기술자에게 점검을 받으세요.</p>'],
+ ['처음부터 다시 하고 싶어요 (설정 초기화)',
+  '<p>설정은 <code>C:\\Mach3\\Mach3Mill.xml</code> 같은 <b>프로파일 파일</b>에 저장돼요. 이 파일을 복사해서 보관해 두면 언제든 되돌릴 수 있어요. 기계 설정이 끝나면 꼭 복사해 두세요.</p>']
+];
+var GLOSS = [
+ ['스텝모터','신호 한 번에 정해진 각도만큼 도는 모터.'],
+ ['드라이버','컨트롤러의 약한 신호를 받아 모터를 돌릴 큰 전류로 키워 주는 장치.'],
+ ['컨트롤러 / BOB','컴퓨터의 명령을 STEP, DIR 신호로 바꿔 주는 장치(Breakout Board).'],
+ ['펄스 (STEP)','"한 칸 가라"는 신호 한 번.'],
+ ['DIR','방향 신호. 켜짐/꺼짐에 따라 앞/뒤로.'],
+ ['세분화 (Microstep)','한 스텝을 더 잘게 나눠서 부드럽게 움직이는 것. 1/8이면 8배로 잘게 나눠요.'],
+ ['탈조','신호는 갔는데 모터가 힘이 부족해서 따라가지 못한 현상. 위치가 틀어져요.'],
+ ['볼스크류','구슬이 구르며 움직이는 정밀 이송 나사.'],
+ ['피치','나사 한 바퀴에 가는 거리(mm).'],
+ ['커플링','모터 축과 나사 축을 이어 주는 부품.'],
+ ['리밋 스위치','기계가 끝까지 가서 부서지기 전에 알려 주는 스위치.'],
+ ['원점(홈) 스위치','기계의 기준 위치를 알려 주는 스위치.'],
+ ['비상정지','모든 동작을 즉시 멈추는 빨간 버튼.'],
+ ['조그 (Jog)','손으로 키를 눌러 기계를 조금씩 움직이는 것.'],
+ ['DRO','숫자로 위치를 보여주는 화면 (Digital Read Out).'],
+ ['G코드','기계에 하는 명령 언어. 한 줄이 한 동작.'],
+ ['MDI','명령을 한 줄 직접 입력해서 바로 실행하는 기능.'],
+ ['옵셋','기준점이나 공구 길이의 차이값.'],
+ ['픽스처 (G54)','소재 기준점 저장 번호.'],
+ ['스핀들','공구를 돌리는 모터.'],
+ ['오버라이드','G코드 속도를 배율로 바꾸는 것.'],
+ ['Active Low','신호가 "꺼질 때(0V)" 동작으로 인식하는 방식. 설정이 반대면 항상 눌린 것으로 나와요.'],
+ ['NC / NO','NC는 평소 연결, 누르면 끊김. NO는 평소 끊김, 누르면 연결.'],
+ ['프로파일','내 기계 설정을 저장한 파일 (xml).'],
+ ['커널 속도','Mach3가 신호를 만들어 내는 속도(Hz). 높을수록 빠른 이동이 가능하지만 컴퓨터가 힘들어요.'],
+ ['공구경로','가공 경로를 그림으로 그린 것.'],
+ ['에어컷','소재나 공구 없이 허공에서만 움직여 보는 시험.']
+];
+
+/* ---------- 도우미 ---------- */
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+function esc(t){return t}
+
+/* 버튼 카드 */
+(function(){
+  var g=$('#btngrid'),scr=$('#scr'),out=[];
+  SCR.forEach(function(s){
+    out.push('<h4 class="scrhead s" data-scr="'+s[0]+'">'+s[1]+'<small>'+s[2]+'</small></h4>');
+    BTN.filter(function(b){return b[0]===s[0]}).forEach(function(b){
+      out.push('<article class="bcard s" data-scr="'+b[0]+'"><span class="tag">'+s[1]+'</span>'
+        +'<div class="nm">'+b[1]+'</div><div class="en">'+b[2]+'</div><dl>'
+        +'<dt>무엇을 해요?</dt><dd>'+b[3]+'</dd>'
+        +(b[4]?'<dt>언제 눌러요?</dt><dd>'+b[4]+'</dd>':'')
+        +(b[5]?'<dt>주의</dt><dd class="w">'+b[5]+'</dd>':'')
+        +'</dl></article>');
+    });
+  });
+  g.innerHTML=out.join('');
+  var cur='all';
+  var chips=[['all','전체']].concat(SCR.map(function(s){return [s[0],s[1].replace('모든 화면에서 보이는 것','공통')]}));
+  scr.innerHTML=chips.map(function(c){return '<button class="chip" type="button" data-k="'+c[0]+'" aria-pressed="'+(c[0]==='all')+'">'+c[1]+'</button>'}).join('');
+  scr.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;cur=b.dataset.k;
+    $$('button',scr).forEach(function(x){x.setAttribute('aria-pressed',x===b)});
+    $$('[data-scr]',g).forEach(function(x){x.classList.toggle('hide',cur!=='all'&&x.dataset.scr!==cur)});
+    runSearch();});
+})();
+
+/* 체크리스트 */
+function checklist(el,items,key){
+  var saved={};try{saved=JSON.parse(store(key)||'{}')}catch(e){}
+  el.innerHTML=items.map(function(t,i){return '<li><label><input type="checkbox" id="'+key+i+'" '+(saved[i]?'checked':'')+'><span>'+t+'</span></label></li>'}).join('');
+  el.addEventListener('change',function(){var o={};$$('input',el).forEach(function(c,i){if(c.checked)o[i]=1});store(key,JSON.stringify(o))});
+}
+checklist($('#partlist'),PARTS,'parts');
+checklist($('#prelist'),PRE,'pre');
+
+/* FAQ, 낱말 */
+$('#faq').innerHTML=FAQ.map(function(f){return '<details class="faq s"><summary>'+f[0]+'</summary><div>'+f[1]+'</div></details>'}).join('');
+$('#glossary').innerHTML=GLOSS.map(function(g){return '<div class="s"><b>'+g[0]+'</b>'+g[1]+'</div>'}).join('');
+
+/* 계산기 */
+(function(){
+  var ids=['c-type','c-steps','c-micro','c-gear','c-p1','c-p2','c-v'];
+  function g(i){return parseFloat($('#'+i).value)}
+  function calc(){
+    var t=$('#c-type').value;
+    $('#c-l2').hidden=t!=='belt';
+    var l1=$('#c-l1');
+    var txt=t==='screw'?'나사 피치 (mm / 1회전)':t==='belt'?'풀리 잇수 (개)':'피니언 1회전 거리 (mm)';
+    l1.firstChild.nodeValue=txt+' ';
+    var rev=t==='belt'?g('c-p1')*g('c-p2'):g('c-p1'); // mm per rev (before gear)
+    var spu=g('c-steps')*g('c-micro')*g('c-gear')/rev;
+    var out=$('#r-spu'),note=$('#r-note');
+    if(!isFinite(spu)||spu<=0){out.textContent='-';note.textContent='값을 모두 입력하세요.';return}
+    out.textContent=(Math.round(spu*1000)/1000).toString();
+    var f=g('c-v')/60*spu, res=1/spu*1000;
+    var msg='1스텝 이동 거리 ≈ '+(Math.round(res*10)/10)+' μm. 최고 속도 '+g('c-v')+' mm/분이면 신호는 약 <b>'+Math.round(f).toLocaleString()+' Hz</b>예요. ';
+    if(f>25000)msg+='<br><b>주의:</b> 25,000 Hz를 넘어요. 패럴렐 포트는 한계에 가까워서 속도를 낮추거나 세분화를 줄이세요. USB·이더넷 카드는 그 카드가 지원하는 한계를 확인하세요.';
+    else msg+='이 정도면 패럴렐 포트(25 kHz)에서도 무난해요.';
+    note.innerHTML=msg;
+  }
+  ids.forEach(function(i){$('#'+i).addEventListener('input',calc);$('#'+i).addEventListener('change',calc)});
+  $('#c-type').addEventListener('change',function(){
+    var t=this.value;$('#c-p1').value=t==='screw'?5:t==='belt'?20:62.83;calc();
+  });
+  calc();
+})();
+
+/* 목차 */
+(function(){
+  var secs=$$('section.sec'),toc=$('#toc'),mt=$('#mtoc'),html='',last='';
+  secs.forEach(function(s){
+    if(s.dataset.g!==last){html+='<div class="grp">'+s.dataset.g+'</div>';last=s.dataset.g}
+    html+='<a href="#'+s.id+'" data-id="'+s.id+'">'+s.dataset.t+'</a>';
+  });
+  toc.innerHTML=html;mt.innerHTML=html;
+  $$('a',mt).forEach(function(a){a.addEventListener('click',function(){$('.mtoc').open=false})});
+  var links=$$('a',toc);
+  function spy(){
+    var y=window.scrollY+140,cur=secs[0].id;
+    secs.forEach(function(s){if(s.offsetTop<=y)cur=s.id});
+    links.forEach(function(a){a.classList.toggle('on',a.dataset.id===cur)});
+  }
+  window.addEventListener('scroll',spy,{passive:true});spy();
+  var q=$('#quick');
+  ['리셋','비상정지','배선','스텝','0점','속도'].forEach(function(w){
+    var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=w;
+    b.addEventListener('click',function(){$('#q').value=w;runSearch();$('#q').focus()});q.appendChild(b);
+  });
+})();
+
+/* 글자 크기 */
+(function(){
+  var fs=parseInt(store('fs')||'17',10);if(!(fs>=14&&fs<=26))fs=17;
+  function ap(){document.documentElement.style.setProperty('--fs',fs+'px');store('fs',String(fs))}
+  ap();
+  $('#fsp').addEventListener('click',function(){if(fs<26){fs+=2;ap()}});
+  $('#fsm').addEventListener('click',function(){if(fs>14){fs-=2;ap()}});
+})();
+
+/* 검색 */
+var blocks=$$('.s'),secs=$$('section.sec');
+var tocAll=$$('#toc a');
+function runSearch(){
+  var raw=$('#q').value.trim().toLowerCase(),tk=raw.split(/\s+/).filter(Boolean);
+  $('#qx').hidden=!raw;
+  try{if(window.CSS&&CSS.highlights)CSS.highlights.delete('hit')}catch(e){}
+  var n=0;
+  blocks.forEach(function(b){
+    var filteredOut=b.classList.contains('hide');
+    var show=true;
+    if(tk.length){var t=b.textContent.toLowerCase();show=tk.every(function(w){return t.indexOf(w)>-1})}
+    b.hidden=!show;
+    if(show&&!filteredOut&&b.matches('.bcard,.faq,.gl>div,.s'))n+=0;
+  });
+  // 상세 열기 & 개수
+  var count=0,ranges=[];
+  blocks.forEach(function(b){
+    if(b.hidden||b.classList.contains('hide'))return;
+    if(b.tagName==='DETAILS'&&tk.length)b.open=true;
+    if(tk.length&&!b.matches('.scrhead')&&!b.querySelector('.s'))count++;
+  });
+  // 화면 제목은 카드가 하나라도 보이면만 표시
+  $$('.scrhead').forEach(function(h){
+    var any=$$('.bcard[data-scr="'+h.dataset.scr+'"]').some(function(c){return !c.hidden&&!c.classList.contains('hide')});
+    h.hidden=!any;
+  });
+  var vis=0;
+  secs.forEach(function(s){
+    var any=$$('.s',s).some(function(b){return !b.hidden&&!b.classList.contains('hide')&&!b.matches('.scrhead')});
+    s.hidden=!any&&tk.length>0;
+    if(!s.hidden)vis++;
+    tocAll.forEach(function(a){if(a.dataset.id===s.id)a.classList.toggle('dim',s.hidden)});
+  });
+  $('#empty').hidden=!(tk.length&&count===0);
+  $('#status').textContent=tk.length?(count?('"'+$('#q').value.trim()+'" 관련 설명 '+count+'개를 찾았어요.'):'찾는 설명이 없어요.'):'';
+  // 강조
+  if(tk.length&&window.CSS&&CSS.highlights&&window.Highlight){
+    try{
+      var rs=[];
+      $$('.s').forEach(function(b){
+        if(b.hidden||b.classList.contains('hide'))return;
+        var w=document.createTreeWalker(b,NodeFilter.SHOW_TEXT,null);
+        var node;
+        while(node=w.nextNode()){
+          var low=node.nodeValue.toLowerCase();
+          tk.forEach(function(k){var i=0;while((i=low.indexOf(k,i))>-1){var r=new Range();r.setStart(node,i);r.setEnd(node,i+k.length);rs.push(r);i+=k.length}});
+        }
+      });
+      if(rs.length>400)rs.length=400;
+      CSS.highlights.set('hit',new Highlight(...rs));
+    }catch(e){}
+  }
+}
+var tmr;
+$('#q').addEventListener('input',function(){clearTimeout(tmr);tmr=setTimeout(runSearch,120)});
+$('#qx').addEventListener('click',function(){$('#q').value='';runSearch();$('#q').focus()});
+$('#q').addEventListener('keydown',function(e){if(e.key==='Escape'){$('#q').value='';runSearch()}});
+</script>
+
+</body></html>
