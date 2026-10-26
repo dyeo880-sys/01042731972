@@ -3410,13 +3410,13 @@ async function electStep(R){
   if (liveRoom.only){
     let closed = null, rg = null, rgOk = true; try { closed = await lj('roomclosed_' + R, 'GET'); } catch(e){}
     try { rg = await lj('livereg/' + R, 'GET'); } catch(e){ rgOk = false; }
-    const keepable = (MV.k === 'yt' || MV.k === 'url') && !(closed && Date.now() - closed.ts < 600000) && !(rgOk && !rg);
+    const keepable = (MV.k === 'yt' || MV.k === 'url') && !(closed && (closed.f || Date.now() - closed.ts < 600000)) && !(rgOk && !rg);
     if (!keepable){ setBc('방이 닫혔거나 방장이 나가서 소리 듣기를 멈췄습니다.'); setStatus('정지'); if (lis) stopListen(); else leaveRoom(); loadLive(); return; }
     return;                                    // 소리만 듣는 사람은 방 화면을 열지 않고, 새 방장이 생길 때까지(또는 방이 사라질 때까지) 영상을 계속 재생
   }
   try {
     const c = await lj('roomclosed_' + R, 'GET');
-    if (c && Date.now() - c.ts < 600000){
+    if (c && (c.f || Date.now() - c.ts < 600000)){
       MV.hostless = false; MV.gone = 0;
       setBc(c.f ? '관리자가 방을 폭파했습니다. 방이 사라졌습니다.' : '방장이 방을 폭파했습니다. 방이 사라졌습니다.'); setStatus('정지');
       if (lis) stopListen(); else leaveRoom(); loadLive(); return;
@@ -3683,7 +3683,7 @@ function stopBroadcast(noKeep, local){
   try { me.ac.close(); } catch(e){}
   const a = $('bcAudio'); a.pause(); a.onended = null; a.hidden = true;
   if (noKeep){ lj('livereg/' + me.rid, 'DELETE').catch(() => {}); lj('livekeep/' + me.rid, 'DELETE').catch(() => {}); }
-  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: (me.pw || me.lock) ? 1 : 0, c: 0, e: nowS() + KEEP_MIN * 60000, hd: me.hold || 10080, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap, dj: me.dj || 0, dn: me.dn || ''}).catch(() => {});
+  else lj('livereg/' + me.rid, 'PUT', {n: me.title, h: '', ts: nowS(), p: (me.pw || me.lock) ? 1 : 0, c: 0, e: nowS() + KEEP_MIN * 60000, hd: me.hold || 43200, hs: me.holdSet ? 1 : 0, al: me.alone ? 1 : 0, pn: me.pvOff ? 1 : 0, lk: me.lock || '', an: me.an || null, v: snap, dj: me.dj || 0, dn: me.dn || ''}).catch(() => {});
   if (noKeep || !me.dj) lj('djpic/' + me.rid, 'DELETE').catch(() => {});   // 사진은 방이 남아 있는 동안(30일, 누가 들어오면 다시 30일) 그대로 유지
   lj('sig_' + me.rid, 'DELETE').catch(() => {}); lj('roommedia_' + me.rid, 'DELETE').catch(() => {}); lj('talkreq_' + me.rid, 'DELETE').catch(() => {}); lj('talkok_' + me.rid, 'DELETE').catch(() => {}); lj('kalib_' + me.rid, 'DELETE').catch(() => {}); lj('kq_' + me.rid, 'DELETE').catch(() => {}); $('talkhost').hidden = true; $('tkbadge').hidden = true; $('guestTile').hidden = true; $('guestVid').srcObject = null; lj('roomguest_' + me.rid, 'DELETE').catch(() => {}); lj('roomctl_' + me.rid, 'DELETE').catch(() => {}); lj('roomcap_' + me.rid, 'DELETE').catch(() => {});
   $('bcPreview').style.display = 'none'; $('bcPreview').srcObject = null; mwUpdate();
@@ -4683,7 +4683,7 @@ function rsUpdate(){
 }
 function rsFill(){
   const me = bc; if (!me) return;
-  const m = me.hold || 10080;
+  const m = me.hold || 43200;
   if (m % 1440 === 0){ $('rsunit').value = '1440'; $('rshold').value = m / 1440; } else if (m % 60 === 0){ $('rsunit').value = '60'; $('rshold').value = m / 60; } else { $('rsunit').value = '1'; $('rshold').value = m; }
   $('rsalone').checked = !!me.alone; $('rskeep').checked = me.keep !== false; rsUpdate();
 }
@@ -4712,7 +4712,7 @@ function bcWatch(){
   const me = bc; if (!me) return;
   lj('roomclosed_' + me.rid, 'GET').then(c => {
     if (bc !== me) return;
-    if (c && c.f && Date.now() - c.ts < 600000){ setBc('관리자가 이 방을 폭파했습니다.'); stopBroadcast(true); }
+    if (c && c.f){ setBc('관리자가 이 방을 폭파했습니다.'); stopBroadcast(true); }
   }).catch(() => {});
   const n = Object.keys(me.pcs).filter(k => me.pcs[k].connectionState === 'connected').length;
   if (!me.alone || n > 0) me.aloneSince = 0;
@@ -4726,9 +4726,9 @@ function bcWatch(){
   rsUpdate();
 }
 // 관리자: 모든 방 강제 폭파
-async function forceBomb(id, name){
+async function forceBomb(id, name, skip){
   if (!rmAdm()) return;
-  if (!confirm('관리자 권한으로 「' + name + '」 방을 강제 폭파합니다.\n안에 있는 사람도 모두 방에서 나오게 됩니다. 진행할까요?')) return;
+  if (!skip && !confirm('관리자 권한으로 「' + name + '」 방을 강제 폭파합니다.\n안에 있는 사람도 모두 방에서 나오게 됩니다. 진행할까요?')) return;
   try { await lj('roomclosed_' + id, 'PUT', {ts: Date.now(), f: 1}); } catch(e){}
   ['livereg/', 'livekeep/', 'djpic/', 'sig_', 'roommedia_', 'roommem_', 'talkreq_', 'talkok_', 'kalib_', 'kq_', 'roomguest_', 'roomctl_', 'roomcap_'].forEach(k => lj(k + id, 'DELETE').catch(() => {}));
   if (bc && bc.rid === id) stopBroadcast(true);
@@ -5087,11 +5087,18 @@ $('bcstop').onclick = async () => {
   if (!rmAdm()){ setBc('방을 없애는 것은 관리자만 할 수 있습니다. 그냥 나가면 방은 30일 동안 보관됩니다.'); return; }
   if (!confirm('방을 폭파하면 방이 완전히 사라지고, 안에 있는 사람들도 모두 방에서 나오게 됩니다. (그냥 나가면 다른 사람이 방장을 이어받습니다.) 폭파할까요?')) return;
   const R = bc.rid;
-  try { await lj('roomclosed_' + R, 'PUT', {ts: Date.now()}); } catch(e){}
+  try { await lj('roomclosed_' + R, 'PUT', {ts: Date.now(), f: 1}); } catch(e){}
   stopBroadcast(true);
 };
 setInterval(() => { try { $('bcstop').style.display = rmAdm() ? '' : 'none'; } catch(_){} }, 1000);
-$('leavebtn').onclick = () => { try { localStorage.removeItem('radio_last_room'); } catch(e){} stopListen(); setStatus('정지'); };
+function admLeaveAsk(){   // 관리자가 방에서 나가기 전에: 폭파 / 그냥 나가기(30일 유지) / 머물기
+  if (confirm('💣 관리자님, 나가기 전에 확인합니다.\n\n[확인] 이 방을 지금 바로 폭파하고 나갑니다 (되돌릴 수 없음)\n[취소] 폭파하지 않습니다')) return 'bomb';
+  return confirm('폭파하지 않고 그냥 나갈까요?\n\n방은 빈 방으로 30일 동안 유지됩니다. (누가 들어오면 30일이 다시 시작)\n\n[확인] 그냥 나가기\n[취소] 방에 머물기') ? 'leave' : 'stay';
+}
+$('leavebtn').onclick = async () => {
+  if (liveRoom && rmAdm()){ const a = admLeaveAsk(); if (a === 'stay') return; if (a === 'bomb'){ await forceBomb(liveRoom.id, liveRoom.name, true); return; } }
+  try { localStorage.removeItem('radio_last_room'); } catch(e){} stopListen(); setStatus('정지');
+};
 $('mwre').onclick = () => { if (lis){ setBc('영상을 다시 연결하는 중입니다…'); reconnectListen(); } };
 $('rvmini').onclick = () => setMini(!$('roomview').classList.contains('mini'));
 (function(){ // 채팅 위치: 영상 옆 오른쪽(기본) / 왼쪽 / 아래 — 넓은 화면(900px 이상)에서만 적용
@@ -5103,11 +5110,17 @@ $('rvmini').onclick = () => setMini(!$('roomview').classList.contains('mini'));
   b.onclick = () => { m = {r: 'l', l: 'b', b: 'r'}[m]; try { localStorage.setItem('radio_chat_side', m); } catch(e){} apply(); };
   apply();
 })();
-$('rvleave').onclick = () => {
+$('rvleave').onclick = async () => {
+  if (!liveRoom){ try { localStorage.removeItem('radio_last_room'); } catch(e){} hideRoomView(); return; }
+  let admAsked = false;
+  if (rmAdm()){
+    const a = admLeaveAsk(); if (a === 'stay') return;
+    if (a === 'bomb'){ try { localStorage.removeItem('radio_last_room'); } catch(e){} await forceBomb(liveRoom.id, liveRoom.name, true); return; }
+    admAsked = true;
+  }
   try { localStorage.removeItem('radio_last_room'); } catch(e){}
-  if (!liveRoom){ hideRoomView(); return; }
   if (isHost()){
-    if (!confirm('방을 나가면 지금 방에 있는 사람 중 한 명이 새 방장이 됩니다. (아무도 없어도 방은 ' + fmtMin((bc && bc.hold) || 10080) + ' 동안 빈 방으로 남아 누구나 들어와 방장이 될 수 있습니다. 방을 없애는 것은 관리자만 할 수 있습니다.) 나갈까요?')) return;
+    if (!admAsked && !confirm('방을 나가면 지금 방에 있는 사람 중 한 명이 새 방장이 됩니다. (아무도 없어도 방은 ' + fmtMin((bc && bc.hold) || 43200) + ' 동안 빈 방으로 남아 누구나 들어와 방장이 될 수 있습니다. 방을 없애는 것은 관리자만 할 수 있습니다.) 나갈까요?')) return;
     try {   // 내가 올린 DJ 사진이 걸려 있으면: 나가면서 같이 내릴지 물어봄 (안 내리면 방이 남아 있는 동안 그대로 남음)
       const c = bc && bc.dj && DJC[bc.rid];
       if (c && c.o === djOwner() && confirm('내가 올린 DJ 사진도 같이 내릴까요?\n\n[확인] 사진을 내립니다\n[취소] 사진을 그대로 남깁니다 (방이 남아 있는 동안, 다른 DJ가 바꾸기 전까지 유지)')){ bc.dj = 0; bc.dn = ''; delete DJC[bc.rid]; }
