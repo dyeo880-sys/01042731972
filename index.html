@@ -8573,7 +8573,11 @@ async function start(){
     }
     yt = new YT.Player('pb_ytp', {width: '100%', height: '100%', playerVars: {autoplay: 1, playsinline: 1, controls: 0, rel: 0, disablekb: 1, modestbranding: 1}, events: {
       onReady: () => { ready = true; try { const mv = gid('vol'); const v = mv ? Math.round(+mv.value * 100) : +$('vol').value; $('vol').value = v; yt.setVolume(v); } catch(e){} tick(); },
-      onError: () => { if (solo){ solo = ''; curId = ''; msg('고른 곡을 재생할 수 없어 방송으로 돌아갑니다.'); return; } errId = curId; msg('이 영상은 재생할 수 없어 다음 영상이 시작될 때까지 기다립니다. (관리자에게 삭제를 요청하세요)'); }
+      onError: (e) => {
+        const c = e && e.data, isFile = location.protocol === 'file:';
+        if (c === 153 || c === 152 || (isFile && c !== 100)){ errId = curId; msg('🔇 유튜브가 이 페이지를 거부해 소리가 나지 않습니다(오류 ' + (c || '') + '). ' + (isFile ? '파일을 더블클릭해 연 상태(file://)에서는 유튜브가 재생을 막습니다. 웹에 올려서(https://) 또는 내 컴퓨터에서 http://localhost 주소로 열어 주세요.' : '주소창이 https:// 인지, 광고차단·브라우저 설정이 유튜브 Referer를 막지 않는지 확인하세요.')); return; }
+        if (solo){ solo = ''; curId = ''; msg('고른 곡을 재생할 수 없어 방송으로 돌아갑니다.'); return; } errId = curId; msg('이 영상은 재생할 수 없어 다음 영상이 시작될 때까지 기다립니다. (오류 ' + (c || '?') + ' · 관리자에게 삭제를 요청하세요)'); },
+      onAutoplayBlocked: () => { msg('🔇 브라우저가 자동재생을 막았습니다. 화면을 한 번 누른 뒤 ▶ 방송 듣기를 다시 눌러 주세요.'); }
     }});
   } else tick();
 }
