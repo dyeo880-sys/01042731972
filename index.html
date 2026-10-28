@@ -636,6 +636,8 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="gate" id="mkform" hidden style="text-align:left;margin-bottom:8px">
       <div class="chatform" style="flex-wrap:wrap"><input id="bctitle" maxlength="20" placeholder="방 이름 (예: 금요일 밤 재즈)" aria-label="방 이름"><input id="bcpw" maxlength="12" placeholder="비밀번호 (선택 · 비우면 누구나 입장)" aria-label="비밀번호" style="max-width:260px"></div>
       <label class="chatnote" style="display:block"><input type="checkbox" id="bccam"> 📷 내 카메라도 보여주기 (방을 만들 때만 선택할 수 있습니다)</label>
+      <label class="chatnote" style="display:block"><input type="checkbox" id="bcpv"> 🎧 외부 송출 허용 — 비밀번호를 걸어도 메인 목록에서 소리를 들을 수 있게 합니다 (체크하지 않으면 비밀번호를 아는 사람만 듣고, 밖으로는 송출되지 않습니다)</label>
+      <label class="chatnote" style="display:block"><input type="checkbox" id="bck30" checked> 📦 연결이 끊기거나 컴퓨터가 꺼져도 방을 30일 보관 (체크 해제하면 보관하지 않음 · 나갈 때는 방폭/보관을 직접 고릅니다)</label>
       <div class="chatform"><button id="mkok" class="addhome" style="margin:0" type="button">만들기</button><button id="mkcancel" class="addhome" style="margin:0" type="button">취소</button></div>
     </div>
     <div id="invbanner"></div>
@@ -1008,7 +1010,8 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
             <input id="bcpw2" maxlength="12" placeholder="비밀번호 설정/변경" aria-label="방 비밀번호 설정 또는 변경" style="width:150px">
             <button class="addhome" style="margin:0" type="button" id="pwset">설정</button>
             <button class="addhome" style="margin:0" type="button" id="pwclear">해제</button>
-            <label class="chatnote" style="margin:0;flex-basis:100%;display:block"><input type="checkbox" id="pvok" checked> 🎧 비밀번호를 모르는 사람도 방 밖(메인 목록)에서 소리만 듣게 하기 (방에는 비밀번호가 있어야 입장)</label>
+            <label class="chatnote" style="margin:0;flex-basis:100%;display:block"><input type="checkbox" id="pvok"> 🎧 외부 송출 허용: 비밀번호를 모르는 사람도 방 밖(메인 목록)에서 소리만 듣게 하기 (체크하지 않으면 외부로 송출되지 않음 · 방에는 비밀번호가 있어야 입장)</label>
+            <label class="chatnote" style="margin:0;flex-basis:100%;display:block"><input type="checkbox" id="k30ok" checked> 📦 연결이 끊기거나 컴퓨터가 꺼져도 방을 30일 보관</label>
           </div>
                 <div class="tp" id="p-inv" hidden>
             <select id="invpeer" aria-label="초대할 접속자"><option value="">접속자 선택…</option></select>
@@ -3831,8 +3834,9 @@ async function buildBc(rid, title, pw, wantCam, keepState, opts){
       vbase = cv.captureStream(1).getVideoTracks()[0]; stream.addTrack(vbase); timers.push(setInterval(tick, 1000));
     } catch(e){ vbase = null; }
   }
-  const me = {holdSet: true, hold: 43200, alone: false, an: (opts && opts.an) || null, aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : ((opts && opts.lk) || ''), title, src: null, pvOff: !!(opts && opts.pn), cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
+  const me = {holdSet: true, hold: 43200, alone: false, an: (opts && opts.an) || null, aloneSince: 0, stream, ac, pcs: {}, seen: {}, timers, pw, lock: pw ? lockOf(pw, rid) : ((opts && opts.lk) || ''), title, src: null, pvOff: !!(opts && opts.pn), k30: !(opts && opts.k30 === false), cam: hasCam, vbase, rid, okA: {}, okV: {}, rq: {}, tk: {}, seen2: {}, okDirty: true, mix: null, tsig: '', vact: null, vtrack: null, gv: {}, gvAll: 1, mv: 1}; try { $('mixhost').value = 1; $('mixguest').value = 1; $('mixhostv').textContent = '100%'; $('mixguestv').textContent = '100%'; } catch(_){}
   bc = me;
+  try { $('pvok').checked = (me.pw || me.lock) ? !me.pvOff : false; $('k30ok').checked = me.k30 !== false; } catch(_){}
   try { plRoomSwitch(); } catch(_){}
   me.sid = Math.random().toString(36).slice(2, 12);
   try {   // DJ 사진: 내 사진이 있으면 바꿔 걸고, 없으면 앞 방장이 남긴 사진(일주일 안)을 그대로 이어 둠
@@ -3872,8 +3876,9 @@ async function makeMusicRoom(){
   const pw = $('bcpw').value.trim(), wantCam = $('bccam').checked;
   if (lis) stopListen(); // 듣고 있던 다른 방 정리
   stopBroadcast(false);
-  if (!(await buildBc(myId, title, pw, wantCam))) return;
-  $('bctitle').value = ''; $('bcpw').value = ''; openMk(false);
+  const pvAllow = $('bcpv').checked, k30 = $('bck30').checked;
+  if (!(await buildBc(myId, title, pw, wantCam, undefined, {pn: pw ? !pvAllow : false, k30}))) return;
+  $('bctitle').value = ''; $('bcpw').value = ''; $('bcpv').checked = false; $('bck30').checked = true; openMk(false);
   enterRoom(myId, title); fillInvite(); loadLive();
   setBc('음악 방이 만들어졌습니다. 아래에서 음악 파일·마이크·PC 소리 중 하나를 골라 재생하세요.');
 }
@@ -3882,7 +3887,7 @@ async function makeMusicRoom(){
 // 방장 신호가 2분 넘게 끊긴 방은 이 기록으로 "빈 방"으로 바꿔 보관하고, 30일 동안 아무도 오지 않으면 사라집니다. 누가 들어오거나 열면 30일이 다시 시작됩니다.
 const KEEP_MIN = 43200;
 function kpSave(me){
-  if (!me || me !== bc) return;
+  if (!me || me !== bc || me.k30 === false) return;
   me.kpN = (me.kpN || 0) + 1;
   if (me.kpN % 4 !== 1) return;
   let v = null; try { v = mvKeepSnap(); } catch(_){}
@@ -5315,21 +5320,46 @@ addEventListener('resize', tvSched);
 document.addEventListener('fullscreenchange', tvSched);
 setInterval(tvSched, 500);
 $('rvdock').onclick = () => { TVDOCK.on = !TVDOCK.on; try { localStorage.setItem('radio_tvdock', TVDOCK.on ? '1' : '0'); } catch(e){} tvSched(); };
-$('bcstop').onclick = async () => {
-  if (!isHost()) return;
-  if (!rmAdm()){ setBc('방을 없애는 것은 관리자만 할 수 있습니다. 그냥 나가면 방은 30일 동안 보관됩니다.'); return; }
-  if (!confirm('방을 폭파하면 방이 완전히 사라지고, 안에 있는 사람들도 모두 방에서 나오게 됩니다. (그냥 나가면 다른 사람이 방장을 이어받습니다.) 폭파할까요?')) return;
+function hostLeaveAsk(){   // 방장이 나갈 때: 💣 방폭 / 📦 30일 보관하고 나가기 / 머물기
+  return new Promise(res => {
+    const ov = document.createElement('div');
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000a;display:flex;align-items:center;justify-content:center;padding:16px';
+    const bx = document.createElement('div');
+    bx.style.cssText = 'max-width:420px;width:100%;background:#241610;color:#f0e2c4;border:2px solid #b99a5b;border-radius:12px;padding:18px;font-size:14px;line-height:1.6';
+    const h = document.createElement('div'); h.style.cssText = 'font-weight:700;font-size:16px;margin-bottom:8px'; h.textContent = '🚪 방에서 나갑니다';
+    const d = document.createElement('div'); d.style.cssText = 'margin-bottom:14px;opacity:.9';
+    d.textContent = '💣 방폭: 방이 완전히 사라지고 안에 있는 사람도 모두 나오게 됩니다 (되돌릴 수 없음).\n📦 30일 보관: 빈 방으로 남아 누구나 들어와 방장이 될 수 있고, 누가 오면 30일이 다시 시작됩니다.'; d.style.whiteSpace = 'pre-line';
+    const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+    const mk = (txt, v, col) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;flex:1;min-width:120px' + (col ? ';color:' + col : ''); b.textContent = txt; b.onclick = () => { ov.remove(); res(v); }; return b; };
+    const bomb = mk('💣 방폭', 'bomb', '#ff6b6b'), keep = mk('📦 30일 보관하고 나가기', 'keep'), stay = mk('머물기', 'stay');
+    row.append(bomb, keep, stay); bx.append(h, d, row); ov.append(bx);
+    ov.addEventListener('keydown', e => { if (e.key === 'Escape'){ ov.remove(); res('stay'); } });
+    document.body.append(ov); keep.focus();
+  });
+}
+async function hostBomb(){   // 방장이 직접 방폭 (관리자 권한 불필요)
+  if (!bc) return;
   const R = bc.rid;
   try { await lj('roomclosed_' + R, 'PUT', {ts: Date.now(), f: 1}); } catch(e){}
+  try { kpWipe(R); } catch(e){}
   stopBroadcast(true);
+  setBc('💣 방을 폭파했습니다.'); try { loadLive(); } catch(e){}
+}
+$('bcstop').onclick = async () => {
+  if (!isHost()) return;
+  if (!confirm('방을 폭파하면 방이 완전히 사라지고, 안에 있는 사람들도 모두 방에서 나오게 됩니다. (그냥 나가면 다른 사람이 방장을 이어받습니다.) 폭파할까요?')) return;
+  try { localStorage.removeItem('radio_last_room'); } catch(e){}
+  await hostBomb();
 };
-setInterval(() => { try { $('bcstop').style.display = rmAdm() ? '' : 'none'; } catch(_){} }, 1000);
+setInterval(() => { try { $('bcstop').style.display = (isHost() || rmAdm()) ? '' : 'none'; } catch(_){} }, 1000);
 function admLeaveAsk(){   // 관리자가 방에서 나가기 전에: 폭파 / 그냥 나가기(30일 유지) / 머물기
   if (confirm('💣 관리자님, 나가기 전에 확인합니다.\n\n[확인] 이 방을 지금 바로 폭파하고 나갑니다 (되돌릴 수 없음)\n[취소] 폭파하지 않습니다')) return 'bomb';
   return confirm('폭파하지 않고 그냥 나갈까요?\n\n방은 빈 방으로 30일 동안 유지됩니다. (누가 들어오면 30일이 다시 시작)\n\n[확인] 그냥 나가기\n[취소] 방에 머물기') ? 'leave' : 'stay';
 }
 $('leavebtn').onclick = async () => {
-  if (liveRoom && rmAdm()){ const a = admLeaveAsk(); if (a === 'stay') return; if (a === 'bomb'){ await forceBomb(liveRoom.id, liveRoom.name, true); return; } }
+  if (isHost()){ const a = await hostLeaveAsk(); if (a === 'stay') return; if (a === 'bomb'){ try { localStorage.removeItem('radio_last_room'); } catch(e){} await hostBomb(); return; } }
+  else if (liveRoom && rmAdm()){ const a = admLeaveAsk(); if (a === 'stay') return; if (a === 'bomb'){ await forceBomb(liveRoom.id, liveRoom.name, true); return; } }
   try { localStorage.removeItem('radio_last_room'); } catch(e){} stopListen(); setStatus('정지');
 };
 $('mwre').onclick = () => { if (lis){ setBc('영상을 다시 연결하는 중입니다…'); reconnectListen(); } };
@@ -5346,7 +5376,11 @@ $('rvmini').onclick = () => setMini(!$('roomview').classList.contains('mini'));
 $('rvleave').onclick = async () => {
   if (!liveRoom){ try { localStorage.removeItem('radio_last_room'); } catch(e){} hideRoomView(); return; }
   let admAsked = false;
-  if (rmAdm()){
+  if (isHost()){
+    const a = await hostLeaveAsk(); if (a === 'stay') return;
+    if (a === 'bomb'){ try { localStorage.removeItem('radio_last_room'); } catch(e){} await hostBomb(); return; }
+    admAsked = true;
+  } else if (rmAdm()){
     const a = admLeaveAsk(); if (a === 'stay') return;
     if (a === 'bomb'){ try { localStorage.removeItem('radio_last_room'); } catch(e){} await forceBomb(liveRoom.id, liveRoom.name, true); return; }
     admAsked = true;
@@ -5365,17 +5399,18 @@ $('bcinvite').onclick = () => {
   const u = location.href.split(/[?#]/)[0] + '?live=' + (bc ? bc.rid : myId);
   (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => setBc('초대 링크를 복사했습니다. 친구에게 보내세요.')).catch(() => prompt('이 링크를 복사해서 보내세요', u));
 };
-$('pvok').onchange = () => { if (!bc) return; bc.pvOff = !$('pvok').checked; bc.reg(); setBc($('pvok').checked ? '🎧 비밀번호 없이도 밖에서 소리를 들을 수 있습니다.' : '🔒 비밀번호를 모르면 소리도 들을 수 없습니다.'); };
+$('pvok').onchange = () => { if (!bc) return; bc.pvOff = !$('pvok').checked; bc.reg(); setBc($('pvok').checked ? '🎧 외부 송출을 허용했습니다. 비밀번호 없이도 밖에서 소리를 들을 수 있습니다.' : '🔒 외부 송출을 껐습니다. 비밀번호를 모르면 소리도 들을 수 없습니다.'); };
+$('k30ok').onchange = () => { if (!bc) return; bc.k30 = $('k30ok').checked; if (!bc.k30){ try { lj('livekeep/' + bc.rid, 'DELETE').catch(() => {}); } catch(_){} } else { bc.kpN = 0; try { kpSave(bc); } catch(_){} } setBc(bc.k30 ? '📦 연결이 끊겨도 방을 30일 보관합니다.' : '📦 자동 보관을 껐습니다. 연결이 끊기면 방은 사라질 수 있습니다.'); };
 $('pwset').onclick = () => {
   if (!bc) return;
   const v = $('bcpw2').value.trim();
   if (!v){ setBc('설정할 비밀번호를 입력하세요.'); return; }
-  bc.pw = v; bc.lock = lockOf(v, bc.rid); bc.reg(); roomHead(); $('bcpw2').value = '';
+  bc.pw = v; bc.lock = lockOf(v, bc.rid); bc.pvOff = !$('pvok').checked; bc.reg(); roomHead(); $('bcpw2').value = '';
   setBc('🔒 비밀번호를 설정했습니다. 이미 들어와 있는 사람은 그대로 듣습니다.'); closePanels();
 };
 $('pwclear').onclick = () => {
   if (!bc) return;
-  bc.pw = ''; bc.lock = ''; bc.reg(); roomHead(); setBc('비밀번호를 해제했습니다. 이제 누구나 입장할 수 있습니다.'); closePanels();
+  bc.pw = ''; bc.lock = ''; bc.pvOff = false; $('pvok').checked = false; bc.reg(); roomHead(); setBc('비밀번호를 해제했습니다. 이제 누구나 입장할 수 있습니다.'); closePanels();
 };
 $('bcfile').onchange = e => {
   const files = [...e.target.files]; if (!files.length) return;
