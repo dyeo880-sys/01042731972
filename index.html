@@ -2510,24 +2510,35 @@ window.botWelcome = name => {
   if (Math.random() < 0.5){ const w2 = botWho([w]); setTimeout(() => { if (BOT.on) botSay(w2, botRand(BOT_WELCOME2), key); }, d + 2500 + Math.random() * 4000); }
 };
 (function(){ try { const sc = document.createElement('script'); sc.src = 'bot_more.js?v=1'; sc.async = true; sc.onerror = function(){}; document.head.appendChild(sc); } catch(e){} })();   // 🤖 확장팩(대사·대본·이름) 자동 로드
+const BOT_CALLED = ['네~ 저 불렀어요? ㅎㅎ','네 {u}님 말씀하세요~','저요? 네 여기 있어요 😊','부르셨어요? 반가워요 ㅎㅎ','네네 듣고 있어요~','{u}님 저 불렀죠? 네~','네 {u}님 ㅎㅎ 왜요?','저 여기 있어요~ 무슨 일이세요?','오 저를 불러주셨네요 반가워요 😊','네~ 말씀하세요 {u}님','헤헤 저 불렀어요?','불러주셔서 고마워요 ㅎㅎ','네 {u}님 안녕하세요~','저 여기요 여기~ 🙋'];
 window.botUserSaid = text => {
   const key = roomPath();
   if (!BOT.on || !botKeyOk(key)) return;
   if (!BOT.who.length) botShuffle();
   const fl = botLang(text); if (fl && BOT_FX[fl]){ botForeignReply(text, fl, key); return; }
   if (botPersonaReply(text, key)) return;
-  let pool = null; for (const r of BOT_RULES){ if (r[0].test(text)){ pool = r[1]; break; } }
-  if (!pool){ if (Math.random() < 0.35) return; pool = BOT_FALLBACK; }
+  // 📣 손님 이름을 부르면(예: "은행나무님") 그 손님이 직접 대답함
+  let _tg = null, _pure = false;
+  try {
+    const _t = String(text), _hit = (n, strict) => { const i = _t.indexOf(n); if (i < 0) return false; return strict ? /^(님|씨|아|야)/.test(_t.slice(i + n.length)) : true; };
+    const _c = BOT.who.filter(n => !botIsPQ(n) && n.length >= 2 && _hit(n, false)).sort((a, b) => b.length - a.length);
+    if (_c.length) _tg = _c[0];
+    else { const c2 = BOT_NAMES.filter(n => n.length >= 3 && !BOT.who.includes(n) && _hit(n, true)).sort((a, b) => b.length - a.length); if (c2.length){ _tg = c2[0]; BOT.who.push(_tg); } }
+    if (_tg) _pure = _t.replace(_tg, '').replace(/[님씨아야\s?!~.,ㅎㅋ]/g, '').length === 0;
+  } catch(e){}
+  let pool = _pure ? BOT_CALLED : null; if (!pool) for (const r of BOT_RULES){ if (r[0].test(text)){ pool = r[1]; break; } }
+  if (!pool){ if (!_tg && Math.random() < 0.35) return; pool = BOT_FALLBACK; }
   BOT.q = []; BOT.next = Date.now() + 10000;
   const okPool = pool.filter(botOk);
-  const w = botWho(); let line = (pool === BOT_FALLBACK && Math.random() < 0.6) ? botFill(botRand(BOT_G.ko.r), BOT_G.ko, {}) : botRand(okPool.length ? okPool : pool);
-  if (!BOT_SERIOUS.has(pool) && Math.random() < 0.3){ try { const _u = $('nick').value.trim().slice(0, 12); if (_u && line.indexOf(_u) < 0) line = _u + '님, ' + line; } catch(e){} }   // 🔔 가끔 닉네임을 불러줌
+  const w = _tg || botWho(); let line = (pool === BOT_FALLBACK && Math.random() < 0.6) ? botFill(botRand(BOT_G.ko.r), BOT_G.ko, {}) : botRand(okPool.length ? okPool : pool);
+  try { const _u0 = $('nick').value.trim().slice(0, 12) || '손님'; line = line.replace(/\{u\}/g, _u0); } catch(e){ line = line.replace(/\{u\}/g, '손님'); }
+  if (!_tg && !BOT_SERIOUS.has(pool) && Math.random() < 0.3){ try { const _u = $('nick').value.trim().slice(0, 12); if (_u && line.indexOf(_u) < 0) line = _u + '님, ' + line; } catch(e){} }   // 🔔 가끔 닉네임을 불러줌
   // 읽고 → 생각하고 → 타자 치는 시간: 사용자 글 길이·답 길이에 비례, 가끔은 한참 뒤에 답함
   let d1 = 2500 + Math.min(text.length, 40) * 60 + line.length * 120 + Math.random() * 5500;
   if (Math.random() < 0.2) d1 += 5000 + Math.random() * 8000;
   BOT.next = Date.now() + d1 + 6000;   // 답하기 전에 다른 손님이 끼어들지 않게
   setTimeout(() => { if (BOT.on) botSay(w, line, key); }, d1);
-  if (pool !== BOT_RULES[0][1] && !BOT_SERIOUS.has(pool) && Math.random() < 0.3){   // 다른 손님이 거의 동시에 같이 답함
+  if (!_tg && pool !== BOT_RULES[0][1] && !BOT_SERIOUS.has(pool) && Math.random() < 0.3){   // 다른 손님이 거의 동시에 같이 답함
     const wb = botWho([w]), lb = botRand(pool.length > 1 ? pool.filter(x => x !== line) : BOT_ECHO);
     setTimeout(() => { if (BOT.on) botSay(wb, lb, key); }, d1 + 300 + Math.random() * 1500);
   }
