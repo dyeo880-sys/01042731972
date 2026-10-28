@@ -914,7 +914,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <div id="capov" aria-live="polite"></div>
       <div id="guestTile" hidden title="누르면 크게 (크기 조절·이동 가능)"><video id="guestVid" muted autoplay playsinline></video><small id="guestLbl"></small></div>
     </div>
-    <div id="vwall" aria-label="화상 칸"><div class="vwh"><strong>👥 화상 칸 (최대 4명 동시)</strong><span>빈 칸을 누르면 내 얼굴/PC 화면이 나옵니다 · 화면을 누르면 크게</span><button id="vwoff" type="button" class="addhome" hidden style="margin:0;padding:2px 10px;font-size:12px;color:#ff6b6b">⏹ 내 화면 끄기</button><label id="vwauto" hidden style="cursor:pointer"><input type="checkbox" id="vwautock" checked> 요청 자동 허용</label></div><div id="vwgrid"></div></div>
+    <div id="vwall" aria-label="화상 칸"><div class="vwh"><strong id="vwtitle">👥 화상 칸 (최대 4명 동시)</strong><span>빈 칸을 누르면 내 얼굴/PC 화면이 나옵니다 · 화면을 누르면 크게</span><label id="vwmaxl" hidden style="cursor:pointer">칸 수 <select id="vwmaxsel" aria-label="화상 칸 수" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:2px 4px;font-size:12px"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label><button id="vwoff" type="button" class="addhome" hidden style="margin:0;padding:2px 10px;font-size:12px" title="내 화면이 켜져 있는지 꺼져 있는지 보여 줍니다. 켜져 있을 때 누르면 끕니다.">⚫ 내 화면: 꺼짐</button><label id="vwauto" hidden style="cursor:pointer"><input type="checkbox" id="vwautock" checked> 요청 자동 허용</label></div><div class="chatnote" id="vwwarn" hidden style="margin:0 0 6px;color:#ffb347">⚠ 칸이 많을수록 방장의 인터넷(업로드)과 PC 성능이 많이 필요합니다. 영상이 끊기면 칸 수를 줄이세요. (칸당 약 0.3Mbps × 듣는 사람 수)</div><div id="vwgrid"></div></div>
     <audio id="bcAudio" controls hidden style="width:100%;margin-top:8px"></audio>
     <div class="mwctl" id="mwctl" hidden>
       <div class="hbrow hbq">
@@ -3147,7 +3147,8 @@ function memRec(){
     Object.keys(bc.okA).forEach(u => { (ok[u] = ok[u] || {}).a = bc.okA[u]; });
     Object.keys(bc.okV).forEach(u => { (ok[u] = ok[u] || {}).v = bc.okV[u]; });
     if (Object.keys(ok).length) r.ok = ok;
-    if (bc.vslots){ const gs = {}; bc.vslots.forEach((s, i) => { if (s) gs[i] = s.name; }); const gk = Object.keys(gs); if (gk.length){ r.gs = gs; r.g = gs[gk[0]]; } }
+    r.vm = vwMax(bc);
+    if (bc.vslots){ const gs = {}, gu = {}; bc.vslots.forEach((s, i) => { if (s){ gs[i] = s.name; const e = bc.tk && bc.tk[s.lid]; if (e && e.uid) gu[i] = String(e.uid); } }); const gk = Object.keys(gs); if (gk.length){ r.gs = gs; r.gu = gu; r.g = gs[gk[0]]; } }
     const ak = {}; Object.keys(bc.rq || {}).forEach(u => { ak[u] = 1; }); if (Object.keys(ak).length) r.ak = ak; // 요청을 받았다는 확인
   }
   return r;
@@ -3617,7 +3618,7 @@ async function mvPoll(){
   let reg = null, gg = null;
   try { [s, reg, gg] = await Promise.all([lj('roommedia_' + id, 'GET'), lj('livereg/' + id, 'GET'), lj('roommem_' + id, 'GET').catch(() => null)]); } catch(e){ return; }
   if (!liveRoom || liveRoom.id !== id) return;
-  { let hh = null; Object.keys(gg || {}).forEach(k => { const m = gg[k]; if (m && m.h && (!hh || m.ts > hh.ts)) hh = m; }); vwNames(hh && (hh.gs || (hh.g ? {0: hh.g} : null))); }
+  { let hh = null; Object.keys(gg || {}).forEach(k => { const m = gg[k]; if (m && m.h && (!hh || m.ts > hh.ts)) hh = m; }); vwNames(hh && (hh.gs || (hh.g ? {0: hh.g} : null)), hh && hh.gu, hh && hh.vm); }
   if (reg && reg.ts !== MV.regTs){ MV.regTs = reg.ts; MV.regAt = Date.now(); }
   if (reg){ const dj = +reg.dj || 0, dh = String(reg.dn || reg.h || ''); if (dj !== (MV.djc || 0) || (dj && dh !== MV.dh)){ MV.djc = dj; MV.dh = dh; roomHead(); } }
   if (reg){ MV.hd = reg.hd; MV.hs = reg.hs; MV.al = reg.al; MV.an = reg.an; if (reg.n && String(reg.n) !== liveRoom.name){ liveRoom.name = String(reg.n); roomHead(); } }
@@ -4031,8 +4032,10 @@ function gSend(pc, track, me){
   const sd = pc._gs; if (!sd) return;
   sd.replaceTrack(track).then(() => { if (!track) return; try { const q = sd.getParameters(); q.encodings = q.encodings && q.encodings.length ? q.encodings : [{}]; q.encodings[0].maxBitrate = 250000; sd.setParameters(q).catch(() => {}); } catch(e){} }).catch(() => {});
 }
-const VSLOTS = 4;
-const vwEnsure = me => me.vslots || (me.vslots = [null, null, null, null]);
+const VSLOTS = 8;   // 칸 최대치 (실제로 쓰는 칸 수는 방장이 정함, 기본 4)
+const vwMax = me => { let m = me && me.vmax; if (!m){ try { m = +localStorage.getItem('radio_vwmax'); } catch(e){} } return Math.min(VSLOTS, Math.max(1, m || 4)); };
+const vwFree = me => { const sl = vwEnsure(me), n = vwMax(me); for (let i = 0; i < n; i++) if (!sl[i]) return i; return -1; };
+const vwEnsure = me => me.vslots || (me.vslots = new Array(VSLOTS).fill(null));
 const vwUsed = me => Object.values(me.okV || {}).filter(v => v === true).length + vwEnsure(me).filter(s => s && s.lid === '__host').length;
 function vwPush(me){   // 칸마다 영상을 모든 듣는 사람에게 내보내고 내 화면에도 표시
   const sl = vwEnsure(me);
@@ -4050,7 +4053,7 @@ function vwHostApply(me, acts){
   sl.forEach((s, i) => { if (!s || s.lid === '__host') return; const e = me.tk[s.lid]; if (!acts.includes(s.lid) || !e || e.vt !== s.track){ sl[i] = null; ch = true; } });
   acts.forEach(lid => {
     if (sl.some(s => s && s.lid === lid)) return;
-    const i = sl.indexOf(null); if (i < 0) return;
+    const i = vwFree(me); if (i < 0) return;
     const e = me.tk[lid]; sl[i] = {lid, track: e.vt, name: String((me.rq[e.uid] && me.rq[e.uid].n) || '손님').slice(0, 12)}; ch = true;
   });
   if (ch) vwPush(me);
@@ -4060,8 +4063,8 @@ async function vwHostSelf(src){   // 방장이 직접 얼굴/PC 화면을 칸에
   let st = null;
   try { st = src === 'scr' ? await navigator.mediaDevices.getDisplayMedia({video: {frameRate: {ideal: 10, max: 15}}, audio: false}) : await navigator.mediaDevices.getUserMedia({video: {width: {ideal: 320}, height: {ideal: 240}, frameRate: {ideal: 15}, facingMode: 'user'}}); }
   catch(e){ setBc(src === 'scr' ? 'PC 화면을 가져오지 못했습니다. (PC의 Chrome/Edge에서 화면 공유를 허용하세요)' : '카메라를 켤 수 없습니다. 브라우저의 카메라 권한이나 장치를 확인하세요.'); return; }
-  const tr = st.getVideoTracks()[0], sl = vwEnsure(me), i = sl.indexOf(null);
-  if (!tr || bc !== me || i < 0){ st.getTracks().forEach(t => t.stop()); if (i < 0) setBc('화상 칸 4개가 모두 사용 중입니다.'); return; }
+  const tr = st.getVideoTracks()[0], sl = vwEnsure(me), i = vwFree(me);
+  if (!tr || bc !== me || i < 0){ st.getTracks().forEach(t => t.stop()); if (i < 0) setBc('화상 칸 ' + vwMax(me) + '개가 모두 사용 중입니다.'); return; }
   sl[i] = {lid: '__host', track: tr, name: String(myNick() || '방장').slice(0, 12), st}; tr.onended = () => vwHostSelfOff();
   vwPush(me);
 }
@@ -4071,7 +4074,7 @@ function vwHostSelfOff(quiet){
   if (ch && !quiet) vwPush(me);
 }
 // ---- 화상 칸 화면 (모두에게 보이는 사각 칸 4개) ----
-const VW = {tr: [null, null, null, null], names: {}, host: null, el: []};
+const VW = {tr: new Array(VSLOTS).fill(null), vm: 4, names: {}, gu: {}, host: null, el: []};
 (function(){
   const g = document.getElementById('vwgrid'); if (!g) return;
   for (let i = 0; i < VSLOTS; i++){
@@ -4098,22 +4101,49 @@ function vwStart(src){
   if (talk.v) talkKindStop('v', '');
   talk.vsrc = src; talkStart('v');
 }
-function vwStop(){ if (isHost()){ vwHostSelfOff(); return; } if (talk.v) talkKindStop('v', ''); }
+function vwStop(){ if (isHost()) vwHostSelfOff(); else if (talk.v) talkKindStop('v', ''); else return; setBc('⚫ 내 화면: 꺼짐'); }
 function vwRender(){
+  let cnt = 4;
+  if (isHost()){ const me = bc; cnt = me ? vwMax(me) : 4; if (VW.host) VW.host.forEach((s, i) => { if (s && i + 1 > cnt) cnt = i + 1; }); }
+  else { cnt = VW.vm || 4; Object.keys(VW.names || {}).forEach(k => { if (VW.names[k] && +k + 1 > cnt) cnt = +k + 1; }); }
+  cnt = Math.min(VSLOTS, cnt);
+  try { const tt = $('vwtitle'); if (tt) tt.textContent = '👥 화상 칸 (최대 ' + cnt + '명 동시)'; } catch(e){}
   VW.el.forEach((o, i) => {
-    let tr = null, nm = '';
+    o.t.style.display = i < cnt ? '' : 'none';
+    let tr = null, nm = '', mine = false;
     if (isHost()){ const s = VW.host && VW.host[i]; if (s){ tr = s.track; nm = s.name; } }
-    else { nm = (VW.names && VW.names[i]) || ''; tr = nm ? VW.tr[i] : null; }
+    else {
+      nm = (VW.names && VW.names[i]) || ''; tr = nm ? VW.tr[i] : null;
+      let loc = null; try { loc = (typeof talk !== 'undefined' && talk.v === 'ok' && talk.cam) ? talk.cam.getVideoTracks()[0] : null; } catch(e){}
+      if (loc){
+        const mi = VW.names ? Object.keys(VW.names).findIndex(k => VW.gu && VW.gu[k] === myId) : -1;
+        const mk = mi >= 0 ? Object.keys(VW.names)[mi] : null;
+        if (mk != null ? +mk === i : (!nm && i === VW.el.findIndex((_, j) => !(VW.names && VW.names[j])))){ tr = loc; nm = (mk != null ? nm : String(myNick() || '나').slice(0, 12) + ' (연결 중)'); mine = true; }
+      }
+    }
     const cur = o.v.srcObject && o.v.srcObject.getVideoTracks()[0];
+    o.v.style.transform = (mine && !(typeof talk !== 'undefined' && talk.vsrc === 'scr')) ? 'scaleX(-1)' : '';
     if (tr){ if (cur !== tr){ o.v.srcObject = new MediaStream([tr]); } o.v.play().catch(() => {}); o.l.textContent = nm; o.t.classList.add('on'); }
     else { if (o.v.srcObject) o.v.srcObject = null; o.t.classList.remove('on', 'vz'); }
   });
 }
-function vwNames(gs){ if (isHost()) return; VW.names = gs || {}; vwRender(); }
+function vwNames(gs, gu, vm){ if (isHost()) return; VW.names = gs || {}; VW.gu = gu || {}; VW.vm = Math.min(VSLOTS, Math.max(1, +vm || 4)); vwRender(); }
 function vwTrack(i, tr){ VW.tr[i] = tr; vwRender(); }
-function vwReset(){ VW.tr = [null, null, null, null]; VW.names = {}; VW.host = null; vwRender(); }
-setInterval(() => { try { const a = $('vwauto'); if (a) a.hidden = !isHost(); const o = $('vwoff'); if (o){ const mine = isHost() ? !!(bc && bc.vslots && bc.vslots.some(s => s && s.lid === '__host')) : !!(typeof talk !== 'undefined' && talk.v); o.hidden = !mine; o.textContent = (!isHost() && talk.v === 'req') ? '⏳ 요청 취소' : '⏹ 내 화면 끄기'; } } catch(e){} }, 500);
+function vwReset(){ VW.tr = new Array(VSLOTS).fill(null); VW.vm = 4; VW.names = {}; VW.host = null; vwRender(); }
+setInterval(() => { try { const a = $('vwauto'); if (a) a.hidden = !isHost(); const ml = $('vwmaxl'), ww = $('vwwarn'); if (ml){ ml.hidden = !isHost(); const sl = $('vwmaxsel'); if (isHost() && bc && sl && document.activeElement !== sl) sl.value = String(vwMax(bc)); if (ww) ww.hidden = !(isHost() && bc && vwMax(bc) > 4); } const o = $('vwoff'); if (o){
+      const inRoom = isHost() ? !!bc : !!(liveRoom && lis && !lis.pv);
+      const st = isHost() ? ((bc && bc.vslots && bc.vslots.some(s => s && s.lid === '__host')) ? 'on' : 'off') : (talk.v === 'ok' ? 'on' : talk.v === 'req' ? 'req' : 'off');
+      o.hidden = !inRoom; o.disabled = st === 'off'; o.dataset.st = st;
+      o.textContent = st === 'on' ? '🔴 내 화면: 켜짐 (누르면 끔)' : st === 'req' ? '⏳ 내 화면: 요청 중 (누르면 취소)' : '⚫ 내 화면: 꺼짐';
+      o.style.color = st === 'on' ? '#ff6b6b' : st === 'req' ? '#ffb347' : '#9a8c70'; o.style.opacity = st === 'off' ? '.8' : '1';
+    } if (!isHost() && typeof talk !== 'undefined') vwRender(); } catch(e){} }, 500);
 $('vwoff').onclick = () => vwStop();
+$('vwmaxsel').onchange = e => {
+  const me = bc, v = +e.target.value; if (!me || !isHost()) return;
+  if (v > 4 && !confirm('⚠ 화상 칸을 ' + v + '개로 늘립니다.\n\n방장의 PC가 모든 영상을 받아 듣는 사람 모두에게 다시 보내므로, 칸이 많을수록 방장의 업로드 속도와 PC 성능이 많이 필요합니다. 회선이 약하면 영상이 끊기거나 방 전체 소리까지 불안해질 수 있습니다.\n\n회선·PC가 충분할 때만 늘리세요. 계속할까요?')){ e.target.value = vwMax(me); return; }
+  me.vmax = v; try { localStorage.setItem('radio_vwmax', String(v)); } catch(x){}
+  vwRender(); memBeat(); setBc('화상 칸을 ' + v + '개로 정했습니다.' + (v > 4 ? ' (⚠ 회선이 약하면 칸 수를 줄이세요)' : ''));
+};
 function vidOn(me, lid, track, name){ return; /* (예전 한 칸 방식 — 화상 칸으로 대체) */
   me.vact = lid; me.vtrack = track; me.vname = String(name || '손님').slice(0, 12);
   Object.keys(me.pcs).forEach(k => gSend(me.pcs[k], track, me));
@@ -4191,7 +4221,7 @@ function talkDecide(me, kind, u, yes){
   if (yes){
     if (kind === 'a' && Object.values(me.okA).filter(v => v === true).length >= MAX_SPEAK){ setBc('동시에 말할 수 있는 사람은 최대 ' + MAX_SPEAK + '명입니다. 먼저 한 명의 마이크를 끄세요.'); return; }
     if (kind === 'v'){
-      if (vwUsed(me) >= VSLOTS){ setBc('화상 칸 ' + VSLOTS + '개가 모두 사용 중입니다. 먼저 켜진 화면을 끄세요.'); return; }
+      if (vwUsed(me) >= vwMax(me)){ setBc('화상 칸 ' + vwMax(me) + '개가 모두 사용 중입니다. 먼저 켜진 화면을 끄세요.'); return; }
     }
     m[u] = true; if (me.offA) delete me.offA[u];
   } else m[u] = false;
@@ -4206,7 +4236,7 @@ function renderTalkHost(me){
       if (q.v && me.okV[u] === undefined && !Object.values(me.okV).some(v => v === true)) talkDecide(me, 'v', u, true); });
   }
   if ($('vwautock') && $('vwautock').checked){ // 화면 요청 자동 허용 (방장이 ⛔로 끈 사람은 제외)
-    Object.keys(me.rq).forEach(u => { const q = me.rq[u]; if (q && q.v && me.okV[u] === undefined && vwUsed(me) < VSLOTS) talkDecide(me, 'v', u, true); });
+    Object.keys(me.rq).forEach(u => { const q = me.rq[u]; if (q && q.v && me.okV[u] === undefined && vwUsed(me) < vwMax(me)) talkDecide(me, 'v', u, true); });
   }
   if (me.debate && !me.autoBusy){ // 🗣 토론 모드: 마이크 요청을 먼저 누른 순서대로 최대 MAX_SPEAK명까지 자동 허용 (방장이 ⛔로 끈 사람은 제외)
     me.autoBusy = true;
