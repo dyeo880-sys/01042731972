@@ -914,7 +914,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <div id="capov" aria-live="polite"></div>
       <div id="guestTile" hidden title="누르면 크게 (크기 조절·이동 가능)"><video id="guestVid" muted autoplay playsinline></video><small id="guestLbl"></small></div>
     </div>
-    <div id="vwall" aria-label="화상 칸"><div class="vwh"><strong id="vwtitle">👥 화상 칸 (최대 4명 동시)</strong><span>빈 칸을 누르면 내 얼굴/PC 화면이 나옵니다 · 화면을 누르면 크게</span><label id="vwmaxl" hidden style="cursor:pointer">칸 수 <select id="vwmaxsel" aria-label="화상 칸 수" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:2px 4px;font-size:12px"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label><button id="vwoff" type="button" class="addhome" hidden style="margin:0;padding:2px 10px;font-size:12px" title="내 화면이 켜져 있는지 꺼져 있는지 보여 줍니다. 켜져 있을 때 누르면 끕니다.">⚫ 내 화면: 꺼짐</button><label id="vwauto" hidden style="cursor:pointer"><input type="checkbox" id="vwautock" checked> 요청 자동 허용</label></div><div class="chatnote" id="vwwarn" hidden style="margin:0 0 6px;color:#ffb347">⚠ 칸이 많을수록 방장의 인터넷(업로드)과 PC 성능이 많이 필요합니다. 영상이 끊기면 칸 수를 줄이세요. (칸당 약 0.3Mbps × 듣는 사람 수)</div><div id="vwgrid"></div></div>
+    <div id="vwall" aria-label="화상 칸"><div class="vwh"><strong id="vwtitle">👥 화상 칸 (최대 4명 동시)</strong><span>빈 칸을 누르면 내 얼굴/PC 화면이 나옵니다 · 화면을 누르면 크게</span><label id="vwmaxl" hidden style="cursor:pointer">칸 수 <select id="vwmaxsel" aria-label="화상 칸 수" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:2px 4px;font-size:12px"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label><button id="vwoff" type="button" class="addhome" hidden style="margin:0;padding:2px 10px;font-size:12px" title="내 화면이 켜져 있는지 꺼져 있는지 보여 줍니다. 켜져 있을 때 누르면 끕니다.">⚫ 내 화면: 꺼짐</button><label id="vwauto" hidden style="cursor:pointer"><input type="checkbox" id="vwautock" checked> 요청 자동 허용</label></div><div id="vwselfbox" hidden style="display:none;align-items:center;gap:8px;margin:0 0 6px"><video id="vwself" muted autoplay playsinline style="width:112px;height:84px;object-fit:contain;background:#000;border:2px solid #ff6b6b;border-radius:8px"></video><span id="vwselft" style="font-size:12px;color:var(--amber)"></span></div><div class="chatnote" id="vwwarn" hidden style="margin:0 0 6px;color:#ffb347">⚠ 칸이 많을수록 방장의 인터넷(업로드)과 PC 성능이 많이 필요합니다. 영상이 끊기면 칸 수를 줄이세요. (칸당 약 0.3Mbps × 듣는 사람 수)</div><div id="vwgrid"></div></div>
     <audio id="bcAudio" controls hidden style="width:100%;margin-top:8px"></audio>
     <div class="mwctl" id="mwctl" hidden>
       <div class="hbrow hbq">
@@ -4136,7 +4136,26 @@ setInterval(() => { try { const a = $('vwauto'); if (a) a.hidden = !isHost(); co
       o.hidden = !inRoom; o.disabled = st === 'off'; o.dataset.st = st;
       o.textContent = st === 'on' ? '🔴 내 화면: 켜짐 (누르면 끔)' : st === 'req' ? '⏳ 내 화면: 요청 중 (누르면 취소)' : '⚫ 내 화면: 꺼짐';
       o.style.color = st === 'on' ? '#ff6b6b' : st === 'req' ? '#ffb347' : '#9a8c70'; o.style.opacity = st === 'off' ? '.8' : '1';
-    } if (!isHost() && typeof talk !== 'undefined') vwRender(); } catch(e){} }, 500);
+    }
+    { // 내 미리보기: 방장을 거치지 않고 내 기기에서 바로 (카메라가 실제로 켜졌는지 확인용)
+      const bx = $('vwselfbox'), sv = $('vwself'), stx = $('vwselft');
+      let tr = null, scr = false, txt = '';
+      if (isHost()){ const s = bc && bc.vslots && bc.vslots.find(x => x && x.lid === '__host'); if (s){ tr = s.track; scr = !s.st || (s.track && /screen|window|tab|monitor/i.test(s.track.label || '')); } }
+      else if (typeof talk !== 'undefined' && talk.cam){ const t0 = talk.cam.getVideoTracks()[0]; if (t0 && t0.readyState === 'live'){ tr = t0; scr = talk.vsrc === 'scr'; } }
+      if (bx){
+        if (tr){
+          if (!sv.srcObject || sv.srcObject.getVideoTracks()[0] !== tr){ sv.srcObject = new MediaStream([tr]); }
+          sv.style.transform = scr ? '' : 'scaleX(-1)'; sv.play().catch(() => {});
+          txt = '🔴 내 ' + (scr ? 'PC 화면' : '카메라') + ' 켜짐 (내 미리보기)'; bx.style.display = 'flex';
+        } else {
+          if (sv.srcObject) sv.srcObject = null;
+          if (!isHost() && typeof talk !== 'undefined' && talk.v === 'ok') { txt = '📷 카메라를 켜는 중… (브라우저의 카메라 허용을 확인하세요)'; bx.style.display = 'flex'; }
+          else bx.style.display = 'none';
+        }
+        if (stx) stx.textContent = txt;
+      }
+    }
+    if (!isHost() && typeof talk !== 'undefined') vwRender(); } catch(e){} }, 500);
 $('vwoff').onclick = () => vwStop();
 $('vwmaxsel').onchange = e => {
   const me = bc, v = +e.target.value; if (!me || !isHost()) return;
