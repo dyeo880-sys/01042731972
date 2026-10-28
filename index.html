@@ -2419,7 +2419,8 @@ function botReactFor(text){   // 대사 내용에 어울리는 버튼
   return '';
 }
 function botSay(name, text, key, odd){
-  if (botLocked(key || roomPath())){ BOT.q = []; return; }   // 🔒 잠긴 방에서는 말하지 않음
+  if (botLocked(key || roomPath())){ BOT.q = []; return; }
+  if (typeof text === 'string' && text.indexOf('{n}') >= 0){ let _nm = ''; try { _nm = $('nick').value.trim().slice(0, 12); } catch(e){} text = text.replace(/\{n\}/g, _nm || '손님'); }   // 🔒 잠긴 방에서는 말하지 않음
   if (!odd && !botOk(text)) return;
   const now = Date.now(); key = key || roomPath(); BOT.last = name; BOT.recent.push(text); BOT.recent = BOT.recent.slice(-24);
   BOT.msgs.push({n: name, t: text, ts: now, k: 'bot', bot: 1, r: key});
@@ -2508,6 +2509,7 @@ window.botWelcome = name => {
   setTimeout(() => { if (BOT.on) botSay(w, botRand(pool), key); }, d);
   if (Math.random() < 0.5){ const w2 = botWho([w]); setTimeout(() => { if (BOT.on) botSay(w2, botRand(BOT_WELCOME2), key); }, d + 2500 + Math.random() * 4000); }
 };
+(function(){ try { const sc = document.createElement('script'); sc.src = 'bot_more.js?v=1'; sc.async = true; sc.onerror = function(){}; document.head.appendChild(sc); } catch(e){} })();   // 🤖 확장팩(대사·대본·이름) 자동 로드
 window.botUserSaid = text => {
   const key = roomPath();
   if (!BOT.on || !botKeyOk(key)) return;
@@ -2518,7 +2520,8 @@ window.botUserSaid = text => {
   if (!pool){ if (Math.random() < 0.35) return; pool = BOT_FALLBACK; }
   BOT.q = []; BOT.next = Date.now() + 10000;
   const okPool = pool.filter(botOk);
-  const w = botWho(), line = (pool === BOT_FALLBACK && Math.random() < 0.6) ? botFill(botRand(BOT_G.ko.r), BOT_G.ko, {}) : botRand(okPool.length ? okPool : pool);
+  const w = botWho(); let line = (pool === BOT_FALLBACK && Math.random() < 0.6) ? botFill(botRand(BOT_G.ko.r), BOT_G.ko, {}) : botRand(okPool.length ? okPool : pool);
+  if (!BOT_SERIOUS.has(pool) && Math.random() < 0.3){ try { const _u = $('nick').value.trim().slice(0, 12); if (_u && line.indexOf(_u) < 0) line = _u + '님, ' + line; } catch(e){} }   // 🔔 가끔 닉네임을 불러줌
   // 읽고 → 생각하고 → 타자 치는 시간: 사용자 글 길이·답 길이에 비례, 가끔은 한참 뒤에 답함
   let d1 = 2500 + Math.min(text.length, 40) * 60 + line.length * 120 + Math.random() * 5500;
   if (Math.random() < 0.2) d1 += 5000 + Math.random() * 8000;
