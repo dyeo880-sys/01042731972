@@ -1045,7 +1045,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
             <label class="chatnote" style="margin:0;flex-basis:100%;display:block"><input type="checkbox" id="k30ok" checked> 📦 연결이 끊기거나 컴퓨터가 꺼져도 방을 30일 보관</label>
           </div>
                 <div class="tp" id="p-hk" hidden>
-            <div class="chatnote" style="margin:0 0 6px;flex-basis:100%">🔑 방장 권한 보관 — 방 비밀번호와 별개로 「방장 비밀번호」만 정해 둘 수 있습니다. 내가 나간 뒤 <b>최대 3일</b> 동안은 다른 사람이 들어와도 방장이 될 수 없고 방은 내 것으로 남습니다. 돌아와 방장 비밀번호를 넣으면 방장으로 이어서 진행합니다. 3일 안에 오지 않으면 그때부터 다른 사람이 방장을 이어받을 수 있습니다. (관리자는 언제든 방폭 가능)</div>
+            <div class="chatnote" style="margin:0 0 6px;flex-basis:100%">🔑 방장 권한 보관 — 방 비밀번호와 별개로 「방장 비밀번호」만 정해 둘 수 있습니다. 내가 나간 뒤 <b>최대 15일</b> 동안은 다른 사람이 들어와도 방장이 될 수 없고 방은 내 것으로 남습니다. 돌아와 방장 비밀번호를 넣으면 방장으로 이어서 진행합니다. 15일 안에 오지 않으면 그때부터 다른 사람이 방장을 이어받을 수 있습니다. (관리자는 언제든 방폭 가능)</div>
             <input id="hkpw" type="password" maxlength="30" placeholder="방장 비밀번호 (4자 이상)" autocomplete="new-password" aria-label="방장 비밀번호">
             <button class="addhome" id="hkset" type="button" style="margin:0">🔑 설정</button>
             <button class="addhome" id="hkoff" type="button" style="margin:0" hidden>해제</button>
@@ -3702,7 +3702,7 @@ async function electStep(R){
       if (lis) stopListen(); else leaveRoom(); loadLive(); return;
     }
   } catch(e){}
-  try { const rg2 = await lj('livereg/' + R, 'GET'); if (rg2 && rg2.hk && +rg2.hx > nowS()){ setBc('방장이 잠시 자리를 비웠습니다. 방장 권한이 보관 중이라 새 방장을 뽑지 않습니다. (최대 3일, 그 뒤에도 안 오면 다른 사람이 이어받을 수 있습니다)'); return; } } catch(e){}
+  try { const rg2 = await lj('livereg/' + R, 'GET'); if (rg2 && rg2.hk && +rg2.hx > nowS()){ setBc('방장이 잠시 자리를 비웠습니다. 방장 권한이 보관 중이라 새 방장을 뽑지 않습니다. (최대 15일, 그 뒤에도 안 오면 다른 사람이 이어받을 수 있습니다)'); return; } } catch(e){}
   let d = {}; try { d = await lj('roommem_' + R, 'GET') || {}; } catch(e){ return; }
   const now = nowS();
   const alive = Object.keys(d).filter(k => d[k] && now - d[k].ts < 25000).sort();
@@ -3953,7 +3953,7 @@ async function makeMusicRoom(){
 // 방장이 컴퓨터를 끄거나 연결이 끊겨 "나가기"가 실행되지 못해도 방이 남도록, 방장이 켜 둔 동안 1분마다 보관 기록(livekeep)을 서버에 저장합니다.
 // 방장 신호가 2분 넘게 끊긴 방은 이 기록으로 "빈 방"으로 바꿔 보관하고, 30일 동안 아무도 오지 않으면 사라집니다. 누가 들어오거나 열면 30일이 다시 시작됩니다.
 const KEEP_MIN = 43200;
-const HK_MS = 3 * 86400000;   // 방장 권한 보관 기간 (3일)
+const HK_MS = 15 * 86400000;   // 방장 권한 보관 기간 (15일)
 const mtNorm = v => (Array.isArray(v) ? v : Object.values(v || {})).filter(m => m && m.x).map(m => ({x: String(m.x).slice(0, 120), h: /^\d\d:\d\d$/.test(m.h || '') ? m.h : '', b: m.b ? 1 : 0}));
 function kpSave(me){
   if (!me || me !== bc || me.k30 === false) return;
@@ -4269,14 +4269,14 @@ $('vwmicck').onchange = e => {
 };
 document.querySelectorAll('[data-vwmk]').forEach(vwMicBind); vwMicBind($('vwmicbtn'));
 setInterval(() => { try { vwMicUi(); } catch(e){} }, 400);
-// ---- 🔑 방장 권한 보관 (최대 3일) ----
-function hkUi(){ const st = $('hkst'), off = $('hkoff'); if (!st) return; st.textContent = bc && bc.hk ? '✅ 설정됨 — 나가면 3일간 방장 권한이 보관됩니다.' : '설정 안 됨 — 나가면 다른 사람이 방장을 이어받을 수 있습니다.'; off.hidden = !(bc && bc.hk); }
+// ---- 🔑 방장 권한 보관 (최대 15일) ----
+function hkUi(){ const st = $('hkst'), off = $('hkoff'); if (!st) return; st.textContent = bc && bc.hk ? '✅ 설정됨 — 나가면 15일간 방장 권한이 보관됩니다.' : '설정 안 됨 — 나가면 다른 사람이 방장을 이어받을 수 있습니다.'; off.hidden = !(bc && bc.hk); }
 $('hkset').onclick = () => {
   if (!bc) return; const k = $('hkpw').value.trim();
   if (k.length < 4){ setBc('방장 비밀번호는 4자 이상으로 정해 주세요.'); return; }
   if (bc.pw && k === bc.pw){ setBc('방 비밀번호와 다른 비밀번호로 정해 주세요. (같으면 손님도 방장이 될 수 있습니다)'); return; }
   bc.hk = lockOf(k, bc.rid + ':host'); $('hkpw').value = ''; bc.reg(); hkUi();
-  setBc('🔑 방장 권한 보관을 설정했습니다. 내가 나간 뒤 3일 동안 이 방은 방장 비밀번호로만 방장이 될 수 있습니다.');
+  setBc('🔑 방장 권한 보관을 설정했습니다. 내가 나간 뒤 15일 동안 이 방은 방장 비밀번호로만 방장이 될 수 있습니다.');
 };
 $('hkoff').onclick = () => { if (!bc) return; bc.hk = null; bc.reg(); hkUi(); setBc('방장 권한 보관을 해제했습니다.'); };
 document.querySelector('[data-p="p-hk"]').addEventListener('click', hkUi);
@@ -5121,7 +5121,7 @@ async function claimEmptyRoom(R, info){
   let pw = '';
   const fv = mhFind(R, String(info.n)); if (fv && fv.nick) applyMyName(fv.nick);
   let hkOk = false;
-  if (info.hk && +info.hx > nowS()){   // 🔑 방장 권한 보관 중 (최대 3일): 방장 비밀번호가 있어야 방장이 됨
+  if (info.hk && +info.hx > nowS()){   // 🔑 방장 권한 보관 중 (최대 15일): 방장 비밀번호가 있어야 방장이 됨
     const left = Math.max(1, Math.ceil((+info.hx - nowS()) / 3600000));
     const kk = prompt('🔑 이 방은 방장이 권한을 보관 중입니다 (약 ' + left + '시간 남음).\n방장 비밀번호를 입력하면 방장으로 돌아와 이어서 진행합니다.\n\n취소하면 소리만 들을 수 있습니다. 시간이 지나도 방장이 오지 않으면 다른 사람이 방장이 될 수 있습니다.');
     if (!kk){ try { listenOnlyVirtual(R, info); } catch(e){} return; }
@@ -5684,7 +5684,7 @@ function hostLeaveAsk(){   // 방장이 나갈 때: 💣 방폭 / 📦 30일 보
       else { st2.textContent = '✅ 비밀번호를 몰라도 방 밖(메인 목록)에서 소리 듣기 가능.'; st2.style.color = '#7bd88f'; }
     };
     ckb.append(ckh, st1);
-    const hki = document.createElement('input'); hki.type = 'password'; hki.maxLength = 30; hki.autocomplete = 'new-password'; hki.placeholder = (bc && bc.hk) ? '🔑 방장 권한 3일 보관 중 (바꾸려면 새 비밀번호)' : '🔑 방장 비밀번호 입력 시 3일간 방장 권한 보관'; hki.style.cssText = 'width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid #b99a5b88;background:#1a0f08;color:#f0e2c4';
+    const hki = document.createElement('input'); hki.type = 'password'; hki.maxLength = 30; hki.autocomplete = 'new-password'; hki.placeholder = (bc && bc.hk) ? '🔑 방장 권한 15일 보관 중 (바꾸려면 새 비밀번호)' : '🔑 방장 비밀번호 입력 시 15일간 방장 권한 보관'; hki.style.cssText = 'width:100%;box-sizing:border-box;padding:6px 8px;border-radius:6px;border:1px solid #b99a5b88;background:#1a0f08;color:#f0e2c4';
     if (bc) ckb.append(lab('방장이 나가도 유튜브·링크 영상은 계속 재생', bc.keep !== false, v => { bc.keep = v; try { $('rskeep').checked = v; } catch(e){} }));
     ckb.append(st2);
     ckb.append(hki);
