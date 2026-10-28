@@ -5561,10 +5561,36 @@ function hostLeaveAsk(){   // 방장이 나갈 때: 💣 방폭 / 📦 30일 보
     const h = document.createElement('div'); h.style.cssText = 'font-weight:700;font-size:16px;margin-bottom:8px'; h.textContent = '🚪 방에서 나갑니다';
     const d = document.createElement('div'); d.style.cssText = 'margin-bottom:14px;opacity:.9';
     d.textContent = '💣 방폭: 방이 완전히 사라지고 안에 있는 사람도 모두 나오게 됩니다 (되돌릴 수 없음).\n📦 30일 보관: 빈 방으로 남아 누구나 들어와 방장이 될 수 있고, 누가 오면 30일이 다시 시작됩니다.'; d.style.whiteSpace = 'pre-line';
+    // ✅ 나가기 전 점검표: 나가도 음악이 이어지는지, 밖에서 들을 수 있는지를 체크 표시로 보여 줌 (체크를 바꾸면 바로 적용)
+    const ckb = document.createElement('div'); ckb.style.cssText = 'margin:0 0 14px;padding:10px;border:1px dashed #b99a5b88;border-radius:8px;display:flex;flex-direction:column;gap:8px';
+    const ckh = document.createElement('div'); ckh.style.cssText = 'font-weight:700;color:#ffd24a'; ckh.textContent = '📋 나가기 전 확인';
+    const st1 = document.createElement('div'), st2 = document.createElement('div'); st1.style.cssText = st2.style.cssText = 'font-size:13px;line-height:1.5';
+    const lab = (txt, on, fn) => { const l = document.createElement('label'); l.style.cssText = 'display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:13px'; const c = document.createElement('input'); c.type = 'checkbox'; c.checked = on; c.onchange = () => { fn(c.checked); refresh(); }; l.append(c, document.createTextNode(txt)); return l; };
+    const hasPw = !!(bc && (bc.pw || bc.lock));
+    const refresh = () => {
+      let ok = false, why = '';
+      try {
+        if (!bc) why = '방 정보를 읽을 수 없습니다.';
+        else if (bc.keep === false) why = '「나가도 계속 재생」이 꺼져 있습니다. 아래 체크를 켜세요.';
+        else { const sn = mvKeepSnap(); if (sn){ ok = true; why = '링크 영상이 이어서 재생됩니다' + (sn.pl ? ' (목록 ' + sn.pl.length + '곡 반복)' : ' (반복)') + '.'; }
+          else if (MV.k === 'yt' || MV.k === 'url') why = '재생 중이 아닙니다 (일시정지 상태는 이어지지 않습니다). 재생을 누른 뒤 나가세요.';
+          else why = '지금 틀고 있는 것은 이어지지 않습니다. 파일·마이크·PC 소리는 방장이 나가면 끊깁니다. 유튜브·mp3 링크로 틀어야 이어집니다.'; }
+      } catch(e){ why = '확인하지 못했습니다.'; }
+      st1.textContent = (ok ? '✅ 나가도 음악 이어짐 — ' : '❌ 나가면 음악 끊김 — ') + why; st1.style.color = ok ? '#7bd88f' : '#ff9f7a';
+      if (!bc) { st2.textContent = ''; return; }
+      if (!hasPw){ st2.textContent = '✅ 비밀번호가 없는 방이라 밖에서도 누구나 들을 수 있습니다.'; st2.style.color = '#7bd88f'; }
+      else if (bc.pvOff){ st2.textContent = '❌ 비밀번호를 모르는 사람은 밖에서 들을 수 없습니다 (외부 청취 꺼짐).'; st2.style.color = '#ff9f7a'; }
+      else { st2.textContent = '✅ 비밀번호를 몰라도 방 밖(메인 목록)에서 소리 듣기 가능.'; st2.style.color = '#7bd88f'; }
+    };
+    ckb.append(ckh, st1);
+    if (bc) ckb.append(lab('방장이 나가도 유튜브·링크 영상은 계속 재생', bc.keep !== false, v => { bc.keep = v; try { $('rskeep').checked = v; } catch(e){} }));
+    ckb.append(st2);
+    if (bc && hasPw) ckb.append(lab('🎧 외부 청취 허용 (비밀번호를 몰라도 방 밖에서 소리만 듣기)', !bc.pvOff, v => { bc.pvOff = !v; try { $('pvok').checked = v; bc.reg(); } catch(e){} }));
+    refresh();
     const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
     const mk = (txt, v, col) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;flex:1;min-width:120px' + (col ? ';color:' + col : ''); b.textContent = txt; b.onclick = () => { ov.remove(); res(v); }; return b; };
     const bomb = mk('💣 방폭', 'bomb', '#ff6b6b'), keep = mk('📦 30일 보관하고 나가기', 'keep'), stay = mk('머물기', 'stay');
-    row.append(bomb, keep, stay); bx.append(h, d, row); ov.append(bx);
+    row.append(bomb, keep, stay); bx.append(h, d, ckb, row); ov.append(bx);
     ov.addEventListener('keydown', e => { if (e.key === 'Escape'){ ov.remove(); res('stay'); } });
     document.body.append(ov); keep.focus();
   });
