@@ -353,7 +353,15 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 /* 손님 영상: 방장 영상과 똑같이 메인 영상 자리에 나옴 (나오는 동안 방장 영상은 화면만 가림, 소리는 계속) */
 .mwscreen:has(#guestTile:not([hidden])) #mwidle{display:none}
 .mwscreen #guestTile{position:relative;right:auto;bottom:auto;width:min(100%,calc(640px * var(--mws)));cursor:default}
-.mwscreen:has(#guestTile:not([hidden])) :is(#mwvid,#mwyt,#liveAudio,#bcPreview){display:none!important}
+.mwscreen[data-gv="big"]:has(#guestTile:not([hidden])) :is(#mwvid,#mwyt,#liveAudio,#bcPreview){display:none!important}
+/* 🔍 상대 화면: 평소엔 방장 영상 위에 작게(PIP), 더블클릭·⤢·⛶ 로 크게 */
+.mwscreen[data-gv="pip"] #guestTile{position:absolute;right:10px;bottom:10px;width:min(34%,240px);z-index:6;cursor:zoom-in;border:2px solid var(--amber);border-radius:8px;overflow:hidden;background:#000;box-shadow:0 4px 16px #000a}
+.mwscreen[data-gv="big"] #guestTile{cursor:zoom-out}
+#guestTile .gtzoom{position:absolute;top:4px;right:4px;z-index:4;display:flex;gap:4px}
+#guestTile .gtzoom button{margin:0;padding:1px 7px;font-size:13px;line-height:1.4;background:#000b;color:var(--amber);border:1px solid var(--amber);border-radius:6px;cursor:pointer;opacity:.85}
+#guestTile:fullscreen{position:static!important;width:100%!important;height:100%;background:#000;display:flex;align-items:center;justify-content:center}
+#guestTile:fullscreen video{width:100%;height:100%;object-fit:contain}
+
 #guestTile .gtbar{display:none}
 #guestTile.fl .gtbar{display:flex;gap:4px;position:absolute;top:4px;right:4px;z-index:3}
 #guestTile .gtbar button{margin:0;padding:2px 8px;font-size:13px;line-height:1.3;background:#000b;color:var(--amber);border:1px solid var(--amber);border-radius:6px;cursor:pointer}
@@ -3753,6 +3761,28 @@ function guestSet(g){
   t.onclick = () => { if (moved){ moved = false; return; } if (!fl && !t.classList.contains('inscr')) float(true); };
   t.ondblclick = () => { if (fl) float(false); };
   window.addEventListener('resize', () => { if (fl){ w = clampW(w); t.style.width = w + 'px'; keepIn(); } });
+})();
+(function(){ // 🔍 상대(손님) 화면 크게/작게: 더블클릭 · 더블탭 · ⤢ 버튼 · ⛶ 전체화면
+  const t = $('guestTile'), scr = $('mwscreen'); if (!t || !scr) return;
+  let pref = '';   // 사용자가 직접 고른 모드 ('pip' | 'big')
+  const hostOn = () => ['mwvid', 'mwyt', 'bcPreview'].some(id => { const e = $(id); return e && e.style.display !== 'none' && getComputedStyle(e).display !== 'none'; });
+  const apply = () => {
+    if (t.hidden){ pref = ''; if (scr.dataset.gv) delete scr.dataset.gv; return; }
+    const m = pref || (hostOn() ? 'pip' : 'big');
+    if (scr.dataset.gv !== m) scr.dataset.gv = m;
+    if (bz) bz.textContent = m === 'big' ? '⤡' : '⤢';
+    t.title = m === 'big' ? '더블클릭하면 작게' : '더블클릭하면 크게';
+  };
+  const toggle = () => { pref = (scr.dataset.gv === 'big') ? 'pip' : 'big'; apply(); };
+  const z = document.createElement('div'); z.className = 'gtzoom';
+  const bz = document.createElement('button'); bz.type = 'button'; bz.textContent = '⤢'; bz.title = '크게/작게'; bz.setAttribute('aria-label', '상대 화면 크게/작게');
+  const bf = document.createElement('button'); bf.type = 'button'; bf.textContent = '⛶'; bf.title = '전체 화면'; bf.setAttribute('aria-label', '상대 화면 전체 화면');
+  bz.onclick = e => { e.stopPropagation(); toggle(); };
+  bf.onclick = e => { e.stopPropagation(); try { if (document.fullscreenElement) document.exitFullscreen(); else (t.requestFullscreen || t.webkitRequestFullscreen).call(t); } catch(x){} };
+  z.append(bz, bf); t.append(z);
+  t.addEventListener('dblclick', e => { if (e.target.closest('.gtzoom')) return; e.preventDefault(); toggle(); });
+  new MutationObserver(apply).observe(scr, {attributes: true, subtree: true, attributeFilter: ['style', 'hidden']});
+  apply();
 })();
 function mwClose(){ try { talkStop(''); } catch(e){} $('guestTile').hidden = true; $('guestVid').srcObject = null; clearInterval(MV.poll); mvStop(); MV.vpl = null; MV.rk = ''; MV.hostless = false; MV.gone = 0; lisVidReady = false; $('mediawin').hidden = true; $('mwnow').textContent = '대기 중'; mwUpdate(); }
 // 음악 방에 들어가면 라디오·TV·뮤직비디오는 멈춤 (같은 소리가 겹쳐 울리는 것을 막음)
