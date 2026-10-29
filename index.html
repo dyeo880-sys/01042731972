@@ -73,6 +73,8 @@ button,select,input{font:inherit}
 #nmenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink);padding:9px 10px;border-radius:6px;cursor:pointer;font-size:14px}
 #nmenu button:hover,#nmenu button:focus-visible{background:#ffffff1c;outline:none}
 #blkpanel .brow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0}
+.mgbadge{display:inline-block;margin-left:4px;padding:0 7px;border-radius:8px;background:#d9dde2;color:#2a1a08;font-size:11px;font-weight:700;vertical-align:1px}
+.mgperm label:focus-within{outline:2px solid var(--amber);outline-offset:2px;border-radius:4px}
 .chatform{display:flex;gap:8px;margin-top:8px}
 .chatform input{flex:1;min-width:0}
 .chat input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
@@ -1520,7 +1522,7 @@ function renderChat(forceBottom){
   const inLive = !!(liveRoom && $('room').value === 'b:' + liveRoom.id);
   all.forEach(c => {
     const d = document.createElement('div'); d.className = 'm' + (isDmRoom ? ' wh' : '');
-    const b = document.createElement('b'); b.textContent = (c.bot ? '🤖 ' : '') + (c.h ? '👑 ' : '') + c.n;
+    const b = document.createElement('b'); b.textContent = (c.bot ? '🤖 ' : '') + ((c.h || (inLive && !c.bot && c.k && ctlMgr(c.k))) ? '👑 ' : '') + c.n;
     if (c.bot){ b.title = '가상 손님 (미리 정한 대사만 하는 봇)'; }
     else if (c.k === UID || c.n === $('nick').value.trim()){ b.style.cursor = 'pointer'; b.title = '이름 바꾸기'; b.onclick = renameMe; }
     else { b.className = 'nm'; b.title = '눌러서 귓속말 · 차단'; b.onclick = ev => nameMenu(ev, c); }
@@ -3123,15 +3125,19 @@ function memCall(k, n){
 const hostRec0 = () => memList.find(x => x.h && x.ok);
 function renderMembers(){
   const box = $('members'); box.innerHTML = '';
-  const t = document.createElement('div'); t.style.cssText = 'font-size:12px;opacity:.7;margin-bottom:4px'; t.textContent = '👥 방 참가자 (' + memList.length + '명) · 이름을 누르면 귓속말·채팅' + (memList.some(x => x.sp || (hostRec0() && hostRec0().ok && hostRec0().ok[x.k] && hostRec0().ok[x.k].a === true)) ? ' · 🎤 마이크 허용 · 🔴 말하는 중' : '') + (isHost() && memList.some(x => x.rq && !x.h) ? ' · ✋ 요청 중(깜박임)' : ''); box.append(t);
+  const t = document.createElement('div'); t.style.cssText = 'font-size:12px;opacity:.7;margin-bottom:4px'; t.textContent = '👥 방 참가자 (' + memList.length + '명) · 이름을 누르면 귓속말·채팅' + (isHost() ? ' · 👑 부방장 임명 가능' : '') + (isMgr() ? ' · 👑 나는 부방장' : '') + (memList.some(x => x.sp || (hostRec0() && hostRec0().ok && hostRec0().ok[x.k] && hostRec0().ok[x.k].a === true)) ? ' · 🎤 마이크 허용 · 🔴 말하는 중' : '') + (isHost() && memList.some(x => x.rq && !x.h) ? ' · ✋ 요청 중(깜박임)' : ''); box.append(t);
   const hostRec = memList.find(x => x.h && x.ok);
-  memList.forEach(m => {
+  const rank = x => x.h ? 2 : (ctlMgr(x.ku) ? 1 : 0);   // 방장 → 부방장 → 일반 순서로 정렬
+  memList.slice().sort((a, b) => rank(b) - rank(a)).forEach(m => {
     const r = document.createElement('div');
     const me = m.k === myId;
+    const mg = !m.h && ctlMgr(m.ku);
     const gOk = hostRec && hostRec.ok && hostRec.ok[m.k] && hostRec.ok[m.k].a === true;
     const rqNow = isHost() && !me && m.rq && !m.h && !gOk;   // 방장 화면: 마이크 요청 중인 손님
     const mk = m.sp ? ' 🔴🎤' : (gOk ? ' 🎤' : (rqNow ? ' ✋🎤 요청' : ''));   // 🎤 = 마이크 허용됨(대기), 🔴🎤 = 지금 말하는 중
-    r.textContent = (m.h ? '👑 ' : '· ') + m.n + mk + (me ? ' (나) ✎' : (openMem === m.k ? ' ▾' : ' ✉'));
+    r.textContent = (m.h || mg ? '👑 ' : '· ') + m.n;
+    if (mg){ const bd = document.createElement('span'); bd.className = 'mgbadge'; bd.textContent = '부방장'; r.append(bd); }
+    r.append(mk + (me ? ' (나) ✎' : (openMem === m.k ? ' ▾' : ' ✉')));
     if (mk) r.style.color = 'var(--amber)';
     if (rqNow){ r.classList.add('blink'); r.style.color = '#ff6b6b'; r.style.fontWeight = '700'; r.title = '마이크 요청 중 — 미디어 창에서 허용/거절하세요'; }
     r.style.cursor = 'pointer'; r.setAttribute('role', 'button'); r.tabIndex = 0;
@@ -3147,13 +3153,27 @@ function renderMembers(){
       const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 8px 14px';
       const mk = (txt, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:4px 10px;font-size:13px'; b.textContent = txt; b.onclick = () => { openMem = ''; renderMembers(); fn(); }; return b; };
       row.append(mk('✉ 귓속말', () => memWhisper(m.k, m.n)), mk('💬 채팅', () => memCall(m.k, m.n)));
-      if (isHost() && m.ku){
-        row.append(mk(ctlMuted(m.ku) ? '🔊 입막음 해제' : '🔇 입막음', () => ctlMute(m, !ctlMuted(m.ku))), mk('🚪 강퇴', () => ctlKick(m)));
+      if (m.ku && !m.h){
+        if (isHost()) row.append(mk(mg ? '👑 부방장 해임' : '👑 부방장 임명', () => ctlSetMgr(m, !mg)));
+        if (isHost() || !mg){   // 부방장은 다른 부방장에게 쓸 수 없음
+          if (myPerm('m')) row.append(mk(ctlMuted(m.ku) ? '🔊 입막음 해제' : '🔇 입막음', () => ctlMute(m, !ctlMuted(m.ku))));
+          if (myPerm('k')) row.append(mk('🚪 강퇴', () => ctlKick(m)));
+        }
       }
       box.append(row);
+      if (isHost() && m.ku && !m.h && mg){   // 방장만: 이 부방장에게 줄 권한 고르기
+        const pr = document.createElement('div'); pr.className = 'mgperm'; pr.style.cssText = 'margin:0 0 8px 14px;font-size:13px;display:flex;gap:12px;flex-wrap:wrap;align-items:center';
+        const lb = document.createElement('span'); lb.style.opacity = '.75'; lb.textContent = '부방장 권한'; pr.append(lb);
+        [['m', '🔇 입막음'], ['k', '🚪 강퇴'], ['c', '💬 영상 자막']].forEach(([p, txt]) => {
+          const l = document.createElement('label'); l.style.cssText = 'display:inline-flex;gap:4px;align-items:center;cursor:pointer';
+          const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = ctlPerm(m.ku, p); cb.onchange = () => ctlSetPerm(m, p, cb.checked);
+          l.append(cb, txt); pr.append(l);
+        });
+        box.append(pr);
+      }
     }
   });
-  if (isHost()){
+  if (myPerm('k')){
     Object.keys(CTL.map).forEach(ck => {
       const c = CTL.map[ck]; if (!ctlBanned(c)) return;
       const r = document.createElement('div'); r.style.cssText = 'font-size:13px;opacity:.85;margin-top:4px';
@@ -3184,13 +3204,24 @@ const CTL = {rid: '', map: {}};
 const ctlKey = u => String(u || '').replace(/[.#$\[\]\/]/g, '_');
 const ctlMuted = u => { const c = CTL.map[ctlKey(u)]; return !!(c && c.m); };
 const ctlBanned = c => !!(c && c.k && nowS() - c.k < 1800000);   // 강퇴는 30분간 재입장 불가
+// ===== 👑 부방장: 방장이 임명하면 roomctl_ 기록에 mg:1 이 붙음. pm 으로 권한을 따로 줌 (m=입막음, k=강퇴, c=영상 자막) =====
+const MGR_MAX = 5;                                       // 부방장 최대 인원 (바꾸려면 이 숫자)
+const ctlMgr = u => { const c = CTL.map[ctlKey(u)]; return !!(c && c.mg); };
+const ctlPerm = (u, p) => { const c = CTL.map[ctlKey(u)]; return !!(c && c.mg && (!c.pm || c.pm[p])); };
+const isMgr = () => !!(liveRoom && !isHost() && ctlMgr(UID));
+const myPerm = p => !!(liveRoom && (isHost() || ctlPerm(UID, p)));
+const mgrCount = () => Object.keys(CTL.map).filter(k => CTL.map[k] && CTL.map[k].mg).length;
 async function ctlPoll(){
   if (!liveRoom || !DB){ CTL.rid = ''; CTL.map = {}; return; }
   const id = liveRoom.id;
   let d = null; try { d = await lj('roomctl_' + id, 'GET'); } catch(e){ return; }
   if (!liveRoom || liveRoom.id !== id) return;
-  const prev = JSON.stringify(CTL.map);
+  const prev = JSON.stringify(CTL.map), first = CTL.rid !== id, wasMgr = !first && ctlMgr(UID);
   CTL.rid = id; CTL.map = d || {};
+  if (!first && !isHost() && wasMgr !== ctlMgr(UID)){
+    memToast(ctlMgr(UID) ? '👑 방장이 나를 부방장으로 임명했습니다' : '부방장에서 해임되었습니다', !ctlMgr(UID));
+    try { roomHead(); } catch(e){}
+  }
   if (!isHost()){
     if (ctlBanned(CTL.map[ctlKey(UID)])){
       memToast('🚪 방장에 의해 강퇴되었습니다', true);
@@ -3198,14 +3229,14 @@ async function ctlPoll(){
       return;
     }
   }
-  if (JSON.stringify(CTL.map) !== prev){ try { renderChat(); } catch(e){} if (isHost()) renderMembers(); }
+  if (JSON.stringify(CTL.map) !== prev){ try { renderChat(); } catch(e){} renderMembers(); }
 }
 async function ctlPut(path, rec){
   try { const r = await fetch(`${DB}/chat/${path}.json`, {method: 'PUT', body: JSON.stringify(rec)}); if (!r.ok) throw new Error(r.status); return true; }
   catch(e){ memToast('⚠ 저장 실패 — Firebase 규칙에서 roomctl_ 경로 쓰기를 허용하세요', true); return false; }
 }
 async function ctlMute(m, on){
-  if (!isHost() || !liveRoom || !m.ku) return;
+  if (!myPerm('m') || !liveRoom || !m.ku || (!isHost() && (m.h || ctlMgr(m.ku)))) return;   // 부방장은 방장·다른 부방장에게 쓸 수 없음
   const ck = ctlKey(m.ku), old = CTL.map[ck] || {};
   const rec = Object.assign({}, old, {m: on ? 1 : 0, n: String(m.n).slice(0, 12)});
   CTL.map[ck] = rec;
@@ -3214,10 +3245,10 @@ async function ctlMute(m, on){
   renderMembers(); try { renderChat(); } catch(e){}
 }
 async function ctlKick(m){
-  if (!isHost() || !liveRoom || !m.ku) return;
+  if (!myPerm('k') || !liveRoom || !m.ku || (!isHost() && (m.h || ctlMgr(m.ku)))) return;
   if (!confirm('「' + m.n + '」님을 강퇴할까요?\n30분 동안 다시 들어올 수 없습니다.')) return;
   const ck = ctlKey(m.ku), old = CTL.map[ck] || {};
-  const rec = Object.assign({}, old, {k: nowS(), n: String(m.n).slice(0, 12)});
+  const rec = Object.assign({}, old, {k: nowS(), n: String(m.n).slice(0, 12)}); if (old.mg) rec.mg = 0;   // 강퇴되면 부방장도 자동 해임
   CTL.map[ck] = rec;
   await ctlPut('roomctl_' + liveRoom.id + '/' + ck, rec);
   try { await lj('roommem_' + liveRoom.id + '/' + m.k, 'DELETE'); } catch(e){}
@@ -3226,10 +3257,29 @@ async function ctlKick(m){
   renderMembers();
 }
 async function ctlUnkick(ck){
-  if (!isHost() || !liveRoom) return;
+  if (!myPerm('k') || !liveRoom) return;
   const rec = Object.assign({}, CTL.map[ck] || {}); delete rec.k;
   CTL.map[ck] = rec;
   await ctlPut('roomctl_' + liveRoom.id + '/' + ck, rec);
+  renderMembers();
+}
+async function ctlSetMgr(m, on){
+  if (!isHost() || !liveRoom || !m.ku || m.h) return;
+  if (on && !ctlMgr(m.ku) && mgrCount() >= MGR_MAX){ memToast('👑 부방장은 최대 ' + MGR_MAX + '명까지 임명할 수 있습니다', true); return; }
+  const ck = ctlKey(m.ku), old = CTL.map[ck] || {};
+  const rec = Object.assign({}, old, {mg: on ? 1 : 0, n: String(m.n).slice(0, 12)});
+  if (on) rec.pm = old.pm || {m: 1, k: 1, c: 1};
+  CTL.map[ck] = rec;
+  await ctlPut('roomctl_' + liveRoom.id + '/' + ck, rec);
+  memToast(on ? '👑 ' + String(m.n).slice(0, 12) + '님을 부방장으로 임명했습니다' : String(m.n).slice(0, 12) + '님을 부방장에서 해임했습니다', !on);
+  renderMembers(); try { renderChat(); } catch(e){}
+}
+async function ctlSetPerm(m, p, on){
+  if (!isHost() || !liveRoom || !m.ku || !ctlMgr(m.ku)) return;
+  const ck = ctlKey(m.ku), old = CTL.map[ck] || {};
+  const pm = Object.assign({m: 1, k: 1, c: 1}, old.pm || {}); pm[p] = on ? 1 : 0;
+  CTL.map[ck] = Object.assign({}, old, {pm});
+  await ctlPut('roomctl_' + liveRoom.id + '/' + ck, CTL.map[ck]);
   renderMembers();
 }
 setInterval(ctlPoll, 3000);
@@ -3248,7 +3298,7 @@ function capShow(t){
 }
 async function capSend(){
   const inp = $('capin'), t = inp.value.trim();
-  if (!t || !(isHost() || rmAdm()) || !liveRoom || !DB) return;
+  if (!t || !(isHost() || rmAdm() || myPerm('c')) || !liveRoom || !DB) return;
   { const bm = badMsg([t]); if (bm){ alert(bm); return; } }
   inp.value = '';
   const ts = nowS(); capShow(t);
@@ -3259,7 +3309,7 @@ async function capSend(){
   } catch(e){ memToast('⚠ 자막을 보내지 못했습니다 (DB 쓰기 규칙 확인)', true); }
 }
 async function capPoll(){
-  const row = $('caprow'); if (row) row.hidden = !(liveRoom && (isHost() || rmAdm()));
+  const row = $('caprow'); if (row) row.hidden = !(liveRoom && (isHost() || rmAdm() || myPerm('c')));
   if (!liveRoom || !DB){ CAP.rid = ''; return; }
   const id = liveRoom.id;
   if (CAP.rid !== id){ CAP.rid = id; CAP.seen = {}; CAP.first = true; }
@@ -3362,7 +3412,7 @@ function roomHead(){
   if (!liveRoom) return;
   const host = isHost();
   $('rvtitle').textContent = '🎵 ' + liveRoom.name + (host && bc && bc.pw ? ' 🔒' : '');
-  $('roomtitle').textContent = host ? '👑 내가 방장입니다' : '음악 방에 참여 중'; djHead();
+  $('roomtitle').textContent = host ? '👑 내가 방장입니다' : (isMgr() ? '👑 부방장으로 참여 중' : '음악 방에 참여 중'); djHead();
   $('rstat').style.display = host ? 'none' : '';
   try { $('rvforce').hidden = !(rmAdm() && !host); } catch(e){}
 }
