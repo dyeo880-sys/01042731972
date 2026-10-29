@@ -530,6 +530,12 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 @media(max-width:560px){#lbsec th.dt,#lbsec td.dt,#lbsec th.no,#lbsec td.no{display:none}}
 #botbtn[hidden]{display:none!important}
 #botbtn{background:none!important;border:0!important;box-shadow:none!important;opacity:.5;font-size:11px!important;padding:2px 4px!important;margin-left:auto!important}#botbtn:hover{opacity:.9}
+
+/* 🎮 퀴즈 · ⭐ 별점 · 🏆 랭킹 */
+#gamesec{margin-top:18px}.gt{margin:0 2px!important;padding:6px 10px!important}.gt.on,#rkbar button.on{background:var(--brass);color:#2a1a08}
+.gp[hidden]{display:none}.gbox{background:#1a0f08;border-radius:6px;padding:16px;text-align:center;font-size:18px;font-weight:700;white-space:pre-line;line-height:1.7;min-height:70px}
+#qtm{text-align:center;color:var(--amber);margin:6px 0;font-size:13px;min-height:18px}.sbtn{margin:0 2px!important;padding:4px 10px!important;font-size:24px;opacity:.45}.sbtn.on{opacity:1;color:var(--amber)}
+#rkbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}#rkbar button{margin:0;padding:5px 10px}#rklist div{padding:4px 2px;border-bottom:1px solid #b99a5b33}.rtg{color:var(--amber);font-size:.85em;margin-left:6px}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
 </head>
@@ -715,6 +721,23 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="note" style="margin:0 0 6px;font-weight:700;color:var(--amber)">🎉 반응 버튼 — 누르면 화면에 날아갑니다</div>
     <div id="mrxrow" style="display:flex;flex-wrap:wrap;gap:8px"></div>
     <div class="chatnote" id="mrxnote"></div>
+  </section>
+  <section class="chat" id="gamesec" aria-label="퀴즈 별점 랭킹">
+    <div class="chathead"><strong>🎮 음악 퀴즈 · ⭐ 별점 · 🏆 랭킹</strong><span><button class="addhome gt on" data-t="qz" type="button">🎯 퀴즈</button><button class="addhome gt" data-t="st" type="button">⭐ 별점</button><button class="addhome gt" data-t="rk" type="button">🏆 랭킹</button></span></div>
+    <div class="gp" id="g_qz">
+      <div class="gbox" id="qbox"></div><div id="qtm"></div>
+      <div class="chatform"><input id="qin" maxlength="30" placeholder="정답 입력 (채팅창에 쳐도 인정돼요)" aria-label="정답"><button id="qgo" class="addhome" style="margin:0" type="button">제출</button><button id="qnext" class="addhome" style="margin:0" type="button">▶ 새 문제</button></div>
+      <div class="chatnote"><label><input type="checkbox" id="qauto" checked> 정답 맞히면 5초 뒤 다음 문제 자동 시작</label> · 선택한 채팅방마다 따로 진행돼요</div><div class="chatnote" id="qnote"></div>
+    </div>
+    <div class="gp" id="g_st" hidden>
+      <div class="gbox" id="stname" style="font-size:16px"></div>
+      <div style="text-align:center;margin:8px 0" id="stars"></div><div class="chatnote" style="text-align:center" id="stinfo"></div>
+      <div class="chatnote" style="text-align:center">방송 목록 위쪽 “★ 별점순”을 켜면 평가 높은 방송부터 볼 수 있어요.</div>
+    </div>
+    <div class="gp" id="g_rk" hidden>
+      <div id="rkbar"><button class="addhome on" data-p="d" type="button">오늘</button><button class="addhome" data-p="w" type="button">이번 주</button><button class="addhome" data-p="pw" type="button">지난주</button><button class="addhome" data-p="all" type="button">전체</button><button class="addhome" data-p="st" type="button">⭐ 방송 별점</button></div>
+      <div id="rklist"></div>
+    </div>
   </section>
   <section class="chat" id="chatsec" aria-label="채팅">
     <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"><button id="botbtn" class="addhome" type="button" hidden style="margin:0;padding:6px 10px"></button></div>
@@ -9793,6 +9816,159 @@ try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@
   el.addEventListener('click', close);
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
   setTimeout(close, 4000);   // 3초 뒤 자동으로 닫힘 (바꾸려면 이 숫자, 1000 = 1초)
+})();
+</script>
+
+<script>
+// ===== 🎮 음악 퀴즈 + ⭐ 방송 별점 + 🏆 랭킹 (Firebase: quiz/ scores/ ratings/ ratingagg/) =====
+(function(){
+const g = id => document.getElementById(id), pad = n => String(n).padStart(2, '0');
+if (!DB){ g('gamesec').hidden = true; return; }
+const nick = () => (($('nick').value || '').trim().slice(0, 12)) || '손님';
+const J = (p, o) => fetch(DB + '/' + p + '.json', o).then(r => { if (!r.ok) throw r.status; return r.json(); });
+const SV = {'.sv': 'timestamp'}, INC = n => ({'.sv': {increment: n}});
+const room = () => roomPath().replace(/[.#$\[\]\/]/g, '_');
+const dec = s => decodeURIComponent(escape(atob(s)));
+const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+const ini = s => [...s].map(c => { const n = c.charCodeAt(0) - 44032; return n >= 0 && n < 11172 ? CHO[Math.floor(n / 588)] : c; }).join('');
+const norm = s => s.toLowerCase().replace(/[^0-9a-z가-힣]/g, '');
+const dk = () => { const d = new Date(); return 'd' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()); };
+const wk = o => { const d = new Date(Date.now() - o * 6048e5); d.setHours(0,0,0,0); d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  const y = d.getFullYear(), j = new Date(y, 0, 4); return 'w' + y + pad(1 + Math.round(((d - j) / 864e5 - 3 + (j.getDay() + 6) % 7) / 7)); };
+// 문제 은행: 제목|가수|가수 다른 표기 (문제 추가는 여기에 한 줄씩)
+const BANK = ('밤편지|아이유|iu;좋은 날|아이유|iu;라일락|아이유|iu;에잇|아이유|iu;거리에서|성시경;서른 즈음에|김광석;이등병의 편지|김광석;붉은 노을|이문세;봄날|방탄소년단|bts;'
+ + '소주 한 잔|임창정;거짓말|빅뱅|bigbang;하루하루|빅뱅|bigbang;강남스타일|싸이|psy;챔피언|싸이|psy;눈의 꽃|박효신;야생화|박효신;보고 싶다|김범수;벚꽃 엔딩|버스커버스커;여수 밤바다|버스커버스커;'
+ + '좋니|윤종신;너를 만나|폴킴;다시 만난 세계|소녀시대;시간을 달려서|여자친구;핑계|김건모;아모르 파티|김연자;애인 있어요|이은미;비행기|거북이;마법의 성|더 클래식|더클래식;소리쳐|이승철;'
+ + '천일동안|이승환;걱정말아요 그대|전인권;사랑을 했다|아이콘|ikon;디토|뉴진스|newjeans;어텐션|뉴진스|newjeans;슈퍼노바|에스파|aespa;아파트|로제|rose;뿜뿜|모모랜드').split(';');
+const LIM = 30;
+let Q = null, R = null, lr = '', streak = 0, sk = '', au = '';
+
+async function poll(){
+  const rk = room();
+  if (rk !== lr){ Q = null; R = null; lr = rk; }
+  try { const d = await J('quiz/' + rk); Q = d && d.cur || null; R = d && d.res || null; } catch(e){}
+  draw();
+}
+function draw(){
+  const b = g('qbox'), t = g('qtm');
+  if (!Q){ b.textContent = '아직 문제가 없어요.\n▶ 새 문제를 눌러 시작해 보세요!'; t.textContent = ''; return; }
+  const el = Math.max(0, (Date.now() - Q.ts) / 1000), r = R && R[Q.id];
+  if (r){
+    b.textContent = '🎉 ' + r.n + '님 정답! 「' + r.a + '」 +' + (r.p || 0) + '점'; t.textContent = '';
+    if (r.k !== UID && sk !== Q.id){ sk = Q.id; streak = 0; }
+    if (r.k === UID && au !== Q.id){ au = Q.id; if (g('qauto').checked) setTimeout(start, 5000); }
+  } else if (el > LIM){ b.textContent = '⏰ 시간 종료! 정답: ' + dec(Q.x).split('|')[0]; t.textContent = ''; }
+  else { b.textContent = Q.q + (el > 12 ? '\n' + Q.h : ''); t.textContent = '남은 시간 ' + Math.max(0, Math.ceil(LIM - el)) + '초 · 출제 ' + Q.by; }
+}
+async function start(){
+  const rk = room(), note = g('qnote'); note.textContent = '';
+  if (rk.indexOf('dm_') === 0){ note.textContent = '1:1 대화방에서는 퀴즈를 할 수 없어요.'; return; }
+  await poll();
+  if (Q && !(R && R[Q.id]) && Date.now() - Q.ts < (LIM + 1) * 1000){ note.textContent = '진행 중인 문제가 있어요!'; return; }
+  const e = BANK[Math.floor(Math.random() * BANK.length)].split('|'), t = e[0], a = e[1], asT = Math.random() < .65;
+  const ans = asT ? [t] : [a].concat((e[2] || '').split(',').filter(Boolean));
+  const c = {id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), by: nick(), ts: SV,
+    q: asT ? '🎵 노래 제목 초성 퀴즈\n' + ini(t) : '🎤 「' + t + '」 을(를) 부른 가수(그룹)는?',
+    h: asT ? '힌트 · 가수: ' + a : '힌트 · 초성: ' + ini(a), x: btoa(unescape(encodeURIComponent(ans.join('|'))))};
+  try { await J('quiz/' + rk, {method: 'PUT', body: JSON.stringify({cur: c})}); } catch(e){ note.textContent = '문제를 시작하지 못했어요. DB 규칙(쓰기 허용)을 확인하세요.'; }
+  poll();
+}
+async function check(text){
+  text = (text || '').trim();
+  if (!Q || !text || (Date.now() - Q.ts) / 1000 > LIM || (R && R[Q.id])) return;
+  if (dec(Q.x).split('|').map(norm).indexOf(norm(text)) < 0) return;
+  const el = Math.max(0, (Date.now() - Q.ts) / 1000), id = Q.id, rk = room();
+  const p = 10 + Math.max(0, 5 - Math.floor(el / 6)) + Math.min(streak, 5);
+  const body = JSON.stringify({k: UID, n: nick(), a: text.slice(0, 30), p, ts: SV}), url = DB + '/quiz/' + rk + '/res/' + id + '.json';
+  let ok;
+  try { ok = (await fetch(url, {method: 'PUT', headers: {'if-match': 'null_etag'}, body})).ok; }   // 먼저 친 1명만 성공
+  catch(e){ try { ok = !(await J('quiz/' + rk + '/res/' + id)); if (ok) await fetch(url, {method: 'PUT', body}); } catch(e2){ ok = false; } }
+  await poll();
+  if (!ok) return;
+  streak++;
+  const sc = {n: nick(), p: INC(p), w: INC(1), ts: SV};
+  [dk(), wk(0), 'all'].forEach(k => fetch(DB + '/scores/' + k + '/' + UID + '.json', {method: 'PATCH', body: JSON.stringify(sc)}).catch(() => {}));
+  g('qnote').textContent = '정답! +' + p + '점' + (streak > 1 ? ' · ' + streak + '연속 🔥' : '');
+}
+g('qnext').onclick = start;
+g('qgo').onclick = () => { check(g('qin').value); g('qin').value = ''; };
+g('qin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing){ check(g('qin').value); g('qin').value = ''; } });
+$('chatsend').addEventListener('click', () => check($('chatin').value), true);   // 채팅창에 정답을 쳐도 인정
+$('chatin').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) check($('chatin').value); }, true);
+
+// ----- ⭐ 별점 -----
+let agg = {}, lu = '', mine = 0;
+const av = u => { const a = agg[u]; return a && a.c > 0 ? a.t / a.c : 0; };
+const sb = g('stars');
+for (let i = 1; i <= 5; i++){ const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome sbtn'; b.textContent = '★'; b.title = i + '점'; b.onclick = () => rate(i); sb.appendChild(b); }
+function drawSt(s){
+  g('stname').textContent = '📻 ' + s.name.trim();
+  [...sb.children].forEach((b, i) => b.classList.toggle('on', i < mine));
+  const a = agg[s.stationuuid];
+  g('stinfo').textContent = (a && a.c ? '평균 ★' + (a.t / a.c).toFixed(1) + ' · ' + a.c + '명 참여' : '아직 평가가 없어요') + (mine ? ' · 내 별점 ' + mine + '점' : '');
+}
+async function stCheck(f){
+  const s = stations[cur], u = s && s.stationuuid;
+  if (!u){ g('stname').textContent = '방송을 선택하면 별점을 줄 수 있어요.'; g('stinfo').textContent = ''; [...sb.children].forEach(b => b.classList.remove('on')); lu = ''; return; }
+  if (u !== lu || f === true){ lu = u; mine = 0; try { const o = await J('ratings/' + u + '/' + UID); mine = o ? o.s : 0; } catch(e){} }
+  drawSt(s);
+}
+async function rate(n){
+  const s = stations[cur]; if (!s) return; const u = s.stationuuid; let old = 0;
+  try {
+    const o = await J('ratings/' + u + '/' + UID); old = o ? o.s : 0;
+    await J('ratings/' + u + '/' + UID, {method: 'PUT', body: JSON.stringify({s: n, ts: SV})});
+    await J('ratingagg/' + u, {method: 'PATCH', body: JSON.stringify({nm: s.name.trim().slice(0, 40), c: INC(old ? 0 : 1), t: INC(n - old)})});
+    mine = n; await loadAgg(); drawSt(s);
+  } catch(e){ g('stinfo').textContent = '별점을 저장하지 못했어요. DB 규칙(쓰기 허용)을 확인하세요.'; }
+}
+async function loadAgg(){ try { agg = await J('ratingagg') || {}; } catch(e){} deco(); }
+// 방송 목록에 ★평균 표시 + 별점순 정렬
+const lab = document.createElement('label'); lab.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:13px';
+lab.innerHTML = '<input type="checkbox" id="rtsort"> ★ 별점순'; $('q').parentNode.appendChild(lab);
+g('rtsort').onchange = () => { if (g('rtsort').checked) deco(); else if (typeof render === 'function') render(); };
+const obs = new MutationObserver(() => deco());
+function deco(){
+  obs.disconnect();
+  try {
+    const L = g('list'), rows = [...L.children].filter(r => r.querySelector && r.querySelector('.st'));
+    rows.forEach(r => { const b = r.querySelector('.st'), a = agg[b.dataset.u]; let x = b.querySelector('.rtg');
+      if (!x){ x = document.createElement('span'); x.className = 'rtg'; (b.querySelector('.n') || b).appendChild(x); }
+      x.textContent = a && a.c ? '★' + (a.t / a.c).toFixed(1) + '(' + a.c + ')' : ''; });
+    if (g('rtsort').checked) rows.sort((a, b) => av(b.querySelector('.st').dataset.u) - av(a.querySelector('.st').dataset.u)).forEach(r => L.appendChild(r));
+  } catch(e){}
+  obs.observe(g('list'), {childList: true});
+}
+
+// ----- 🏆 랭킹 (오늘/이번 주/지난주/전체는 DB에 계속 저장됨) -----
+let rp = 'd';
+async function rank(p){
+  rp = p; [...g('rkbar').children].forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  const L = g('rklist'); L.textContent = '불러오는 중…';
+  try {
+    let rows;
+    if (p === 'st'){ await loadAgg();
+      rows = Object.keys(agg).map(u => ({n: agg[u].nm, v: agg[u].t / agg[u].c, c: agg[u].c})).filter(x => x.c >= 3).sort((a, b) => b.v - a.v || b.c - a.c).slice(0, 10).map(x => ({t: x.n, s: '★' + x.v.toFixed(2) + ' (' + x.c + '명)'}));
+    } else {
+      const key = p === 'd' ? dk() : p === 'w' ? wk(0) : p === 'pw' ? wk(1) : 'all', d = await J('scores/' + key) || {};
+      rows = Object.keys(d).map(k => Object.assign({k}, d[k])).sort((a, b) => (b.p || 0) - (a.p || 0)).slice(0, 10).map(x => ({t: x.n, s: x.p + '점 · ' + (x.w || 0) + '승', me: x.k === UID}));
+    }
+    L.textContent = '';
+    if (!rows.length){ L.textContent = p === 'st' ? '아직 3명 이상 평가한 방송이 없어요.' : '아직 기록이 없어요. 첫 정답의 주인공이 되어 보세요!'; return; }
+    rows.forEach((x, i) => { const d = document.createElement('div'); d.textContent = (['🥇', '🥈', '🥉'][i] || (i + 1) + '위') + ' ' + x.t + ' — ' + x.s; if (x.me) d.style.color = 'var(--amber)'; L.appendChild(d); });
+  } catch(e){ L.textContent = '불러오지 못했어요. DB 규칙(읽기 허용)을 확인하세요.'; }
+}
+[...g('rkbar').children].forEach(b => b.onclick = () => rank(b.dataset.p));
+document.querySelectorAll('#gamesec .gt').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#gamesec .gt').forEach(x => x.classList.toggle('on', x === b));
+  ['qz', 'st', 'rk'].forEach(t => g('g_' + t).hidden = t !== b.dataset.t);
+  if (b.dataset.t === 'rk') rank(rp); if (b.dataset.t === 'st') stCheck(true); if (b.dataset.t === 'qz') poll();
+});
+setInterval(() => { if (!document.hidden && !g('g_qz').hidden) poll(); }, 2500);
+setInterval(draw, 500);
+setInterval(() => stCheck(), 2000);
+setInterval(loadAgg, 60000);
+draw(); loadAgg(); poll();
 })();
 </script>
 </body>
