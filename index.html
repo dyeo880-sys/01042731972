@@ -7374,10 +7374,10 @@ renderRooms();
 renderChat();
 if (DB){
   $('chatlog').hidden = true; $('chatform').hidden = true;
-  const GATE_INIT = '접속 중입니다… 접속자가 많을 때는 접속이 지연될 수 있습니다. 잠시만 기다려 주세요.';
+  const GATE_INIT = '접속 중입니다… 잠시만 기다려 주세요.';
   $('gate').hidden = false; $('gatemsg').textContent = GATE_INIT;
-  // 6초가 지나도 아직 접속 중이면: 접속자가 많거나 정원이 찬 상태일 수 있다고 안내
-  setTimeout(() => { if (!$('gate').hidden && $('gatemsg').textContent === GATE_INIT) $('gatemsg').textContent = '아직 접속 중입니다. 접속자가 많아 지연되고 있거나 현재 방 정원이 가득 찬 상태일 수 있습니다. 조금만 기다려 주시면 자리가 생기는 대로 자동으로 접속합니다. (라디오는 계속 들을 수 있습니다)'; }, 6000);
+  // 6초가 지나도 아직 접속 중이면: 정원이 찬 상태일 수 있다고 안내
+  setTimeout(() => { if (!$('gate').hidden && $('gatemsg').textContent === GATE_INIT) $('gatemsg').textContent = '아직 접속 중입니다. 현재 방 정원이 가득 찬 상태일 수 있습니다. 조금만 기다려 주시면 자리가 생기는 대로 자동으로 접속합니다. (라디오는 계속 들을 수 있습니다)'; }, 6000);
   admit();
   setInterval(() => { if (chatAllowed || !document.hidden) admit(); }, BEAT);
 } else { fetchChat(true); }
@@ -9793,18 +9793,102 @@ try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@
 })();
 </script>
 <style>
-#joinpop{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.55);transition:opacity .4s}
-#joinpop.out{opacity:0;pointer-events:none}
-#joinpop .box{max-width:420px;width:100%;background:var(--panel,#2a1a0e);color:var(--ink,#f3e6c8);border:1px solid var(--brass,#b99a5b);border-radius:10px;padding:18px 20px;box-shadow:0 10px 40px #000a;text-align:center;line-height:1.7;font-size:15px}
-#joinpop .box b{display:block;color:var(--amber,#f0a93b);font-size:17px;margin-bottom:6px}
-#joinpop .box small{display:block;margin-top:10px;opacity:.65;font-size:12px}
+#adm,#admed{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.6);transition:opacity .3s}
+#adm.out,#admed.out{opacity:0;pointer-events:none}
+.admbox{max-width:440px;width:100%;max-height:92vh;overflow:auto;background:var(--panel,#2a1a0e);color:var(--ink,#f3e6c8);border:1px solid var(--brass,#b99a5b);border-radius:10px;padding:20px;box-shadow:0 10px 40px #000a;line-height:1.7;font-size:15px}
+.admbox b{display:block;color:var(--amber,#f0a93b);font-size:17px;margin-bottom:8px;text-align:center}
+.admbox .msg{white-space:pre-line;word-break:keep-all;text-align:center}
+.admbox label{display:block;margin-top:12px;font-size:13px;cursor:pointer}
+.admbox input[type=text],.admbox textarea{width:100%;box-sizing:border-box;margin-top:8px;background:#241610;color:var(--ink,#f3e6c8);border:1px solid #b99a5b88;border-radius:6px;padding:8px 10px;font:inherit}
+.admbox .btns{display:flex;gap:8px;justify-content:center;margin-top:14px}
+.admbox button{padding:8px 22px;border-radius:6px;border:1px solid var(--brass,#b99a5b);background:#3b2417;color:var(--amber,#f0a93b);font:inherit;cursor:pointer}
+.admbox .st{margin-top:10px;font-size:13px;min-height:20px;text-align:center;color:var(--amber,#f0a93b)}
+.admbox .sm{opacity:.75;font-size:12px}
+#admfab{position:fixed;left:12px;bottom:12px;z-index:99998;padding:8px 14px;border-radius:20px;border:1px solid var(--brass,#b99a5b);background:#3b2417;color:var(--amber,#f0a93b);font:inherit;font-size:13px;cursor:pointer;box-shadow:0 4px 16px #0008}
 </style>
-<div id="joinpop" role="dialog" aria-live="polite" aria-label="접속 안내"><div class="box"><b>📻 접속 중입니다</b>접속자가 많습니다. 접속자가 너무 많을 경우 접속이 지연될 수 있으며, 현재 방 정원이 가득 찬 상태일 수도 있습니다.<br>조금만 기다려 주시면 자리가 생기는 대로 자동으로 접속합니다.<small>잠시 후 자동으로 닫힙니다 (화면을 누르면 바로 닫힘)</small></div></div>
 <script>
 (function(){
-  var el = document.getElementById('joinpop'); if (!el) return;
-  var closed = false;
-  function close(){ if (closed) return; closed = true; el.classList.add('out'); setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 500); waitDone(); }
+  // ===== 📢 관리자 공지 팝업 — 문구·표시 여부는 관리자가 화면에서 직접 수정 (Firebase notice 경로에 저장) =====
+  var DBU = (typeof DB !== 'undefined' && DB) ? DB : (typeof FIREBASE_URL !== 'undefined' ? String(FIREBASE_URL).replace(/\/+$/, '') : '');
+  if (!DBU) return;
+  var NURL = DBU + '/notice.json';
+  function mk(tag, cls, txt){ var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  function today(){ return new Date().toDateString(); }
+  function hsh(s){ var h = 5381; for (var i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h; }
+  function get(){
+    var c = new AbortController(), t = setTimeout(function(){ c.abort(); }, 5000);
+    return fetch(NURL, {signal: c.signal}).then(function(r){ clearTimeout(t); if (!r.ok) throw r.status; return r.json(); });
+  }
+  function overlay(id){ var o = mk('div'); o.id = id; o.setAttribute('role', 'dialog'); var bx = mk('div', 'admbox'); o.appendChild(bx); document.body.appendChild(o); return [o, bx]; }
+  function closeOv(o, after){ o.classList.add('out'); setTimeout(function(){ if (o.parentNode) o.parentNode.removeChild(o); if (after) after(); }, 400); }
+
+  /* ① 접속자에게 보이는 공지 팝업 — 관리자가 '공지 표시'를 체크했을 때만 뜸 */
+  function showNotice(n){
+    var text = String(n.text || '').trim(); if (!n.on || !text) return;
+    var title = String(n.title || '📢 공지').trim() || '📢 공지';
+    var key = 'adm_hide_' + hsh(title + text);
+    try { if (localStorage.getItem(key) === today()) return; } catch (e) {}   // 문구가 바뀌면 다시 표시
+    var r = overlay('adm'), o = r[0], bx = r[1];
+    bx.appendChild(mk('b', '', title)); bx.appendChild(mk('div', 'msg', text));
+    var lb = mk('label', 'sm'), cb = document.createElement('input'); cb.type = 'checkbox';
+    lb.appendChild(cb); lb.appendChild(document.createTextNode(' 오늘 하루 보지 않기'));
+    var bt = mk('button', '', '확인'), row = mk('div', 'btns'); row.appendChild(bt);
+    bx.appendChild(lb); bx.appendChild(row);
+    var done = false;
+    function close(){ if (done) return; done = true; try { if (cb.checked) localStorage.setItem(key, today()); } catch (e) {} closeOv(o); }
+    bt.onclick = close; o.addEventListener('click', function(e){ if (e.target === o) close(); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+  }
+  get().then(function(n){ if (n) showNotice(n); }).catch(function(){});
+
+  /* ② 관리자 전용 '공지 관리' 버튼 (관리자 로그인 상태이거나 주소 끝에 #notice 를 붙였을 때만 보임) */
+  var authed = false, fab = null;
+  function isAdm(){
+    try { return authed || (typeof isAdmin !== 'undefined' && isAdmin) || sessionStorage.getItem('radio_admin') === '1' || sessionStorage.getItem('board_admin') === '1'; }
+    catch (e) { return authed; }
+  }
+  function check(){
+    if (fab || !document.body) return;
+    if (isAdm() || /notice/.test(location.hash)){ fab = mk('button', '', '📢 공지 관리'); fab.id = 'admfab'; fab.type = 'button'; fab.onclick = openEditor; document.body.appendChild(fab); }
+  }
+  check(); setInterval(check, 3000); addEventListener('hashchange', check);
+
+  async function login(){
+    var pw = prompt('관리자 비밀번호를 입력하세요.'); if (pw === null) return false;
+    try {
+      var hs = [await pwHash(pw), await pwHash(pw.trim())];
+      var ok = hs.some(function(h){ return (typeof ADMIN_HASH !== 'undefined' && h === ADMIN_HASH) || (typeof TV_ADMIN_HASH !== 'undefined' && h === TV_ADMIN_HASH); });
+      if (!ok){ alert('비밀번호가 맞지 않습니다.'); return false; }
+    } catch (e) { alert('이 주소에서는 비밀번호를 확인할 수 없습니다. https:// 주소로 열어 주세요.'); return false; }
+    authed = true; return true;
+  }
+  async function openEditor(){
+    if (!isAdm() && !(await login())) return;
+    if (document.getElementById('admed')) return;
+    var r = overlay('admed'), o = r[0], bx = r[1];
+    bx.appendChild(mk('b', '', '📢 공지 관리'));
+    var lb = mk('label'), cb = document.createElement('input'); cb.type = 'checkbox';
+    lb.appendChild(cb); lb.appendChild(document.createTextNode(' 공지 표시 (체크해야 접속자에게 팝업이 뜹니다)'));
+    var ti = document.createElement('input'); ti.type = 'text'; ti.maxLength = 30; ti.placeholder = '제목 (예: 📢 공지)';
+    var ta = document.createElement('textarea'); ta.maxLength = 500; ta.rows = 6; ta.placeholder = '공지 문구 (줄바꿈 가능, 500자까지)';
+    var st = mk('div', 'st'), row = mk('div', 'btns'), sv = mk('button', '', '저장'), cl = mk('button', '', '닫기');
+    row.appendChild(sv); row.appendChild(cl);
+    bx.appendChild(lb); bx.appendChild(ti); bx.appendChild(ta); bx.appendChild(row); bx.appendChild(st);
+    st.textContent = '현재 공지를 불러오는 중…';
+    get().then(function(n){ if (n){ cb.checked = !!n.on; ti.value = n.title || ''; ta.value = n.text || ''; } else ti.value = '📢 공지'; st.textContent = ''; })
+      .catch(function(){ st.textContent = '현재 공지를 불러오지 못했습니다. 새로 작성해 저장할 수 있습니다.'; });
+    sv.onclick = function(){
+      st.textContent = '저장 중…';
+      fetch(NURL, {method: 'PUT', body: JSON.stringify({on: cb.checked, title: ti.value.trim().slice(0, 30), text: ta.value.trim().slice(0, 500), ts: {'.sv': 'timestamp'}})})
+        .then(function(x){ if (!x.ok) throw x.status; st.textContent = '✅ 저장되었습니다. 지금부터 접속하는 사람에게 적용됩니다.'; })
+        .catch(function(e){ st.textContent = '저장에 실패했습니다 (' + e + '). Firebase 규칙에서 notice 경로의 쓰기 허용이 필요할 수 있습니다.'; });
+    };
+    cl.onclick = function(){ closeOv(o); };
+  }
+})();
+</script>
+<script>
+(function(){
   // ✅ 안내 창이 사라진 뒤, 실제로 채팅에 접속이 되면 "접속 완료" 문구를 2.5초간 보여 줌 (정원이 차 있으면 입장되는 순간에 표시)
   function waitDone(){
     var t0 = Date.now();
@@ -9823,9 +9907,7 @@ try { if (typeof TAKEDOWN_EMAIL === 'string' && /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@
     setTimeout(function(){ d.style.opacity = '1'; }, 20);
     setTimeout(function(){ d.style.opacity = '0'; setTimeout(function(){ if (d.parentNode) d.parentNode.removeChild(d); }, 500); }, 2500);
   }
-  el.addEventListener('click', close);
-  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
-  setTimeout(close, 4000);   // 3초 뒤 자동으로 닫힘 (바꾸려면 이 숫자, 1000 = 1초)
+  waitDone();
 })();
 </script>
 
@@ -9900,6 +9982,109 @@ document.querySelectorAll('#gamesec .gt').forEach(b => b.onclick = () => {
 setInterval(() => stCheck(), 2000);
 setInterval(loadAgg, 60000);
 loadAgg(); stCheck(true);
+})();
+</script>
+<style>
+body.fxon .set{background:linear-gradient(180deg,rgba(90,56,34,.86),rgba(59,36,23,.9))}
+#fxsky{position:fixed;inset:0;z-index:-1;pointer-events:none}
+#fxorb{position:absolute;width:min(20vw,100px);aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);transition:opacity 1s}
+#fxorb.sun{background:radial-gradient(circle,#fffbe0,#ffd75e 50%,#ffb347);box-shadow:0 0 70px 24px #ffd27a88}
+#fxorb.moon{background:radial-gradient(circle at 36% 34%,#fffdf0,#e8e6d0 60%,#bdb9a0);box-shadow:0 0 55px 16px #cfd8ff55}
+#fxwx{position:absolute;inset:0;transition:background 1s}
+#fxb,#fxf{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#fxb{z-index:-1}#fxf{z-index:9000}
+#fxbtn{position:fixed;right:12px;bottom:12px;z-index:99997;width:40px;height:40px;border-radius:50%;border:1px solid #b99a5b;background:#3b2417cc;color:#ffcf7a;font-size:18px;line-height:1;cursor:pointer;padding:0}
+#fxbtn.off{opacity:.55;filter:grayscale(1)}
+body:not(.fxon) #fxsky,body:not(.fxon) #fxb,body:not(.fxon) #fxf{display:none}
+</style>
+<script>
+(function(){
+  // ===== ✨ 배경 효과: 한국 시간대별 하늘 · 계절(낙엽/벚꽃/반딧불) · 오늘 날씨(비/눈) — 우하단 ✨ 버튼으로 켜고 끔 =====
+  // 미리보기: 주소 뒤에 ?fxt=23&fxm=10&fxw=rain  (fxt=시각 0~23, fxm=월, fxw=clear|cloud|fog|rain|snow|storm)
+  var R = Math.random, Q = new URLSearchParams(location.search), g = function(i){ return document.getElementById(i); };
+  var saved = null; try { saved = localStorage.getItem('fxon'); } catch (e) {}
+  var low = (navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2);
+  var calm = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var on = saved === null ? !(low || calm) : saved === '1';   // 저사양·모션 줄이기 기기는 처음에 꺼진 상태
+
+  var sky = document.createElement('div'); sky.id = 'fxsky';
+  sky.innerHTML = '<div id="fxorb"></div><div id="fxwx"></div>';
+  var cb = document.createElement('canvas'); cb.id = 'fxb';
+  var cf = document.createElement('canvas'); cf.id = 'fxf';
+  var btn = document.createElement('button'); btn.id = 'fxbtn'; btn.type = 'button'; btn.textContent = '✨'; btn.title = '배경 효과 켜기/끄기';
+  document.body.appendChild(sky); document.body.appendChild(cb); document.body.appendChild(cf); document.body.appendChild(btn);
+  var xb = cb.getContext('2d'), xf = cf.getContext('2d'), D = Math.min(window.devicePixelRatio || 1, 1.5), W = 0, Hh = 0;
+  function size(){ W = cb.width = cf.width = innerWidth * D | 0; Hh = cb.height = cf.height = innerHeight * D | 0; }
+  size(); addEventListener('resize', size);
+
+  var SKY = {dawn:['#2b2d6e','#c76b8f','#ffc89b'], morning:['#3d8fe8','#7fc4f5','#d4efff'], noon:['#1f6fd1','#4aa3ee','#9ad6ff'],
+    sunset:['#2e2a6b','#d9566a','#ffb25e'], evening:['#140f40','#43317f','#c2528f'], night:['#03020c','#0a0f33','#1b1b52']};
+  var OV = {clear:'transparent', cloud:'rgba(80,90,110,.3)', fog:'rgba(200,205,215,.38)', rain:'rgba(35,45,65,.55)', storm:'rgba(20,25,45,.65)', snow:'rgba(210,225,245,.22)'};
+  var H = 12, S = 'autumn', PH = 'noon', WX = Q.get('fxw') || 'clear', sig = '', P = [], shoot = null;
+  function calc(){
+    var n = new Date(Date.now() + new Date().getTimezoneOffset() * 6e4 + 324e5);   // 한국 시간
+    H = Q.has('fxt') ? +Q.get('fxt') : n.getHours() + n.getMinutes() / 60;
+    var M = Q.has('fxm') ? +Q.get('fxm') : n.getMonth() + 1;
+    S = M >= 3 && M <= 5 ? 'spring' : M >= 6 && M <= 8 ? 'summer' : M >= 9 && M <= 11 ? 'autumn' : 'winter';
+    PH = H >= 5 && H < 7 ? 'dawn' : H >= 7 && H < 11 ? 'morning' : H >= 11 && H < 16 ? 'noon' : H >= 16 && H < 19 ? 'sunset' : H >= 19 && H < 21 ? 'evening' : 'night';
+  }
+  function pick(a){ return a[R() * a.length | 0]; }
+  function add(k, c, f){ var a = Math.min(1, innerWidth * innerHeight / 800000) * .6 + .4; for (var i = 0; i < (c * a | 0); i++){ var p = f(); p.k = k; p.x = R() * W; p.y = R() * Hh; p.ph = R() * 6.28; P.push(p); } }
+  function build(){
+    P = []; var wet = WX === 'rain' || WX === 'storm' || WX === 'snow', h = wet ? .5 : 1, starry = PH === 'night' || PH === 'evening' || PH === 'dawn';
+    if (starry && !wet) add('star', WX === 'cloud' || WX === 'fog' ? 25 : 70, function(){ return {r:(.6 + R() * 1.6) * D, v:.5 + R() * 1.5, c:pick(['#fff','#cfe3ff','#fff3c4'])}; });
+    if (S === 'autumn') add('leaf', 16 * h, function(){ return {r:(6 + R() * 8) * D, v:(40 + R() * 50) * D, rot:R() * 6.28, vr:(R() - .5) * 3, c:pick(['#e8590c','#f08c00','#c92a2a','#d9480f','#b7791f']), q:.55}; });
+    if (S === 'spring') add('leaf', 18 * h, function(){ return {r:(4 + R() * 4) * D, v:(25 + R() * 35) * D, rot:R() * 6.28, vr:(R() - .5) * 2.5, c:pick(['#ffc2d9','#ffd6e5','#fff0f5']), q:.65}; });
+    if (S === 'summer' && (PH === 'night' || PH === 'evening') && !wet) add('fly', 16, function(){ return {r:(1.5 + R() * 1.5) * D}; });
+    if (WX === 'snow') add('snow', 55, function(){ return {r:(1.5 + R() * 3) * D, v:(25 + R() * 45) * D}; });
+    if (WX === 'rain' || WX === 'storm') add('rain', 80, function(){ return {l:(14 + R() * 18) * D, v:(520 + R() * 280) * D}; });
+  }
+  function render(){
+    calc(); var c = SKY[PH];
+    sky.style.background = 'linear-gradient(180deg,' + c[0] + ',' + c[1] + ' 55%,' + c[2] + ')';
+    g('fxwx').style.background = OV[WX] || 'transparent';
+    var day = H >= 6 && H < 18, p = day ? (H - 6) / 12 : ((H - 18 + 24) % 24) / 12, o = g('fxorb'), wet = WX === 'rain' || WX === 'storm' || WX === 'snow';
+    o.className = day ? 'sun' : 'moon'; o.style.left = (8 + 84 * p) + '%'; o.style.top = (62 - 52 * Math.sin(Math.PI * p)) + '%';
+    o.style.opacity = wet ? .15 : (WX === 'cloud' || WX === 'fog' ? .45 : 1);
+    var ns = PH + S + WX; if (ns !== sig){ sig = ns; build(); }
+  }
+  var last = 0, running = false;
+  function draw(t, dt){
+    xb.clearRect(0, 0, W, Hh); xf.clearRect(0, 0, W, Hh); var rain = false, i, p;
+    for (i = 0; i < P.length; i++){ p = P[i];
+      if (p.k === 'star'){ xb.globalAlpha = .3 + .7 * Math.abs(Math.sin(t / 900 * p.v + p.ph)); xb.fillStyle = p.c; xb.beginPath(); xb.arc(p.x, p.y, p.r, 0, 6.283); xb.fill(); }
+      else if (p.k === 'fly'){ p.x += Math.cos(t / 2000 + p.ph) * 14 * D * dt; p.y += Math.sin(t / 2300 + p.ph) * 12 * D * dt; var a = .2 + .8 * Math.abs(Math.sin(t / 700 + p.ph));
+        xb.fillStyle = '#dcff78'; xb.globalAlpha = a * .18; xb.beginPath(); xb.arc(p.x, p.y, p.r * 4, 0, 6.283); xb.fill(); xb.globalAlpha = a; xb.beginPath(); xb.arc(p.x, p.y, p.r, 0, 6.283); xb.fill(); }
+      else if (p.k === 'leaf' || p.k === 'snow'){
+        p.y += p.v * dt; p.x += Math.sin(t / 700 + p.ph) * 28 * D * dt + (p.k === 'leaf' ? 12 * D * dt : 0); if (p.k === 'leaf') p.rot += p.vr * dt;
+        if (p.y > Hh + 20){ p.y = -20; p.x = R() * W; } if (p.x > W + 20) p.x = -20;
+        xf.fillStyle = p.k === 'snow' ? '#fff' : p.c; xf.globalAlpha = p.k === 'snow' ? .85 : .9; xf.beginPath();
+        if (p.k === 'snow') xf.arc(p.x, p.y, p.r, 0, 6.283); else xf.ellipse(p.x, p.y, p.r, p.r * p.q, p.rot, 0, 6.283); xf.fill(); }
+      else if (p.k === 'rain'){ rain = true; p.y += p.v * dt; p.x -= p.v * .18 * dt; if (p.y > Hh){ p.y = -30; p.x = R() * W * 1.2; } } }
+    if (rain){ xf.globalAlpha = .45; xf.strokeStyle = '#bed7ff'; xf.lineWidth = D; xf.beginPath();
+      for (i = 0; i < P.length; i++){ p = P[i]; if (p.k === 'rain'){ xf.moveTo(p.x, p.y); xf.lineTo(p.x - p.l * .18, p.y + p.l); } } xf.stroke(); }
+    if (PH === 'night' && WX === 'clear'){ if (!shoot && R() < .006) shoot = {x:W * (.3 + R() * .6), y:Hh * R() * .3, life:1};
+      if (shoot){ shoot.x -= W * .8 * dt; shoot.y += Hh * .35 * dt; shoot.life -= dt * 1.3; xb.globalAlpha = Math.max(shoot.life, 0); xb.strokeStyle = '#fff'; xb.lineWidth = 2 * D;
+        xb.beginPath(); xb.moveTo(shoot.x, shoot.y); xb.lineTo(shoot.x + W * .13, shoot.y - Hh * .06); xb.stroke(); if (shoot.life <= 0) shoot = null; } }
+  }
+  function loop(t){ if (!on){ running = false; return; } requestAnimationFrame(loop); if (document.hidden || t - last < 33) return; var dt = Math.min((t - last) / 1000, .06); last = t; draw(t, dt); }
+  function apply(){
+    document.body.classList.toggle('fxon', on); btn.classList.toggle('off', !on); btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (on){ render(); if (calm) draw(0, 0); else if (!running){ running = true; requestAnimationFrame(loop); } }
+  }
+  btn.onclick = function(){ on = !on; try { localStorage.setItem('fxon', on ? '1' : '0'); } catch (e) {} apply(); };
+  apply(); setInterval(function(){ if (on) render(); }, 60000);
+
+  /* 오늘 날씨(서울 기준) — 메인 화면이 저장해 둔 값이 있으면 재사용 */
+  function code2(c){ return c >= 95 ? 'storm' : c >= 71 && c <= 77 || c === 85 || c === 86 ? 'snow' : c >= 51 && c <= 67 || c >= 80 && c <= 82 ? 'rain' : c === 45 || c === 48 ? 'fog' : c === 3 ? 'cloud' : 'clear'; }
+  if (!Q.has('fxw')){
+    var ck = null; try { ck = JSON.parse(localStorage.getItem('rw') || 'null'); } catch (e) {}
+    if (ck && Date.now() - ck.t < 12e5){ WX = ck.w; if (on) render(); }
+    else try { var ac = new AbortController(), to = setTimeout(function(){ ac.abort(); }, 4000);
+      fetch('https://api.open-meteo.com/v1/forecast?latitude=37.57&longitude=126.98&current=weather_code', {signal: ac.signal})
+        .then(function(r){ return r.json(); }).then(function(j){ clearTimeout(to); WX = code2(j.current.weather_code);
+          try { localStorage.setItem('rw', JSON.stringify({t: Date.now(), w: WX})); } catch (e) {} if (on) render(); }).catch(function(){}); } catch (e) {}
+  }
 })();
 </script>
 </body>
