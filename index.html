@@ -9985,14 +9985,13 @@ loadAgg(); stCheck(true);
 })();
 </script>
 <style>
-body.fxon .set{background:linear-gradient(180deg,rgba(90,56,34,.86),rgba(59,36,23,.9))}
 #fxsky{position:fixed;inset:0;z-index:-1;pointer-events:none}
 #fxorb{position:absolute;width:min(20vw,100px);aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);transition:opacity 1s}
 #fxorb.sun{background:radial-gradient(circle,#fffbe0,#ffd75e 50%,#ffb347);box-shadow:0 0 70px 24px #ffd27a88}
 #fxorb.moon{background:radial-gradient(circle at 36% 34%,#fffdf0,#e8e6d0 60%,#bdb9a0);box-shadow:0 0 55px 16px #cfd8ff55}
 #fxwx{position:absolute;inset:0;transition:background 1s}
 #fxb,#fxf{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
-#fxb{z-index:-1}#fxf{z-index:9000}
+#fxb,#fxf{z-index:-1}
 #fxbtn{position:fixed;right:12px;bottom:12px;z-index:99997;width:40px;height:40px;border-radius:50%;border:1px solid #b99a5b;background:#3b2417cc;color:#ffcf7a;font-size:18px;line-height:1;cursor:pointer;padding:0}
 #fxbtn.off{opacity:.55;filter:grayscale(1)}
 body:not(.fxon) #fxsky,body:not(.fxon) #fxb,body:not(.fxon) #fxf{display:none}
