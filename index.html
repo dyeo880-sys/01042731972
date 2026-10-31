@@ -118,6 +118,11 @@ body.onlybox #roomview[hidden]{display:block!important;position:fixed;left:-1000
 #capov{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6;border-radius:8px}
 #capov .cap{position:absolute;left:6%;right:6%;bottom:6%;text-align:center;color:#fff;font-family:'Jua','Noto Sans KR','Malgun Gothic',sans-serif;font-size:clamp(20px,4.2vw,40px);line-height:1.35;letter-spacing:.02em;word-break:keep-all;text-shadow:0 0 6px #000,0 2px 4px #000c,0 0 18px #0009;animation:capup var(--cd,9s) linear forwards;will-change:transform}
 @keyframes capup{0%{opacity:0;transform:translateY(0)}12%{opacity:1}55%{opacity:1}100%{opacity:0;transform:translateY(calc(var(--ch,300px) * -.55))}}
+#chatcap{position:absolute;left:3%;bottom:max(54px,11%);width:min(80%,640px);max-height:68%;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:3px;overflow:hidden;pointer-events:none;z-index:6}
+#chatcap .cc{max-width:100%;color:#fff;font-family:'Noto Sans KR','Malgun Gothic',sans-serif;font-size:clamp(13px,1.9vw,19px);line-height:1.35;word-break:break-all;padding:1px 9px;border-radius:6px;background:linear-gradient(90deg,#0007,#0000);text-shadow:0 0 5px #000,0 1px 3px #000c;animation:ccin .3s ease-out both,ccout .9s ease-in 7s forwards}
+#chatcap .cc b{color:#ffd76a;margin-right:7px;font-weight:700}
+@keyframes ccin{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes ccout{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-14px)}}
 #caprow[hidden]{display:none!important}
 #caprow{flex-basis:100%;display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
 #caprow input{flex:1;min-width:160px}
@@ -975,7 +980,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><span id="rscd" class="chatnote" hidden style="margin:0;align-self:center;color:var(--amber);white-space:nowrap"></span><button class="addhome danger" style="margin:0" type="button" id="rvforce" hidden title="관리자 권한으로 이 방을 강제 폭파합니다">💣 강제 폭파</button><span id="tkbadge" class="blink" hidden>🔔 요청</span><button class="addhome" style="margin:0" type="button" id="rvside" title="채팅창을 영상 옆 오른쪽/왼쪽/아래로 옮깁니다">💬 채팅: 오른쪽 ▶</button><button class="addhome" style="margin:0" type="button" id="rvdock" title="작은 창일 때 방 영상을 메인 TV 창에서 재생합니다">📺 TV로 보기: 켜짐</button><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
   <section id="mediawin" hidden aria-label="미디어 창">
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
-    <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button><button class="addhome" type="button" id="lisfs" style="display:none;margin:0 0 0 auto" title="영상을 전체화면으로 봅니다 (나갈 때는 Esc)" aria-label="영상 전체화면">⛶ 전체화면</button></div>
+    <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button><label class="chatnote" style="margin:0;cursor:pointer;white-space:nowrap" title="채팅 문구가 영상 위로 자막처럼 올라갑니다"><input type="checkbox" id="ccon" checked> 💬 채팅을 영상 위에 자막처럼</label><button class="addhome" type="button" id="lisfs" style="display:none;margin:0 0 0 auto" title="영상을 전체화면으로 봅니다 (나갈 때는 Esc)" aria-label="영상 전체화면">⛶ 전체화면</button></div>
     <div class="mwsize mwvolrow" id="mwvolrow"><label for="mwvol">🔊 볼륨</label><input type="range" id="mwvol" min="0" max="100" step="1" value="30" aria-label="전체 볼륨 (유튜브·링크 영상·방 소리 한꺼번에)"><output id="mwvolv" for="mwvol">30%</output><button class="addhome" type="button" id="mwmute" title="유튜브·영상·방 소리를 한꺼번에 껐다 켭니다">🔇 음소거</button><span class="chatnote" style="margin:0">유튜브·영상·방 소리 한꺼번에</span></div>
     <div class="mwsize" id="lagrow" hidden><label for="lagsel">🐢 끊김 줄이기</label><select id="lagsel" aria-label="끊김 줄이기 (영상을 조금 늦게 재생)" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:4px 8px;font-size:13px"><option value="0">끔 (가장 빠름)</option><option value="1000">1초 늦게</option><option value="1500">1.5초 늦게 (기본)</option><option value="2000">2초 늦게</option><option value="3000">3초 늦게</option><option value="4000">4초 늦게 (소리가 끊길 수 있음)</option></select><span class="chatnote" style="margin:0">늦게 볼수록 덜 끊깁니다</span></div>
     <div class="mwsize" id="lecmeter" hidden><strong style="color:var(--amber)">🎓 보내는 소리</strong><span>PC 소리 <meter id="mtsys" min="0" max="1" value="0" style="width:90px"></meter></span><span>내 마이크 <meter id="mtmic" min="0" max="1" value="0" style="width:90px"></meter></span><button class="addhome" type="button" id="lecmic" style="margin:0" title="강의 중 내 마이크만 끄거나 켭니다 (PC 소리는 계속 나갑니다)">🎤 마이크 끄기</button><span id="mtmsg" style="flex-basis:100%;font-size:13px"></span></div>
@@ -991,7 +996,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <div id="mwyt" style="display:none"></div>
       <video id="liveAudio" autoplay playsinline style="display:none"></video>
       <video id="bcPreview" muted autoplay playsinline style="display:none;transform:scaleX(-1)"></video>
-      <div id="capov" aria-live="polite"></div>
+      <div id="capov" aria-live="polite"></div><div id="chatcap" aria-hidden="true"></div>
       <div id="guestTile" hidden title="누르면 크게 (크기 조절·이동 가능)"><video id="guestVid" muted autoplay playsinline></video><small id="guestLbl"></small></div>
     </div>
     <div id="vwall" aria-label="화상 칸"><div class="vwh"><strong id="vwtitle">👥 화상 칸 (최대 4명 동시)</strong><span>빈 칸을 누르면 내 얼굴/PC 화면이 나옵니다 · 화면을 누르면 크게</span><label id="vwmaxl" hidden style="cursor:pointer">칸 수 <select id="vwmaxsel" aria-label="화상 칸 수" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:2px 4px;font-size:12px"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label><button id="vwoff" type="button" class="addhome" hidden style="margin:0;padding:2px 10px;font-size:12px" title="내 화면이 켜져 있는지 꺼져 있는지 보여 줍니다. 켜져 있을 때 누르면 끕니다.">⚫ 내 화면: 꺼짐</button><label id="vwauto" hidden style="cursor:pointer"><input type="checkbox" id="vwautock" checked> 요청 자동 허용</label></div><div id="vwselfbox" hidden style="display:none;align-items:center;gap:8px;margin:0 0 6px"><video id="vwself" muted autoplay playsinline style="width:112px;height:84px;object-fit:contain;background:#000;border:2px solid #ff6b6b;border-radius:8px"></video><span id="vwselft" style="font-size:12px;color:var(--amber)"></span></div><div class="chatnote" id="vwwarn" hidden style="margin:0 0 6px;color:#ffb347">⚠ 칸이 많을수록 방장의 인터넷(업로드)과 PC 성능이 많이 필요합니다. 영상이 끊기면 칸 수를 줄이세요. (칸당 약 0.3Mbps × 듣는 사람 수)</div><div id="vwmic" class="vxrow" hidden style="margin:0 0 6px;gap:8px"><button type="button" id="vwmicbtn" class="addhome vxbtn" style="margin:0;padding:6px 14px;font-size:14px" title="누르고 있는 동안 내 목소리가 방으로 나갑니다">🎤 마이크</button><label class="vxck" id="vwmicl" hidden><input type="checkbox" id="vwmicck"> 계속 켜기</label><span id="vwmicst" style="font-size:12px;opacity:.9"></span></div><div id="vwgrid"></div></div>
@@ -1578,6 +1583,39 @@ function chatLinkNodes(text, mode){   // mode: 'open'(눌러서 열기) | 'own'(
   if (last < text.length) frag.append(text.slice(last));
   return frag;
 }
+// ===== 채팅 문구를 영상 화면 위로 자막처럼 올리기 (음악 방·영상 방) =====
+var CC = {room: '', seen: {}, n: 0};
+function ccOn(){ const k = $('ccon'); return !k || k.checked; }
+function ccShow(c){
+  const ov = $('chatcap'); if (!ov) return;
+  const d = document.createElement('div'); d.className = 'cc';
+  const b = document.createElement('b'); b.textContent = (c.bot ? '🤖 ' : '') + (c.n || '');
+  d.append(b, document.createTextNode(String(c.t).slice(0, 80)));
+  const sc = $('mwscreen'); if (sc) sc.classList.add('capon');   // 소리만 있는 방도 글이 보이도록 화면을 키움
+  while (ov.children.length > 5) ov.firstChild.remove();
+  ov.append(d);
+  d.addEventListener('animationend', e => {
+    if (e.animationName !== 'ccout') return;
+    d.remove();
+    if (!ov.children.length && sc){ const co = $('capov'); if (!co || !co.children.length) sc.classList.remove('capon'); }
+  });
+}
+function ccFeed(all, inLive){
+  const rk = $('room').value, first = CC.room !== rk;
+  if (first){ CC.room = rk; CC.seen = {}; CC.n = 0; const ov = $('chatcap'); if (ov) ov.textContent = ''; }
+  if (CC.n > 400){ CC.seen = {}; CC.n = 0; }
+  const show = inLive && ccOn() && !$('mediawin').hidden;
+  const now = Date.now();
+  all.forEach(c => {
+    if (!c || !c.t) return;
+    const k = (c.ts || 0) + '|' + (c.k || c.n) + '|' + c.t;
+    if (CC.seen[k]) return; CC.seen[k] = 1; CC.n++;
+    if (first || !show) return;                         // 방에 들어올 때 이미 있던 글은 올리지 않음
+    if (c.ts && now - c.ts > 20000) return;            // 오래된 글 제외
+    if (hasLink(c.t) && !isHost()) return;             // 링크는 방장에게만 보이므로 자막에서 제외
+    ccShow(c);
+  });
+}
 function renderChat(forceBottom){
   const log = $('chatlog');
   const near = forceBottom === true || log.scrollHeight - log.scrollTop - log.clientHeight < 40;
@@ -1589,6 +1627,7 @@ function renderChat(forceBottom){
   if (!all.length){ log.innerHTML = '<div class="empty">첫 메시지를 남겨 보세요.</div>'; return; }
   const isDmRoom = $('room').value.indexOf('u:') === 0;
   const inLive = !!(liveRoom && $('room').value === 'b:' + liveRoom.id);
+  try { ccFeed(all, inLive); } catch(e){}
   all.forEach(c => {
     const d = document.createElement('div'); d.className = 'm' + (isDmRoom ? ' wh' : '');
     const b = document.createElement('b'); b.textContent = (c.bot ? '🤖 ' : '') + ((c.h || (inLive && !c.bot && c.k && ctlMgr(c.k))) ? '👑 ' : '') + c.n;
@@ -3398,6 +3437,7 @@ async function capPoll(){
   CAP.first = false;
 }
 setInterval(capPoll, 1500);
+try { const k = $('ccon'); if (k){ k.checked = localStorage.getItem('radio_chatcap') !== '0'; k.onchange = () => { try { localStorage.setItem('radio_chatcap', k.checked ? '1' : '0'); } catch(e){} if (!k.checked){ const ov = $('chatcap'); if (ov) ov.textContent = ''; } }; } } catch(e){}
 $('capgo').onclick = capSend; $('capin').onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); capSend(); } };
 async function memBeat(){
   if (!liveRoom || !DB) return;
