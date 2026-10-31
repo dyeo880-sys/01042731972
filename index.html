@@ -2824,7 +2824,7 @@ const presUrl = id => `${DB}/presence/${id}.json`;
 
 async function presenceTouch(){
   const sv = {'.sv': 'timestamp'};
-  const w = await fetch(presUrl(myId), {method: 'PUT', body: JSON.stringify({ts: sv, j: joinTs || sv, a: isAdmin, n: ($('nick').value || '').trim().slice(0, 12), k: UID})});
+  const w = await fetch(presUrl(myId), {method: 'PUT', body: JSON.stringify({ts: sv, j: joinTs || sv, a: isAdmin, n: ($('nick').value || '').trim().slice(0, 12), k: UID, ip: (window.IPID || '')})});
   if (!w.ok) throw new Error(w.status);
   const r = await fetch(`${DB}/presence.json`);
   if (!r.ok) throw new Error(r.status);
@@ -10105,6 +10105,158 @@ body:not(.fxon) #fxsky,body:not(.fxon) #fxb,body:not(.fxon) #fxf{display:none}
       fetch('https://api.open-meteo.com/v1/forecast?latitude=37.57&longitude=126.98&current=weather_code', {signal: ac.signal})
         .then(function(r){ return r.json(); }).then(function(j){ clearTimeout(to); WX = code2(j.current.weather_code);
           try { localStorage.setItem('rw', JSON.stringify({t: Date.now(), w: WX})); } catch (e) {} if (on) render(); }).catch(function(){}); } catch (e) {}
+  }
+})();
+</script>
+<script>
+/* 📊 관리자 접속 현황 + IP 차단 (관리자만 보임)
+   - 방문자 IP 원문은 저장하지 않고, 소금+PBKDF2 로 만든 기기번호(해시)만 DB 에 저장합니다.
+   - 차단 목록은 Firebase DB(ipban)에 저장 → 관리자가 [차단]을 누르면 파일 재업로드 없이 바로 적용(최대 약 1분 안에 접속자에게 반영) */
+(function(){
+  if (window.__ipAdminLoaded) return; window.__ipAdminLoaded = 1;
+  if (typeof DB === 'undefined' || !DB) return;
+  var IP_SALT = 'radiola-ip-2026-c7d1', TTL_BAN = 90000;
+  function adm(){ try { return (typeof isAdmin !== 'undefined' && isAdmin) || sessionStorage.getItem('radio_admin') === '1' || sessionStorage.getItem('board_admin') === '1' || window.__ipAuthed === true; } catch(e){ return window.__ipAuthed === true; } }
+  function mk(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
+  function tf(u, ms, o){ var ac = new AbortController(), to = setTimeout(function(){ ac.abort(); }, ms || 5000); o = o || {}; o.signal = ac.signal; return fetch(u, o).finally(function(){ clearTimeout(to); }); }
+  function kst(){ return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
+  async function hashIp(ip){
+    var enc = new TextEncoder(), key = await crypto.subtle.importKey('raw', enc.encode(String(ip).trim().toLowerCase()), 'PBKDF2', false, ['deriveBits']);
+    var bits = await crypto.subtle.deriveBits({name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(IP_SALT), iterations: 100000}, key, 96);
+    return Array.from(new Uint8Array(bits)).map(function(b){ return b.toString(16).padStart(2, '0'); }).join('');
+  }
+  async function getIp(){
+    var urls = ['https://api.ipify.org?format=json', 'https://api64.ipify.org?format=json'];
+    for (var i = 0; i < urls.length; i++){ try { var r = await tf(urls[i], 4000); if (r.ok){ var j = await r.json(); if (j && j.ip) return j.ip; } } catch(e){} }
+    return '';
+  }
+  /* ① 내 기기번호 만들기 (실패하면 차단 검사를 건너뜀) */
+  window.IPID = '';
+  var ready = (async function(){
+    try { var c = sessionStorage.getItem('ipid1'); if (c){ window.IPID = c; return; } } catch(e){}
+    var ip = await getIp(); if (!ip) return;
+    window.IPID = await hashIp(ip);
+    try { sessionStorage.setItem('ipid1', window.IPID); } catch(e){}
+  })();
+
+  /* ② 방문 수 기록 (브라우저당 한 번) */
+  (async function(){
+    try {
+      if (sessionStorage.getItem('visit1')) return; sessionStorage.setItem('visit1', '1');
+      var d = kst(), o = {}, inc = {'.sv': {increment: 1}};
+      var newDay = false, newAll = false;
+      try { if (localStorage.getItem('uvday') !== d){ localStorage.setItem('uvday', d); newDay = true; } if (!localStorage.getItem('uvall')){ localStorage.setItem('uvall', '1'); newAll = true; } } catch(e){}
+      o['total'] = inc; o['day/' + d + '/v'] = inc; if (newDay) o['day/' + d + '/u'] = inc; if (newAll) o['uall'] = inc;
+      fetch(DB + '/stats.json', {method: 'PATCH', body: JSON.stringify(o)}).catch(function(){});
+    } catch(e){}
+  })();
+
+  /* ③ 차단 확인 */
+  var blocked = false;
+  function blockScreen(){
+    if (blocked) return; blocked = true;
+    try { document.querySelectorAll('audio,video').forEach(function(m){ try { m.pause(); } catch(e){} }); } catch(e){}
+    var o = mk('div'); o.id = 'ipblock';
+    o.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:#1b120c;color:#f7d9a0;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-size:18px;line-height:1.7';
+    o.appendChild(mk('div', '', '🚫 접속이 차단되었습니다.\n관리자에게 문의해 주세요.')); o.firstChild.style.whiteSpace = 'pre-line';
+    document.body.appendChild(o);
+  }
+  async function checkBan(){
+    if (blocked || adm()) return;
+    await ready; if (!window.IPID) return;
+    try { var r = await tf(DB + '/ipban/' + window.IPID + '.json', 5000); if (r.ok){ var v = await r.json(); if (v) blockScreen(); } } catch(e){}
+  }
+  checkBan(); setInterval(checkBan, TTL_BAN);
+
+  /* ④ 관리자 전용 '접속 현황' 화면 */
+  var fab = null, panel = null, timer = null;
+  function showFab(){
+    if (fab || !document.body) return;
+    if (adm() || /stats/.test(location.hash)){
+      fab = mk('button', '', '📊 접속 현황'); fab.type = 'button';
+      fab.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:9998;padding:8px 12px;border-radius:999px;border:1px solid #c8a35a;background:#2a1a10;color:#f7d9a0;font-size:14px;cursor:pointer;opacity:.92';
+      fab.onclick = openPanel; document.body.appendChild(fab);
+    }
+  }
+  showFab(); setInterval(showFab, 3000); addEventListener('hashchange', showFab);
+  async function login(){
+    var pw = prompt('관리자 비밀번호를 입력하세요.'); if (pw === null) return false;
+    try {
+      var hs = [await pwHash(pw), await pwHash(pw.trim())];
+      if (!hs.some(function(h){ return (typeof ADMIN_HASH !== 'undefined' && h === ADMIN_HASH) || (typeof TV_ADMIN_HASH !== 'undefined' && h === TV_ADMIN_HASH); })){ alert('비밀번호가 맞지 않습니다.'); return false; }
+    } catch(e){ alert('이 주소에서는 비밀번호를 확인할 수 없습니다. https:// 주소로 열어 주세요.'); return false; }
+    window.__ipAuthed = true; return true;
+  }
+  function closePanel(){ if (timer){ clearInterval(timer); timer = null; } if (panel){ panel.remove(); panel = null; } }
+  async function banId(id, note, nick){
+    if (!id) return;
+    var rec = {ts: {'.sv': 'timestamp'}, n: String(nick || '').slice(0, 12), m: String(note || '').slice(0, 40)};
+    var r = await fetch(DB + '/ipban/' + id + '.json', {method: 'PUT', body: JSON.stringify(rec)}); if (!r.ok) throw new Error(r.status);
+  }
+  async function openPanel(){
+    if (!adm() && !(await login())) return;
+    if (panel) return;
+    panel = mk('div'); panel.style.cssText = 'position:fixed;inset:0;z-index:2147482000;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:12px';
+    var bx = mk('div'); bx.style.cssText = 'background:#2a1a10;color:#f7d9a0;border:1px solid #c8a35a;border-radius:12px;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:14px;font-size:14px;line-height:1.5';
+    panel.appendChild(bx); document.body.appendChild(panel);
+    panel.addEventListener('click', function(e){ if (e.target === panel) closePanel(); });
+    var st = mk('div'); st.textContent = '불러오는 중…';
+    bx.appendChild(st);
+    async function draw(){
+      var pres = {}, ban = {}, stats = {};
+      try { var a = await Promise.all([tf(DB + '/presence.json', 6000), tf(DB + '/ipban.json', 6000), tf(DB + '/stats.json', 6000)]); pres = (await a[0].json()) || {}; ban = (await a[1].json()) || {}; stats = (await a[2].json()) || {}; }
+      catch(e){ st.textContent = '불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'; return; }
+      var now = Date.now() + (typeof SKEW === 'number' ? SKEW : 0), ttl = (typeof PRES_TTL === 'number' ? PRES_TTL : 120000);
+      var live = Object.keys(pres).map(function(id){ var p = pres[id] || {}; p.id = id; return p; }).filter(function(p){ return typeof p.ts === 'number' && now - p.ts < ttl; }).sort(function(x, y){ return (x.j || 0) - (y.j || 0); });
+      var cnt = {}; live.forEach(function(p){ if (p.ip) cnt[p.ip] = (cnt[p.ip] || 0) + 1; });
+      var d = kst(), td = (stats.day && stats.day[d]) || {};
+      try { if (live.length > ((stats.max && stats.max.n) || 0)) fetch(DB + '/stats/max.json', {method: 'PUT', body: JSON.stringify({n: live.length, ts: {'.sv': 'timestamp'}})}).catch(function(){}); } catch(e){}
+      bx.textContent = '';
+      var h = mk('div'); h.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px';
+      h.appendChild(mk('b', '', '📊 접속 현황 (관리자)'));
+      var hb = mk('div'); var rf = mk('button', '', '새로고침'), cl = mk('button', '', '닫기'); [rf, cl].forEach(function(b){ b.type = 'button'; b.style.cssText = 'margin-left:6px;padding:4px 10px;border-radius:8px;border:1px solid #c8a35a;background:#3a2517;color:#f7d9a0;cursor:pointer'; hb.appendChild(b); });
+      rf.onclick = draw; cl.onclick = closePanel; h.appendChild(hb); bx.appendChild(h);
+      var sm = mk('div', '', '채팅 접속 ' + live.length + '명 · 오늘 방문 ' + (td.v || 0) + '회 (기기 ' + (td.u || 0) + '대) · 누적 방문 ' + (stats.total || 0) + '회 (기기 ' + (stats.uall || 0) + '대) · 최고 동시 접속 ' + ((stats.max && stats.max.n) || 0) + '명');
+      sm.style.marginBottom = '4px'; bx.appendChild(sm);
+      var days = Object.keys(stats.day || {}).sort().slice(-7).reverse();
+      if (days.length){ var dd = mk('div', '', '최근: ' + days.map(function(k){ return k.slice(5) + ' ' + ((stats.day[k] || {}).v || 0) + '회'; }).join(' · ')); dd.style.cssText = 'opacity:.8;font-size:12px;margin-bottom:8px'; bx.appendChild(dd); }
+      bx.appendChild(mk('b', '', '지금 채팅에 접속 중'));
+      var tb = mk('div'); tb.style.cssText = 'margin:6px 0 10px';
+      if (!live.length) tb.appendChild(mk('div', '', '없음'));
+      live.forEach(function(p){
+        var row = mk('div'); row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #4a3220';
+        var mins = Math.max(0, Math.round((now - (p.j || p.ts)) / 60000));
+        var me = (typeof myId !== 'undefined' && p.id === myId) || (p.ip && p.ip === window.IPID);
+        var t = (p.a ? '🔑 ' : '') + (p.n || '손님') + ' · ' + mins + '분째' + (p.ip ? ' · 기기 ' + p.ip.slice(0, 8) + (cnt[p.ip] > 1 ? ' (같은 기기 ' + cnt[p.ip] + '명)' : '') : ' · 기기 확인 안 됨') + (me ? ' · 나' : '');
+        var s = mk('span', '', t); s.style.flex = '1'; row.appendChild(s);
+        if (p.ip && !p.a && !me && !ban[p.ip]){
+          var b = mk('button', '', '차단'); b.type = 'button'; b.style.cssText = 'padding:3px 10px;border-radius:8px;border:1px solid #d96a5a;background:#4a1d17;color:#ffd2c9;cursor:pointer';
+          b.onclick = async function(){ var memo = prompt('차단 메모 (선택, 40자)', ''); if (memo === null) return; try { await banId(p.ip, memo, p.n); draw(); } catch(e){ alert('차단을 저장하지 못했습니다.'); } };
+          row.appendChild(b);
+        }
+        tb.appendChild(row);
+      });
+      bx.appendChild(tb);
+      var bh = mk('div'); bh.style.cssText = 'display:flex;justify-content:space-between;align-items:center'; bh.appendChild(mk('b', '', '차단 목록 (' + Object.keys(ban).length + ')'));
+      var add = mk('button', '', '＋ IP 주소로 차단'); add.type = 'button'; add.style.cssText = 'padding:3px 10px;border-radius:8px;border:1px solid #c8a35a;background:#3a2517;color:#f7d9a0;cursor:pointer';
+      add.onclick = async function(){ var ip = prompt('차단할 IP 주소를 입력하세요 (예: 123.45.67.89)'); if (!ip || !ip.trim()) return; var memo = prompt('차단 메모 (선택)', ''); if (memo === null) return;
+        try { var id = await hashIp(ip); if (id === window.IPID){ alert('내 IP는 차단할 수 없습니다.'); return; } await banId(id, memo, ''); draw(); } catch(e){ alert('차단을 저장하지 못했습니다.'); } };
+      bh.appendChild(add); bx.appendChild(bh);
+      var bl = mk('div'); bl.style.margin = '6px 0';
+      var ids = Object.keys(ban); if (!ids.length) bl.appendChild(mk('div', '', '없음'));
+      ids.forEach(function(id){
+        var v = ban[id] || {}, row = mk('div'); row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #4a3220';
+        var dt = typeof v.ts === 'number' ? new Date(v.ts + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ') : '';
+        var s = mk('span', '', '기기 ' + id.slice(0, 8) + (v.n ? ' · ' + v.n : '') + (v.m ? ' · ' + v.m : '') + (dt ? ' · ' + dt : '')); s.style.flex = '1'; row.appendChild(s);
+        var b = mk('button', '', '해제'); b.type = 'button'; b.style.cssText = 'padding:3px 10px;border-radius:8px;border:1px solid #c8a35a;background:#3a2517;color:#f7d9a0;cursor:pointer';
+        b.onclick = async function(){ if (!confirm('차단을 해제할까요?')) return; try { var r = await fetch(DB + '/ipban/' + id + '.json', {method: 'DELETE'}); if (!r.ok) throw 0; draw(); } catch(e){ alert('해제하지 못했습니다.'); } };
+        row.appendChild(b); bl.appendChild(row);
+      });
+      bx.appendChild(bl);
+      var nt = mk('div', '', '※ IP 원문은 저장하지 않고 기기번호(암호화값)만 저장합니다. 차단은 접속자 화면에서 최대 약 1분 안에 적용되며, 다른 네트워크·VPN으로 바꾸면 우회될 수 있습니다.'); nt.style.cssText = 'opacity:.7;font-size:12px;margin-top:8px'; bx.appendChild(nt);
+    }
+    await draw();
+    timer = setInterval(function(){ if (panel) draw(); }, 8000);
   }
 })();
 </script>
