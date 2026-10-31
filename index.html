@@ -980,7 +980,7 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <div class="rvhead"><strong id="rvtitle"></strong><span style="display:flex;gap:6px;flex-shrink:0"><span id="rscd" class="chatnote" hidden style="margin:0;align-self:center;color:var(--amber);white-space:nowrap"></span><button class="addhome danger" style="margin:0" type="button" id="rvforce" hidden title="관리자 권한으로 이 방을 강제 폭파합니다">💣 강제 폭파</button><span id="tkbadge" class="blink" hidden>🔔 요청</span><button class="addhome" style="margin:0" type="button" id="rvside" title="채팅창을 영상 옆 오른쪽/왼쪽/아래로 옮깁니다">💬 채팅: 오른쪽 ▶</button><button class="addhome" style="margin:0" type="button" id="rvdock" title="작은 창일 때 방 영상을 메인 TV 창에서 재생합니다">📺 TV로 보기: 켜짐</button><button class="addhome" style="margin:0" type="button" id="rvmini" aria-label="작은 창으로 줄이기">▁ 작게</button><button class="addhome" style="margin:0" type="button" id="rvleave">← 나가기</button></span></div>
   <section id="mediawin" hidden aria-label="미디어 창">
     <div class="mwhead"><strong>📺 미디어 창</strong><a id="mwlink" target="_blank" rel="noopener noreferrer" hidden style="color:var(--amber);font-size:13px;white-space:nowrap">↗ 유튜브에서 직접 열기</a><button class="addhome" style="margin:0;padding:3px 9px;font-size:12px" type="button" id="mwre" hidden title="영상이 안 나올 때 눌러 보세요">🔄 영상 다시 연결</button><span id="mwnow">대기 중</span></div>
-    <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button><label class="chatnote" style="margin:0;cursor:pointer;white-space:nowrap" title="채팅 문구가 영상 위로 자막처럼 올라갑니다"><input type="checkbox" id="ccon" checked> 💬 채팅을 영상 위에 자막처럼</label><button class="addhome" type="button" id="lisfs" style="display:none;margin:0 0 0 auto" title="영상을 전체화면으로 봅니다 (나갈 때는 Esc)" aria-label="영상 전체화면">⛶ 전체화면</button></div>
+    <div class="mwsize"><label for="mwsize">🔍 화면 크기</label><input type="range" id="mwsize" min="50" max="200" step="5" value="100" aria-label="미디어 화면 크기 조절"><output id="mwsizev" for="mwsize">100%</output><button class="addhome" type="button" id="mwsizer" title="기본 크기로">↺ 기본</button><label class="chatnote" style="margin:0;cursor:pointer;white-space:nowrap" title="채팅 문구가 영상 위로 자막처럼 올라갑니다"><input type="checkbox" id="ccon" checked> 💬 채팅을 영상 위에 자막처럼</label><label class="chatnote" id="ccadml" hidden style="margin:0;cursor:pointer;white-space:nowrap;color:var(--amber)" title="관리자·방장 전용: 해제하면 이 방 모든 사람의 영상 화면에 채팅 글씨가 나오지 않습니다"><input type="checkbox" id="ccadm" checked> 🛡 관리자·방장: 모두에게 채팅 자막 표시</label><button class="addhome" type="button" id="lisfs" style="display:none;margin:0 0 0 auto" title="영상을 전체화면으로 봅니다 (나갈 때는 Esc)" aria-label="영상 전체화면">⛶ 전체화면</button></div>
     <div class="mwsize mwvolrow" id="mwvolrow"><label for="mwvol">🔊 볼륨</label><input type="range" id="mwvol" min="0" max="100" step="1" value="30" aria-label="전체 볼륨 (유튜브·링크 영상·방 소리 한꺼번에)"><output id="mwvolv" for="mwvol">30%</output><button class="addhome" type="button" id="mwmute" title="유튜브·영상·방 소리를 한꺼번에 껐다 켭니다">🔇 음소거</button><span class="chatnote" style="margin:0">유튜브·영상·방 소리 한꺼번에</span></div>
     <div class="mwsize" id="lagrow" hidden><label for="lagsel">🐢 끊김 줄이기</label><select id="lagsel" aria-label="끊김 줄이기 (영상을 조금 늦게 재생)" style="background:#241610;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:4px 8px;font-size:13px"><option value="0">끔 (가장 빠름)</option><option value="1000">1초 늦게</option><option value="1500">1.5초 늦게 (기본)</option><option value="2000">2초 늦게</option><option value="3000">3초 늦게</option><option value="4000">4초 늦게 (소리가 끊길 수 있음)</option></select><span class="chatnote" style="margin:0">늦게 볼수록 덜 끊깁니다</span></div>
     <div class="mwsize" id="lecmeter" hidden><strong style="color:var(--amber)">🎓 보내는 소리</strong><span>PC 소리 <meter id="mtsys" min="0" max="1" value="0" style="width:90px"></meter></span><span>내 마이크 <meter id="mtmic" min="0" max="1" value="0" style="width:90px"></meter></span><button class="addhome" type="button" id="lecmic" style="margin:0" title="강의 중 내 마이크만 끄거나 켭니다 (PC 소리는 계속 나갑니다)">🎤 마이크 끄기</button><span id="mtmsg" style="flex-basis:100%;font-size:13px"></span></div>
@@ -1585,7 +1585,24 @@ function chatLinkNodes(text, mode){   // mode: 'open'(눌러서 열기) | 'own'(
 }
 // ===== 채팅 문구를 영상 화면 위로 자막처럼 올리기 (음악 방·영상 방) =====
 var CC = {room: '', seen: {}, n: 0};
-function ccOn(){ const k = $('ccon'); return !k || k.checked; }
+function ccGlobalOff(){ const c = CTL.map && CTL.map._cc; return !!(c && c.off); }   // 관리자가 이 방 전체에서 끔
+function ccOn(){ if (ccGlobalOff()) return false; const k = $('ccon'); return !k || k.checked; }
+function ccSync(){   // 관리자 체크박스 표시·상태 맞추기, 관리자가 껐으면 내 화면 자막도 치움
+  const adm = !!(liveRoom && (rmAdm() || isHost())), l = $('ccadml'), a = $('ccadm'), k = $('ccon'), off = ccGlobalOff();
+  if (l) l.hidden = !adm;
+  if (a && a.checked === off) a.checked = !off;
+  if (k){ k.disabled = off; k.title = off ? '관리자 또는 방장이 이 방의 채팅 자막을 껐습니다' : ''; }
+  if (off){ const ov = $('chatcap'); if (ov && ov.children.length) ov.textContent = ''; }
+}
+async function ccAdminSet(on){
+  if (!liveRoom || !(rmAdm() || isHost()) || !DB) return;
+  const rec = on ? null : {off: 1};
+  CTL.map = CTL.map || {};
+  if (on) delete CTL.map._cc; else CTL.map._cc = rec;
+  ccSync();
+  try { const r = await fetch(`${DB}/chat/roomctl_${liveRoom.id}/_cc.json`, {method: on ? 'DELETE' : 'PUT', body: on ? null : JSON.stringify(rec)}); if (!r.ok) throw new Error(r.status); memToast(on ? '💬 채팅 자막을 다시 켰습니다' : '💬 모든 사람 화면에서 채팅 자막을 껐습니다'); }
+  catch(e){ memToast('⚠ 저장 실패 — Firebase 규칙에서 roomctl_ 경로 쓰기를 허용하세요', true); }
+}
 function ccShow(c){
   const ov = $('chatcap'); if (!ov) return;
   const d = document.createElement('div'); d.className = 'cc';
@@ -3422,6 +3439,7 @@ async function capSend(){
   } catch(e){ memToast('⚠ 자막을 보내지 못했습니다 (DB 쓰기 규칙 확인)', true); }
 }
 async function capPoll(){
+  try { ccSync(); } catch(e){}
   const row = $('caprow'); if (row) row.hidden = !(liveRoom && (isHost() || rmAdm() || myPerm('c')));
   if (!liveRoom || !DB){ CAP.rid = ''; return; }
   const id = liveRoom.id;
@@ -3438,6 +3456,7 @@ async function capPoll(){
 }
 setInterval(capPoll, 1500);
 try { const k = $('ccon'); if (k){ k.checked = localStorage.getItem('radio_chatcap') !== '0'; k.onchange = () => { try { localStorage.setItem('radio_chatcap', k.checked ? '1' : '0'); } catch(e){} if (!k.checked){ const ov = $('chatcap'); if (ov) ov.textContent = ''; } }; } } catch(e){}
+try { $('ccadm').onchange = e => ccAdminSet(e.target.checked); } catch(e){}
 $('capgo').onclick = capSend; $('capin').onkeydown = e => { if (e.key === 'Enter'){ e.preventDefault(); capSend(); } };
 async function memBeat(){
   if (!liveRoom || !DB) return;
