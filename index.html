@@ -2621,6 +2621,7 @@ window.botWelcome = name => {
   if (Math.random() < 0.5){ const w2 = botWho([w]); setTimeout(() => { if (BOT.on) botSay(w2, botRand(BOT_WELCOME2), key); }, d + 2500 + Math.random() * 4000); }
 };
 (function(){ try { const sc = document.createElement('script'); sc.src = 'bot_more.js?v=1'; sc.async = true; sc.onerror = function(){}; document.head.appendChild(sc); } catch(e){} })();   // 🤖 확장팩(대사·대본·이름) 자동 로드
+(function(){ try { const sc = document.createElement('script'); sc.src = 'bot_love.js?v=1'; sc.async = true; sc.onerror = function(){}; document.head.appendChild(sc); } catch(e){} })();   // 💕 사랑·연애·이별 확장팩 자동 로드
 const BOT_CALLED = ['네~ 저 불렀어요? ㅎㅎ','네 {u}님 말씀하세요~','저요? 네 여기 있어요 😊','부르셨어요? 반가워요 ㅎㅎ','네네 듣고 있어요~','{u}님 저 불렀죠? 네~','네 {u}님 ㅎㅎ 왜요?','저 여기 있어요~ 무슨 일이세요?','오 저를 불러주셨네요 반가워요 😊','네~ 말씀하세요 {u}님','헤헤 저 불렀어요?','불러주셔서 고마워요 ㅎㅎ','네 {u}님 안녕하세요~','저 여기요 여기~ 🙋'];
 window.botUserSaid = text => {
   const key = roomPath();
