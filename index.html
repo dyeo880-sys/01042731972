@@ -627,15 +627,8 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
   <div id="livepin"></div>
   <div class="list" id="list" role="list"></div>
   <section class="chat" id="tvsec" aria-label="TV 보기">
-    <div class="chathead"><strong>📺 TV·위성 방송</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvadm">➕ 방송 추가</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvmv">🎵 24시간 뮤직비디오</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvresume" hidden>▶ 다시 켜기</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvopen">나라별 채널 펼치기</button></span></div>
+    <div class="chathead"><strong>📺 TV·위성 방송</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvmv">🎵 24시간 뮤직비디오</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvresume" hidden>▶ 다시 켜기</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="tvopen">나라별 채널 펼치기</button></span></div>
     <div id="livepin2"></div>
-    <div class="gate" id="tvadmin" hidden style="text-align:left;margin-bottom:8px">
-      <div style="color:var(--amber);font-weight:700;font-size:14px;margin-bottom:6px">⭐ 기타 방송 추가 — 관리자 전용 · 실시간 영상이 나오는 주소만 등록되고, 안 나오는 방송은 자동으로 숨겨집니다</div>
-      <div class="tvnotice" role="note"><b>방송 추가는 관리자만 할 수 있습니다.</b> 불법 중계, 유료 방송, 저작권자가 허락하지 않은 방송은 올리지 않습니다. 방송사나 권리자가 공식으로 공개한 주소만 등록하며, 문제가 있는 방송은 목록의 '🚩 신고' 버튼으로 알려 주시면 확인 후 삭제합니다.</div>
-      <div class="chatform" style="flex-wrap:wrap"><input id="tvan" maxlength="60" placeholder="방송 이름" aria-label="방송 이름"><input id="tvau" placeholder="주소 (m3u8 · mp4 · 유튜브 링크)" aria-label="방송 주소"></div>
-      <div class="chatform"><button id="tvaadd" class="addhome" style="margin:0" type="button">＋ 추가</button><button id="tvaout" class="addhome" style="margin:0" type="button">🔒 관리자 로그인 (삭제용)</button></div>
-      <div class="chatnote" id="tvamsg"></div>
-    </div>
     <div id="tvbox" hidden>
       <div id="tvplayer" hidden style="margin-bottom:8px">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px"><span id="tvnow" style="flex:1;color:var(--amber);font-weight:700;font-size:14px"></span><button class="addhome" style="margin:0;padding:4px 10px" type="button" id="tvclose">■ 끄기</button></div>
@@ -657,16 +650,34 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
       <div class="vres" id="tvlist" style="max-height:60vh"></div>
     </div>
   </section>
-  <section class="chat" id="rsssec" aria-label="실시간 소식(RSS)">
-    <div class="chathead"><strong>📰 실시간 소식 (RSS)</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="rssadm">➕ RSS 추가</button> <button class="addhome" style="margin:0;padding:6px 10px" type="button" id="rssref">🔄 새로고침</button></span></div>
-    <div class="gate" id="rssadmin" hidden style="text-align:left;margin-bottom:8px">
-      <div style="color:var(--amber);font-weight:700;font-size:14px;margin-bottom:6px">RSS 등록 — 관리자 전용 · 등록하면 모든 접속자 화면에 실시간으로 나옵니다</div>
-      <div class="chatform" style="flex-wrap:wrap"><input id="rssn" maxlength="30" placeholder="이름 (예: 이진주방산업 블로그)" aria-label="RSS 이름"><input id="rssu" placeholder="RSS 주소 (예: https://rss.blog.naver.com/fb1234.xml)" aria-label="RSS 주소"></div>
-      <div class="chatform"><button id="rssadd" class="addhome" style="margin:0" type="button">＋ 추가</button><button id="rssout" class="addhome" style="margin:0" type="button">🔒 관리자 로그인</button></div>
-      <div class="chatnote" id="rssmsg"></div>
-      <div id="rsslist"></div>
+  <section class="chat" id="chatsec" aria-label="채팅">
+    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"><button id="botbtn" class="addhome" type="button" hidden style="margin:0;padding:6px 10px"></button></div>
+    <div class="roomform" id="roomform" hidden>
+      <input id="roomname" maxlength="20" placeholder="새 채팅방 이름 (최대 20자)" aria-label="새 채팅방 이름">
+      <button id="roomok" class="addhome" style="margin:0" type="button">만들기</button>
+      <button id="roomcancel" class="addhome" style="margin:0" type="button">취소</button>
     </div>
-    <div class="chatlog" id="rssitems" style="height:auto;max-height:300px"><div class="empty" style="margin:14px 0">불러오는 중…</div></div>
+    <div class="gate" id="gate" hidden>
+      <p id="gatemsg"></p>
+      <div class="row">
+        <button id="gateretry" class="addhome" style="margin:0" type="button">다시 시도</button>
+        <input id="adminpw" type="password" autocomplete="off" placeholder="관리자 비밀번호" aria-label="관리자 비밀번호">
+        <button id="adminok" class="addhome" style="margin:0" type="button">관리자 입장</button>
+      </div>
+    </div>
+    <div id="camstrip"></div>
+    <div class="chatlog" id="chatlog" role="log" aria-live="polite"></div>
+    <div class="chatform" id="chatform">
+      <input id="chatin" maxlength="200" placeholder="메시지를 입력하세요" aria-label="메시지">
+      <button id="chatsend" class="addhome" style="margin:0">보내기</button>
+    </div>
+    <div class="chatnote" id="chatnote"></div>
+    <div class="chatnote" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="blkbtn" class="addhome" style="margin:0;padding:6px 10px" type="button">🚫 차단 목록 (0)</button><span>채팅의 이름을 누르면 귓속말·차단 메뉴가 열립니다.</span></div>
+    <div class="gate" id="blkpanel" hidden></div>
+  </section>
+  <section class="chat" id="rsssec" aria-label="실시간 소식(RSS)" style="display:none">
+    <div class="chathead"><strong>📰 실시간 소식 (RSS)</strong><span><button class="addhome" style="margin:0;padding:6px 10px" type="button" id="rssref">🔄 새로고침</button></span></div>
+    <div class="chatlog" id="rssitems" style="height:auto;max-height:300px"></div>
     <div class="chatnote" id="rssnote"></div>
   </section>
   <section class="chat" id="krinfo" aria-label="한국 교통·날씨">
@@ -758,31 +769,6 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="gp" id="g_rk" hidden>
             <div id="rklist"></div>
     </div>
-  </section>
-  <section class="chat" id="chatsec" aria-label="채팅">
-    <div class="chathead"><strong>채팅</strong><select id="room" aria-label="채팅방"><option value="lobby">전체 채팅방</option><option value="station">현재 방송국 채팅방</option></select><button id="newroom" class="addhome" style="margin:0;padding:6px 10px" type="button">🎵 음악 방 만들기</button><input id="nick" maxlength="12" placeholder="닉네임" aria-label="닉네임"><button id="botbtn" class="addhome" type="button" hidden style="margin:0;padding:6px 10px"></button></div>
-    <div class="roomform" id="roomform" hidden>
-      <input id="roomname" maxlength="20" placeholder="새 채팅방 이름 (최대 20자)" aria-label="새 채팅방 이름">
-      <button id="roomok" class="addhome" style="margin:0" type="button">만들기</button>
-      <button id="roomcancel" class="addhome" style="margin:0" type="button">취소</button>
-    </div>
-    <div class="gate" id="gate" hidden>
-      <p id="gatemsg"></p>
-      <div class="row">
-        <button id="gateretry" class="addhome" style="margin:0" type="button">다시 시도</button>
-        <input id="adminpw" type="password" autocomplete="off" placeholder="관리자 비밀번호" aria-label="관리자 비밀번호">
-        <button id="adminok" class="addhome" style="margin:0" type="button">관리자 입장</button>
-      </div>
-    </div>
-    <div id="camstrip"></div>
-    <div class="chatlog" id="chatlog" role="log" aria-live="polite"></div>
-    <div class="chatform" id="chatform">
-      <input id="chatin" maxlength="200" placeholder="메시지를 입력하세요" aria-label="메시지">
-      <button id="chatsend" class="addhome" style="margin:0">보내기</button>
-    </div>
-    <div class="chatnote" id="chatnote"></div>
-    <div class="chatnote" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="blkbtn" class="addhome" style="margin:0;padding:6px 10px" type="button">🚫 차단 목록 (0)</button><span>채팅의 이름을 누르면 귓속말·차단 메뉴가 열립니다.</span></div>
-    <div class="gate" id="blkpanel" hidden></div>
   </section>
   <section class="chat" id="boardsec" aria-label="맛집 게시판">
     <div class="chathead"><strong>🍚 지역별 맛집 자유게시판</strong></div>
@@ -938,9 +924,27 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     <div class="note" id="pb_count" style="margin:0 0 8px"></div>
     <div id="pb_list"></div>
   </section>
+  <section class="chat" id="admsec" aria-label="관리자 전용" style="display:none">
+    <div class="chathead"><strong>🔐 관리자 전용</strong></div>
+    <div class="gate" id="tvadmin" style="text-align:left;margin-bottom:10px">
+      <div style="color:var(--amber);font-weight:700;font-size:14px;margin-bottom:6px">⭐ 기타 방송 추가 — 관리자 전용 · 실시간 영상이 나오는 주소만 등록되고, 안 나오는 방송은 자동으로 숨겨집니다</div>
+      <div class="tvnotice" role="note"><b>방송 추가는 관리자만 할 수 있습니다.</b> 불법 중계, 유료 방송, 저작권자가 허락하지 않은 방송은 올리지 않습니다. 방송사나 권리자가 공식으로 공개한 주소만 등록하며, 문제가 있는 방송은 목록의 '🚩 신고' 버튼으로 알려 주시면 확인 후 삭제합니다.</div>
+      <div class="chatform" style="flex-wrap:wrap"><input id="tvan" maxlength="60" placeholder="방송 이름" aria-label="방송 이름"><input id="tvau" placeholder="주소 (m3u8 · mp4 · 유튜브 링크)" aria-label="방송 주소"></div>
+      <div class="chatform"><button id="tvaadd" class="addhome" style="margin:0" type="button">＋ 추가</button><button id="tvaout" class="addhome" style="margin:0" type="button">🔒 관리자 로그인 (삭제용)</button></div>
+      <div class="chatnote" id="tvamsg"></div>
+    </div>
+    <div class="gate" id="rssadmin" style="text-align:left;margin-bottom:10px">
+      <div style="color:var(--amber);font-weight:700;font-size:14px;margin-bottom:6px">RSS 등록 — 관리자 전용 · 등록하면 모든 접속자 화면에 실시간으로 나옵니다</div>
+      <div class="chatform" style="flex-wrap:wrap"><input id="rssn" maxlength="30" placeholder="이름 (예: 이진주방산업 블로그)" aria-label="RSS 이름"><input id="rssu" placeholder="RSS 주소 (예: https://rss.blog.naver.com/fb1234.xml)" aria-label="RSS 주소"></div>
+      <div class="chatform"><button id="rssadd" class="addhome" style="margin:0" type="button">＋ 추가</button><button id="rssout" class="addhome" style="margin:0" type="button">🔒 관리자 로그인</button></div>
+      <div class="chatnote" id="rssmsg"></div>
+      <div id="rsslist"></div>
+    </div>
+  </section>
   <footer class="foot"><a href="https://blog.naver.com/fb1234" target="_blank" rel="noopener noreferrer">이진주방산업</a>
     <div><button id="addhome" class="addhome">바탕화면에 바로가기 만들기</button></div>
     <div class="addmsg" id="addmsg" role="status"></div>
+    <div style="margin-top:6px"><button id="admenter" class="addhome" type="button" style="margin:0;padding:4px 10px;font-size:12px;opacity:.7">🔒 관리자</button></div>
     <p class="legal" id="legal">이 사이트는 방송사와 권리자가 공개한 스트림 주소를 연결할 뿐 영상을 저장하거나 올리지 않습니다. 저작권 침해, 불법 중계, 유료 방송 등 문제가 되는 방송을 발견하면 '기타 방송' 목록의 <b>🚩 신고</b> 버튼을 눌러 주세요. 확인 후 바로 삭제합니다. <span id="legalmail">삭제 요청은 위 '이진주방산업' 블로그로 연락해 주세요.</span></p>
   </footer>
   <p class="note">※ 실제 AM/FM 전파가 아니라, 각 방송국이 인터넷으로 송출하는 스트림을 radio-browser.info 공개 목록에서 불러옵니다. 일부 방송국은 지역 제한이나 주소 변경으로 재생되지 않을 수 있습니다. 이 파일을 내 컴퓨터에서 직접 열어 사용하세요.</p>
@@ -7038,11 +7042,11 @@ function refreshTvLists(){
   if (!$('vres').hidden && $('vres').querySelector('details')) tvBrowse();
 }
 function admShow(){
+  $('admsec').style.display = tvIsAdm() ? '' : 'none'; try { rssAdmShow(); } catch(e){}
   const a = tvIsAdm(); $('tvaout').textContent = a ? '🔓 관리자 끝내기' : '🔒 관리자 로그인 (추가·삭제용)';
   ['tvan', 'tvau', 'tvaadd'].forEach(id => { $(id).disabled = !a; });
   $('tvan').placeholder = a ? '방송 이름' : '관리자만 추가할 수 있습니다';
 }
-$('tvadm').onclick = () => { $('tvadmin').hidden = !$('tvadmin').hidden; };
 $('tvaout').onclick = async () => {
   if (tvIsAdm()){ try { sessionStorage.removeItem('radio_admin'); } catch(e){} admShow(); refreshTvLists(); return; }
   const pw = prompt('관리자 비밀번호를 입력하세요. (방송 삭제용)');
@@ -7053,6 +7057,7 @@ $('tvaout').onclick = async () => {
   try { sessionStorage.setItem('radio_admin', '1'); } catch(e){}
   admShow(); refreshTvLists();
 };
+$('admenter').onclick = () => { if (tvIsAdm()){ $('admsec').scrollIntoView({behavior: 'smooth', block: 'center'}); return; } $('tvaout').click(); };
 let tvLastAdd = 0;
 $('tvaadd').onclick = async () => {
   const name = $('tvan').value.trim(), u = $('tvau').value.trim(), m = $('tvamsg');
@@ -7147,7 +7152,8 @@ async function rssLoad(){
   try {
     note.textContent = '불러오는 중…';
     RSSF = await rssFeeds(); rssListAdm();
-    if (!RSSF.length){ box.innerHTML = ''; const e = document.createElement('div'); e.className = 'empty'; e.style.margin = '14px 0'; e.textContent = '등록된 RSS가 없습니다. 관리자가 ➕ RSS 추가에서 등록하면 여기에 나옵니다.'; box.append(e); note.textContent = ''; return; }
+    if (!RSSF.length){ box.innerHTML = ''; note.textContent = ''; $('rsssec').style.display = 'none'; return; }
+    $('rsssec').style.display = '';
     const res = await Promise.all(RSSF.map(async f => ({f, items: await rssGet(f.u)})));
     let all = [], fail = 0;
     res.forEach(r => { if (!r.items.length) fail++; r.items.forEach(it => all.push({src: r.f.name, title: it.title, link: it.link, date: it.date, summary: it.summary, t: Date.parse(it.date) || 0})); });
@@ -7168,7 +7174,6 @@ async function rssLoad(){
     note.textContent = rssFmt(Date.now()) + ' 기준 · ' + Math.round(RSS_EVERY / 60000) + '분마다 자동 갱신' + (fail ? ' · ' + fail + '곳은 불러오지 못했어요' : '');
   } finally { rssBusy = false; }
 }
-$('rssadm').onclick = () => { $('rssadmin').hidden = !$('rssadmin').hidden; rssAdmShow(); };
 $('rssref').onclick = rssLoad;
 $('rssout').onclick = async () => {
   if (tvIsAdm()){ try { sessionStorage.removeItem('radio_admin'); } catch(e){} admShow(); rssAdmShow(); refreshTvLists(); return; }
