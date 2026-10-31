@@ -1275,7 +1275,7 @@ function playView(i, keepRoom, restore){
     audio.src = url;
   }
   audio.play().catch(e => (restore && e && e.name === 'NotAllowedError') ? radioMutedStart() : setStatus(e && e.name === 'NotAllowedError' ? '▶ 화면을 한 번 누르면 이어서 나옵니다' : '재생할 수 없습니다. 다른 방송국을 선택하세요'));
-  document.querySelectorAll('.st').forEach((el, k) => el.classList.toggle('on', k === i));
+  document.querySelectorAll('#list .st[data-u]').forEach(el => el.classList.toggle('on', el.dataset.u === s.stationuuid));   // 방송국 버튼만, 고유번호로 비교 (추억의 방송국·음방 줄이 번호를 밀어내던 문제 수정)
   if ($('room').value === 'station' && typeof fetchChat === 'function') { lastSig = ''; fetchChat(true); }
   if (navigator.mediaSession){
     navigator.mediaSession.metadata = new MediaMetadata({title: s.name.trim(), artist: 'Radiola'});
