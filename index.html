@@ -667,11 +667,14 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
     </div>
     <div id="camstrip"></div>
     <div class="chatlog" id="chatlog" role="log" aria-live="polite"></div>
+    <div id="vocabbar" style="display:none;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
     <div class="chatform" id="chatform">
       <input id="chatin" maxlength="200" placeholder="메시지를 입력하세요" aria-label="메시지">
       <button id="chatsend" class="addhome" style="margin:0">보내기</button>
+      <button id="vocabask" class="addhome" style="margin:0;padding:6px 10px" type="button" title="모르는 채팅 용어 뜻 찾기 (/뜻 단어)">💡 뜻</button>
     </div>
     <div class="chatnote" id="chatnote"></div>
+    <div class="chatnote" id="vocabnote" hidden style="color:var(--amber)"></div>
     <div class="chatnote" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="blkbtn" class="addhome" style="margin:0;padding:6px 10px" type="button">🚫 차단 목록 (0)</button><span>채팅의 이름을 누르면 귓속말·차단 메뉴가 열립니다.</span></div>
     <div class="gate" id="blkpanel" hidden></div>
   </section>
@@ -1662,6 +1665,7 @@ async function fetchChat(force){
 async function sendChat(){
   const inp = $('chatin'), text = inp.value.trim();
   if (!text) return;
+  if (/^\/(뜻|뜻풀이)\s+\S/.test(text)){ inp.value = ''; try { window.explainWord(text.replace(/^\/\S+\s+/, '')); } catch(e){} return; }
   { const bm = badMsg([text, $('nick').value]); if (bm){ alert(bm); return; } }
   if (liveRoom && !isHost() && $('room').value === 'b:' + liveRoom.id && ctlMuted(UID)){ $('chatnote').textContent = '🔇 방장이 입막음해서 이 방에서는 채팅할 수 없습니다.'; return; }
   if (!$('nick').value.trim()) $('nick').value = fakeNick();
@@ -1670,6 +1674,7 @@ async function sendChat(){
   try { localStorage.setItem('radio_nick', msg.n); } catch(e){}
   try { if (liveRoom && !isHost() && $('room').value === 'b:' + liveRoom.id && hasLink(text)) $('chatnote').textContent = '🔒 링크는 방장에게만 보입니다. 다른 손님에게는 가려져요.'; } catch(e){}
   inp.value = '';
+  try { window.learnWords && window.learnWords(text); } catch(e){}
   try { window.botUserSaid && window.botUserSaid(text); } catch(e){}
   if (!DB){
     chat.push(msg); chat = chat.slice(-100);
@@ -7207,6 +7212,95 @@ $('rssadd').onclick = async () => {
 rssAdmShow();
 setTimeout(rssLoad, 2500);   // 접속 직후 바쁘지 않게 조금 뒤에 첫 불러오기
 setInterval(() => { if (!document.hidden) rssLoad(); }, RSS_EVERY);
+
+// ===== 🧠 채팅 용어 스스로 배우기: 채팅에서 자주 나오는 말을 모아 자동완성으로 추천하고, 모르는 말은 무료 AI(중계 파일 jin_ai.php)에게 한 번만 물어 모두가 함께 씁니다 =====
+const AI_PROXY = RSS_PROXY.replace('jin_rss.php', 'jin_ai.php');
+const VK = 'radio_vocab', SK = 'radio_slang', AK = 'radio_slang_auto';
+const jl = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || d); } catch(e){ return JSON.parse(d); } };
+let VOC = jl(VK, '{}'), VSH = {}, SLANG = jl(SK, '{}');
+const vSave = () => { try { VOC = Object.fromEntries(Object.entries(VOC).sort((a, b) => b[1].c - a[1].c).slice(0, 400)); localStorage.setItem(VK, JSON.stringify(VOC)); } catch(e){} };
+const sSave = () => { try { localStorage.setItem(SK, JSON.stringify(SLANG)); } catch(e){} };
+const STOPW = new Set('그리고 그런데 그래서 하지만 그냥 진짜 너무 아니 이거 저거 그거 여기 거기 저기 우리 나는 내가 제가 저는 너도 오늘 지금 이제 정말 그럼 근데 아직 혹시 같이 해요 하네 합니다 있어 없어 있는 없는 이렇게 그렇게'.split(' '));
+const slKey = w => encodeURIComponent(String(w).toLowerCase());
+window.learnWords = text => {
+  try {
+    if ($('room').value.indexOf('u:') === 0 || /https?:\/\//i.test(text)) return;   // 귓속말·링크는 배우지 않음
+    const seen = new Set();
+    (text.match(/[가-힣ㄱ-ㅎA-Za-z0-9]{2,12}/g) || []).forEach(w => {
+      const k = w.toLowerCase();
+      if (seen.has(k) || STOPW.has(k) || /^\d+$/.test(k) || /^(.)\1+$/.test(k)) return;
+      seen.add(k);
+      try { if (badMsg([k])) return; } catch(e){}
+      const v = VOC[k] || (VOC[k] = {c: 0});
+      v.c++;
+      if (v.c === 3 && !v.p && DB){ v.p = 1; lj('vocab/' + slKey(k), 'PUT', {c: v.c, ts: Date.now()}).catch(() => { v.p = 0; }); }
+      if (v.c >= 5 && !(k in SLANG)) vAuto(k);
+    });
+    vSave(); vSuggest();
+  } catch(e){}
+};
+async function vSharedLoad(){ if (!DB) return; try { const j = await lj('vocab', 'GET'); VSH = j && typeof j === 'object' ? j : {}; } catch(e){} }
+function vSuggest(){
+  const inp = $('chatin'), bar = $('vocabbar');
+  const m = /([가-힣ㄱ-ㅎA-Za-z0-9]+)$/.exec(inp.value.slice(0, inp.selectionStart == null ? inp.value.length : inp.selectionStart));
+  bar.innerHTML = '';
+  if (!m){ bar.style.display = 'none'; return; }
+  const pre = m[1].toLowerCase(), cand = {};
+  Object.entries(VOC).forEach(([w, v]) => { cand[w] = v.c; });
+  Object.entries(VSH).forEach(([w, v]) => { cand[w] = Math.max(cand[w] || 0, +(v && v.c) || 0); });
+  const list = Object.entries(cand).filter(([w, c]) => w !== pre && w.startsWith(pre) && c >= 2).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  if (!list.length){ bar.style.display = 'none'; return; }
+  list.forEach(([w]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:3px 10px;font-size:13px';
+    b.textContent = w; const s = SLANG[w]; if (s && s.m) b.title = s.m;
+    b.onmousedown = e => e.preventDefault();
+    b.onclick = () => { const pos = inp.selectionStart == null ? inp.value.length : inp.selectionStart; inp.value = inp.value.slice(0, pos - pre.length) + w + ' ' + inp.value.slice(pos); inp.focus(); vSuggest(); };
+    bar.append(b);
+  });
+  bar.style.display = 'flex';
+}
+$('chatin').addEventListener('input', vSuggest);
+async function slangAsk(w, silent){   // 공유 사전 → 없으면 AI 중계 파일에 한 번만 물어보고 모두가 쓰게 저장
+  const k = w.toLowerCase();
+  if (SLANG[k]) return SLANG[k];
+  if (DB){ try { const j = await lj('slang/' + slKey(k), 'GET'); if (j && (j.m || j.g)){ SLANG[k] = {m: String(j.m || '').slice(0, 300), g: j.g ? 1 : 0}; sSave(); return SLANG[k]; } } catch(e){} }
+  const r = await fetch(AI_PROXY + '?w=' + encodeURIComponent(w)); if (!r.ok) throw new Error(r.status);
+  const j = await r.json();
+  if (j && j.m){ SLANG[k] = {m: String(j.m).slice(0, 300), g: 0}; }
+  else if (j && j.common){ SLANG[k] = {m: '', g: 1}; }
+  else return null;
+  sSave();
+  if (DB) lj('slang/' + slKey(k), 'PUT', {m: SLANG[k].m, g: SLANG[k].g, ts: Date.now()}).catch(() => {});
+  return SLANG[k];
+}
+let vAutoBusy = false;
+async function vAuto(k){   // 자주 나오는 말을 조용히 학습: 하루 10번까지만 (무료 한도 아끼기)
+  if (vAutoBusy) return;
+  const today = new Date().toISOString().slice(0, 10), a = jl(AK, '{}');
+  if (a.d !== today){ a.d = today; a.n = 0; }
+  if (a.n >= 10) return;
+  vAutoBusy = true; a.n++; try { localStorage.setItem(AK, JSON.stringify(a)); } catch(e){}
+  try { await slangAsk(k, true); } catch(e){} finally { vAutoBusy = false; }
+}
+window.explainWord = async function(w){
+  w = String(w || '').trim().slice(0, 20); if (!w) return;
+  const box = $('vocabnote');
+  const show = txt => { box.hidden = false; box.textContent = txt + '  '; const x = document.createElement('button'); x.type = 'button'; x.className = 'addhome'; x.style.cssText = 'margin:0;padding:1px 8px;font-size:12px'; x.textContent = '닫기'; x.onclick = () => { box.hidden = true; }; box.append(x); };
+  show('💡 「' + w + '」 찾는 중…');
+  try {
+    const s = await slangAsk(w);
+    if (!s) show('💡 「' + w + '」 뜻을 찾지 못했어요.');
+    else if (s.g) show('💡 「' + w + '」 은(는) 평범한 일반 단어예요.');
+    else show('💡 「' + w + '」 ' + s.m);
+  } catch(e){ show('💡 뜻풀이 서버에 연결하지 못했어요. (jin_ai.php가 올라가 있는지 확인해 주세요)'); }
+};
+$('vocabask').onclick = () => {
+  const inp = $('chatin'), m = /([가-힣ㄱ-ㅎA-Za-z0-9]+)\s*$/.exec(inp.value);
+  const w = prompt('뜻을 알고 싶은 채팅 용어를 입력하세요.', m ? m[1] : '');
+  if (w) window.explainWord(w);
+};
+setTimeout(vSharedLoad, 4000);
+setInterval(() => { if (!document.hidden) vSharedLoad(); }, 600000);
 
 [['전체', ''], ['뉴스', 'news|뉴스|ytn|jtbc|nhk|bbc|cnn|al jazeera|france 24|dw'], ['스포츠', 'sport|스포츠|espn|golf|soccer|football'], ['음악', 'music|뮤직|mtv|kpop|k-pop|vevo|radio'], ['영화', 'movie|cinema|film|영화|drama|드라마'], ['어린이', 'kids|kid|cartoon|children|junior|baby|어린이'], ['다큐', 'documentary|discovery|history|nature|geographic|science|다큐'], ['날씨', 'weather|날씨']].forEach(([n, q]) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'addhome'; b.style.cssText = 'margin:0;padding:4px 10px;font-size:13px'; b.textContent = n;
