@@ -423,10 +423,12 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 #guestTile .gtbar button{margin:0;padding:2px 8px;font-size:13px;line-height:1.3;background:#000b;color:var(--amber);border:1px solid var(--amber);border-radius:6px;cursor:pointer}
 /* 💬 방 화면: 넓은 화면에서는 채팅을 영상 옆(오른쪽/왼쪽)에 붙임 */
 #rvside{margin:0}#roomview.mini #rvside{display:none}
-@media (max-width:899px){#rvside{display:none}}
-@media (min-width:900px){
-#roomview:is(.sideR,.sideL):not(.mini) .rvbox{max-width:1500px;display:grid;grid-template-columns:minmax(0,1fr) clamp(320px,30vw,440px);column-gap:14px;align-items:start}
-#roomview.sideL:not(.mini) .rvbox{grid-template-columns:clamp(320px,30vw,440px) minmax(0,1fr)}
+@media (max-width:639px){#rvside{display:none}}
+@media (min-width:640px){#roomview{--chatw:clamp(240px,36vw,320px)}}
+@media (min-width:900px){#roomview{--chatw:clamp(320px,30vw,440px)}}
+@media (min-width:640px){
+#roomview:is(.sideR,.sideL):not(.mini) .rvbox{max-width:1500px;display:grid;grid-template-columns:minmax(0,1fr) var(--chatw);column-gap:14px;align-items:start}
+#roomview.sideL:not(.mini) .rvbox{grid-template-columns:var(--chatw) minmax(0,1fr)}
 #roomview:is(.sideR,.sideL):not(.mini) #rvbody{display:contents}
 #roomview:is(.sideR,.sideL):not(.mini) .rvhead{grid-column:1/-1;grid-row:1}
 #roomview:is(.sideR,.sideL):not(.mini) #mediawin{grid-row:2;grid-column:1;margin-bottom:0;min-width:0}
@@ -443,6 +445,14 @@ main .chat.sp.dopen{display:block;position:fixed;top:0;bottom:0;right:80px;width
 #roomview:is(.sideR,.sideL):not(.mini) #chatsec{max-height:calc(100vh - 24px);overflow-y:auto}
 #roomview:is(.sideR,.sideL):not(.mini) #chatsec:has(>.debate:not([hidden])) #chatlog{height:max(200px,calc(100vh - 640px))}
 #roomview:is(.sideR,.sideL):not(.mini) .rvbox:has(#mediawin[hidden]) #chatlog{height:180px;min-height:0}
+}
+/* 💬 아주 좁은 화면(639px 이하, 세로 폰): 채팅창을 화면 아래에 고정해서 스크롤 없이 항상 보이게 함 */
+@media (max-width:639px){
+#roomview:not(.mini) .rvbox{padding-bottom:calc(44vh + 10px);padding-bottom:calc(44dvh + 10px)}
+#roomview:not(.mini) #chatsec{position:fixed;left:0;right:0;bottom:0;z-index:20;margin:0;height:44vh;height:44dvh;display:flex;flex-direction:column;overflow-y:auto;border-radius:12px 12px 0 0;border-width:1px 0 0;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 18px #000a}
+#roomview:not(.mini) #chatsec>*{flex:0 0 auto}
+#roomview:not(.mini) #chatsec>#chatlog{flex:1 1 auto;height:auto;min-height:90px}
+#roomview:not(.mini) #blkbtn+span{display:none}
 }
 #dlvsec input,#dlvsec select,#dlvsec textarea{background:#1a0f08;color:var(--ink);border:1px solid #b99a5b88;border-radius:6px;padding:8px 10px;min-width:0;font:inherit}
 #dlvsec textarea{width:100%;min-height:110px;resize:vertical}
@@ -5839,7 +5849,7 @@ $('leavebtn').onclick = async () => {
 };
 $('mwre').onclick = () => { if (lis){ setBc('영상을 다시 연결하는 중입니다…'); reconnectListen(); } };
 $('rvmini').onclick = () => setMini(!$('roomview').classList.contains('mini'));
-(function(){ // 채팅 위치: 영상 옆 오른쪽(기본) / 왼쪽 / 아래 — 넓은 화면(900px 이상)에서만 적용
+(function(){ // 채팅 위치: 영상 옆 오른쪽(기본) / 왼쪽 / 아래 — 화면 폭 640px 이상: 영상 옆 / 그보다 좁으면 채팅을 화면 아래에 고정
   const rv = $('roomview'), b = $('rvside'); let m = 'r';
   try { m = localStorage.getItem('radio_chat_side') || 'r'; } catch(e){}
   if (!{r: 1, l: 1, b: 1}[m]) m = 'r';
