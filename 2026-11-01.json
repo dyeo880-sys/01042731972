@@ -1,0 +1,136 @@
+{
+  "__type": "unoDocV1",
+  "name": "2026-11-01",
+  "seqs": [
+    {
+      "name": "수동2구 거품 충진기",
+      "trigCh": 1,
+      "trigCond": "BOTH",
+      "condMode": "AND",
+      "conds": [],
+      "steps": [
+        {
+          "relay": 4,
+          "state": "ON",
+          "delay": 0,
+          "wait": null
+        },
+        {
+          "relay": 1,
+          "state": "ON",
+          "delay": 0,
+          "wait": {
+            "ch": 2,
+            "state": "ON"
+          }
+        },
+        {
+          "relay": 2,
+          "state": "ON",
+          "delay": 0,
+          "wait": {
+            "ch": 3,
+            "state": "ON"
+          }
+        },
+        {
+          "relay": 2,
+          "state": "OFF",
+          "delay": 0,
+          "wait": null
+        },
+        {
+          "relay": 3,
+          "state": "ON",
+          "delay": 0,
+          "wait": {
+            "ch": 4,
+            "state": "ON"
+          }
+        },
+        {
+          "relay": 3,
+          "state": "OFF",
+          "delay": 0,
+          "wait": {
+            "ch": 5,
+            "state": "ON"
+          }
+        },
+        {
+          "relay": 1,
+          "state": "OFF",
+          "delay": 0,
+          "wait": null
+        },
+        {
+          "relay": 4,
+          "state": "OFF",
+          "delay": 1000,
+          "wait": null
+        },
+        {
+          "relay": 4,
+          "state": "ON",
+          "delay": 0,
+          "wait": null
+        },
+        {
+          "relay": 1,
+          "state": "OFF",
+          "delay": 0,
+          "wait": null
+        }
+      ],
+      "orderExempt": false
+    }
+  ],
+  "names": {
+    "relay": [
+      "전자벨브 실린더 내림",
+      "펌프 작동 릴레이(MC)",
+      "에어주입릴레이",
+      "타이머"
+    ],
+    "inp": [
+      "발판스위치",
+      "하단 센서",
+      "1번 타이머 ",
+      "2번 타이머 ",
+      "3번타이머 초기화",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "inv": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "boot": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "outinv": [
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}
