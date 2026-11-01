@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNO 릴레이 배선도</title>
+<style>
+body{margin:0;background:#f3f4f6;font-family:Arial,"Malgun Gothic",sans-serif;color:#222}
+h1{margin:0;padding:14px 20px;background:#1f2937;color:#fff;font-size:20px}
+.wrap{max-width:1050px;margin:14px auto;padding:0 12px}
+.card{background:#fff;border-radius:10px;padding:12px;box-shadow:0 1px 4px #0002;margin-bottom:12px}
+.note{font-size:13.5px;line-height:1.75}
+h2{font-size:16px;margin:4px 0 8px}
+button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer}
+@media print{.noprint{display:none}body{background:#fff}.card{box-shadow:none;break-inside:avoid}}
+</style></head><body>
+<h1>Arduino UNO 릴레이 배선도</h1>
+<div class="wrap">
+<div class="card noprint"><button onclick="window.print()">🖨 인쇄 / PDF로 저장</button></div>
+
+<div class="card"><h2>① 릴레이 출력 배선 (UNO → 릴레이 모듈 → 부하)</h2>
+<svg id="a" viewBox="0 0 1000 560" style="width:100%;height:auto;font-family:Arial,'Malgun Gothic',sans-serif"></svg></div>
+
+<div class="card"><h2>② 입력 신호 배선 — 두 가지 방식 (D핀과 5V가 만나면 신호)</h2>
+<svg id="b" viewBox="0 0 1000 400" style="width:100%;height:auto;font-family:Arial,'Malgun Gothic',sans-serif"></svg></div>
+
+<div class="card note">
+<b>정리</b><br>
+· <b>릴레이:</b> UNO D3~D6 → 모듈 IN1~IN4, 모듈 VCC=5V, GND=GND(공통). 기본은 LOW일 때 릴레이 ON(Active-LOW 모듈). 반대로 동작하면 프로그램의 "출력 반전"을 켜세요.<br>
+· <b>입력 기본 방식(A):</b> 스위치 한쪽 = 핀, 반대쪽 = GND. 누르면 LOW = 눌림. 가장 안전하고 간단합니다.<br>
+· <b>5V 방식(B):</b> 프로그램에서 해당 CH의 <b>"입력 반전"</b>을 켠 경우입니다. 핀이 HIGH(5V)일 때 눌림으로 읽습니다. 핀은 내부 풀업이 켜져 있어 스위치가 열려 있을 때 HIGH가 되므로, <b>핀과 GND 사이에 4.7kΩ(풀다운)</b>을 꼭 넣어야 "떼면 LOW"가 됩니다. 5V 쪽 스위치에는 <b>1kΩ 직렬</b>을 넣어 보호하세요. 이 저항값은 제가 계산한 권장값이니, 연결 후 ② 탭에서 눌림/뗌이 맞게 표시되는지 확인해 주세요.<br>
+· 센서 출력이 이미 5V/0V를 확실히 내보내는 타입(NPN/PNP 5V 출력 등)이면 풀다운 없이 센서 신호선을 핀에 바로 연결해도 됩니다. 이때도 센서 GND는 UNO GND와 공통이어야 합니다.<br>
+· <b>24V 신호는 절대 핀에 직결하지 마세요.</b> 포토커플러나 릴레이로 분리해서 받아야 합니다.
+</div></div>
+
+<script>
+function mk(){let h='';const f={
+T:(x,y,s,o)=>{o=o||{};h+=`<text x="${x}" y="${y}" font-size="${o.s||12}" fill="${o.c||'#111'}" text-anchor="${o.a||'start'}" font-weight="${o.b?'bold':'normal'}">${s}</text>`},
+L:(x1,y1,x2,y2,c,w,d)=>{h+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c||'#2563eb'}" stroke-width="${w||2.4}" ${d?'stroke-dasharray="6 4"':''}/>`},
+R:(x,y,w,hh,fl,s,r)=>{h+=`<rect x="${x}" y="${y}" width="${w}" height="${hh}" rx="${r||6}" fill="${fl}" stroke="${s}" stroke-width="1.5"/>`},
+C:(x,y,r,fl,s)=>{h+=`<circle cx="${x}" cy="${y}" r="${r}" fill="${fl}" stroke="${s||'none'}"/>`},
+Z:(x,y,w)=>{ // 저항 지그재그(가로)
+ let p=`M${x},${y} l6,0 l4,-8 l8,16 l8,-16 l8,16 l8,-16 l4,8 l6,0`;h+=`<path d="${p}" fill="none" stroke="#111" stroke-width="2"/>`},
+get:()=>h};return f}
+
+// ===== ① 릴레이 출력 =====
+(function(){const g=mk();
+g.R(40,40,230,440,'#0f766e','#064e3b',12);g.T(155,70,'Arduino UNO',{a:'middle',c:'#fff',b:1,s:16});
+const pins=['D3','D4','D5','D6'];
+g.R(420,40,330,400,'#1e3a8a','#0f172a',10);g.T(585,66,'릴레이 모듈 (4채널, Active-LOW)',{a:'middle',c:'#fff',b:1,s:14});
+pins.forEach((p,i)=>{const y=120+i*80;
+ g.L(270,y,420,y,'#dc2626');g.C(270,y,4,'#fff');g.T(260,y+4,p,{a:'end',c:'#fff',b:1,s:13});
+ g.T(432,y+4,'IN'+(i+1),{c:'#fff',b:1,s:13});g.T(345,y-8,'신호선 R'+(i+1),{a:'middle',s:11,c:'#b91c1c'});
+ // contacts
+ g.R(560,y-26,170,56,'#e5e7eb','#475569',6);
+ ['COM','NO','NC'].forEach((n,k)=>{g.C(590+k*55,y+8,5,'#111');g.T(590+k*55,y+24,n,{a:'middle',s:10})});
+ g.T(645,y-12,'릴레이 R'+(i+1)+' 접점',{a:'middle',s:10,c:'#334155'});
+});
+// power
+g.L(270,380,360,380,'#dc2626',3.5);g.L(360,380,360,410,'#dc2626',3.5);g.L(360,410,420,410,'#dc2626',3.5);
+g.C(270,380,4,'#fff');g.T(260,384,'5V',{a:'end',c:'#fff',b:1,s:13});g.T(432,414,'VCC (5V)',{c:'#fff',b:1,s:12});
+g.L(270,430,380,430,'#111',3.5);g.L(380,430,380,425,'#111',3.5);g.L(380,425,420,425,'#111',3.5);
+g.C(270,430,4,'#fff');g.T(260,434,'GND',{a:'end',c:'#fff',b:1,s:13});g.T(432,429,'GND',{c:'#fff',b:1,s:12});
+// load example
+g.R(800,60,170,100,'#fff7ed','#b45309',8);g.T(885,86,'부하 예: 램프/밸브',{a:'middle',b:1,s:12,c:'#92400e'});
+g.L(645+0,128,645,128);// no-op
+g.L(730,108,800,108,'#b45309',2.4);
+g.T(885,112,'+전원 → COM',{a:'middle',s:11});g.T(885,132,'NO → 부하 → 전원(-)',{a:'middle',s:11});
+g.T(40,520,'빨강=신호/5V · 검정=GND · 갈색=부하측(모듈 정격 전압/전류 이내). 릴레이가 켜지면 COM과 NO가 붙습니다.',{s:12,c:'#334155'});
+g.T(40,540,'릴레이 모듈의 GND와 UNO의 GND는 반드시 공통으로 연결하세요.',{s:12,c:'#334155'});
+document.getElementById('a').innerHTML=g.get()})();
+
+// ===== ② 입력 방식 =====
+(function(){const g=mk();
+// A
+g.R(20,20,470,360,'#f8fafc','#cbd5e1',10);g.T(255,48,'A) 기본 방식 — 핀 ↔ GND',{a:'middle',b:1,s:15});
+g.R(360,80,110,120,'#0f766e','#064e3b',8);g.T(415,105,'UNO',{a:'middle',c:'#fff',b:1,s:13});
+g.C(360,150,4,'#fff');g.T(372,154,'D7 등',{c:'#fff',s:11});
+g.L(360,150,200,150);g.C(200,150,4,'#fff','#111');g.L(200,150,170,135,'#111',2.4);g.C(150,150,4,'#fff','#111');
+g.T(180,125,'스위치',{a:'middle',s:11});g.L(150,150,70,150,'#111');g.L(70,150,70,300,'#111',3);
+g.R(55,300,110,26,'#e5e7eb','#475569',4);g.T(110,318,'GND',{a:'middle',b:1,s:12});
+g.L(70,300,360,300,'#111',3,1);g.C(360,300,4,'#fff');g.T(372,304,'GND',{a:'start',s:11});
+g.T(255,350,'누르면 핀이 GND로 → LOW = 눌림 (내부 풀업 사용, 저항 불필요)',{a:'middle',s:12,c:'#166534',b:1});
+// B
+g.R(510,20,470,360,'#fffbeb','#fcd34d',10);g.T(745,48,'B) 5V 방식 — "입력 반전" ON',{a:'middle',b:1,s:15});
+g.R(870,80,100,170,'#0f766e','#064e3b',8);g.T(920,105,'UNO',{a:'middle',c:'#fff',b:1,s:13});
+g.C(870,150,4,'#fff');g.T(880,154,'D핀',{c:'#fff',s:11});
+g.R(530,70,80,26,'#fecaca','#dc2626',4);g.T(570,88,'5V',{a:'middle',b:1,s:12});
+g.L(570,96,570,150,'#dc2626',2.6);
+g.C(570,150,4,'#fff','#111');g.L(570,150,600,135,'#111',2.4);g.C(620,150,4,'#fff','#111');g.T(595,125,'스위치',{a:'middle',s:11});
+g.L(620,150,650,150,'#dc2626',2.6);g.Z(650,150);g.T(688,180,'1kΩ',{a:'middle',s:11});
+g.L(700+8,150,800,150,'#dc2626',2.6);
+// node
+g.C(800,150,5,'#111');g.L(800,150,870,150,'#2563eb',2.6);
+// pulldown
+g.L(800,150,800,200,'#111',2);
+h2=`<path d="M800,200 l0,6 l-8,4 l16,8 l-16,8 l16,8 l-16,8 l8,4 l0,6" fill="none" stroke="#111" stroke-width="2"/>`;
+g.get();
+document.getElementById('b').innerHTML='';
+// append manual path via closure
+const base=g.get();
+const extra=h2+`<line x1="800" y1="256" x2="800" y2="300" stroke="#111" stroke-width="3"/><rect x="740" y="300" width="120" height="26" rx="4" fill="#e5e7eb" stroke="#475569"/><text x="800" y="318" text-anchor="middle" font-size="12" font-weight="bold">GND</text><text x="820" y="232" font-size="11">4.7kΩ (풀다운)</text><text x="745" y="350" text-anchor="middle" font-size="12" fill="#92400e" font-weight="bold">누르면 핀이 5V → HIGH = 눌림 · 떼면 풀다운으로 LOW</text><text x="745" y="368" text-anchor="middle" font-size="11" fill="#475569">풀다운이 없으면 떼도 HIGH로 남아 "항상 눌림"이 됩니다</text><text x="400" y="368" text-anchor="middle" font-size="0"> </text>`;
+document.getElementById('b').innerHTML=base+extra})();
+</script></body></html>
