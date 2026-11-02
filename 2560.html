@@ -225,8 +225,9 @@ th{font-size:12.5px;color:#64748b;font-weight:700;text-transform:uppercase;lette
 .dupNote{background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:8px 11px;font-size:12.5px;margin:8px 0;line-height:1.6}
 
 /* ===== 최신 디자인 리프레시 (2026) ===== */
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Pretendard,'Noto Sans KR',Arial,sans-serif;background:#f5f6fa}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Pretendard,'Noto Sans KR',Arial,sans-serif;background:#e9e7e1}
 header{background:linear-gradient(120deg,#1e2a44,#1f2937 60%);padding:16px 22px;box-shadow:0 2px 10px #0002}
+
 .headerBadge{background:linear-gradient(120deg,#3b82f6,#2563eb);box-shadow:0 1px 4px #0003}
 /* 헤더의 작은 연결 표시등: 연결되면 천천히 깜박이고, 보드에서 데이터가 올 때마다 짧게 번쩍임 */
 .connLamp{display:inline-block;width:9px;height:9px;border-radius:50%;background:#64748b;opacity:.55;flex:none;margin-left:-4px}
@@ -291,6 +292,39 @@ button.btnFlash{animation:btnFlashKey .32s ease}
 .docMsg{font-size:14px;line-height:1.6;color:#334155}
 .docBtns{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
 .docWarn{margin-top:10px;background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;border-radius:8px;padding:8px 12px;font-size:13px;line-height:1.55}
+/* ===== 눈이 편한 배경 (밝은 흰색 대신 따뜻한 회색 / 어두운 환경에서는 다크 테마) ===== */
+.card,.sidenav,.modalBox{background:#f6f5f1}
+.vChip,.seqTestGroup,.seqItem .seqNo,.guideStep,.optChip,.sTag,.seqMon .chip{background:#f6f5f1}
+.relayBox,.inputChip,.seqMon,.kpEnableRow,.wireDiagramBox,.helpBody,.seqTestStep{background:#eeece6}
+input,select,textarea{background:#fbfaf7}
+.docBarM{background:#f6f5f1}
+.guideCard{background:#f6f5f1;border-color:#e2dfd6}
+.status{background:#e8ebf3}
+@media (prefers-color-scheme:dark){
+ body{background:#14171c;color:#d8dde6}
+ .card,.sidenav,.modalBox{background:#1d2229;color:#d8dde6;box-shadow:0 2px 8px #0006}
+ .relayBox,.inputChip,.seqMon,.kpEnableRow,.wireDiagramBox,.helpBody,.seqTestStep,.vChip,.seqTestGroup,.guideStep,.optChip,.sTag,.seqMon .chip,.helpBtn,.wireHwChip{background:#262c35;border-color:#374151;color:#d8dde6}
+ #seqMon .mHead{background:#262c35}
+ .seqItem .seqNo,.seqItem .seqGrip{background:#262c35;border-color:#374151;color:#d8dde6}
+ input,select,textarea{background:#14181e;color:#e5e9f0;border-color:#3b4452}
+ .small,.card .small,p.small{color:#9aa6b6}
+ h1,h2,h3,h4,label,th,td{color:#e1e6ee}
+ .sidenav a{color:#cbd5e1}
+ .sidenav a:hover{background:#2d3540}
+ .dupNote,.vBox{background:#3a3220;border-color:#6b5a2a;color:#f3d98a}
+ .wireErrItem,.monNotice,.seqBulkBar,.pinConflict{background:#3b2326;border-color:#7f2d33;color:#fca5a5}
+ table,th,td{border-color:#374151}
+ th{background:#262c35}
+ code{background:#2d3540;color:#e1e6ee}
+ .docBarM{background:#1d2229;border-color:#374151;color:#e1e6ee}
+ .docBarM .small{color:#9aa6b6}
+ .guideCard{background:#1d2229;border-color:#374151}
+ .guideStep b{color:#8fb4ff}.guideStep span{color:#9aa6b6}
+ .card button.helpQ,.settings button.helpQ{background:#2d3540;color:#cbd5e1;border-color:#4b5563}
+ .card.open,.card:focus-within{border-color:#374151}
+ .groupTab,.dBtn.l,.status{background:#262c35;border-color:#374151;color:#d8dde6}
+ .groupTab.active{background:#2563eb;color:#fff;border-color:#2563eb}
+}
 </style>
 </head>
 <body>
@@ -338,6 +372,7 @@ button.btnFlash{animation:btnFlashKey .32s ease}
  <a href="#" data-target="cardTest" data-group="check" onclick="gotoSection('cardTest');return false">11. 테스트</a>
  <a href="#" data-target="card12" data-group="check" onclick="gotoSection('card12');return false">12. 배선도 <span class="navOff" id="navWireOff"></span></a>
  <a href="#" data-target="card9" data-group="check" onclick="gotoSection('card9');return false">13. 인쇄/PDF</a>
+ <a href="#" data-target="cardHmi" data-group="check" onclick="gotoSection('cardHmi');return false">14. HMI 화면</a>
  <a href="#" data-target="cardLog" data-group="check" onclick="gotoSection('cardLog');return false">통신 로그</a>
 </nav>
 <div class="wrap">
@@ -862,7 +897,7 @@ button.btnFlash{animation:btnFlashKey .32s ease}
 <div class="card" id="card12" data-group="check">
  <div class="cardHead" onclick="toggleCard('card12')"><h3>12. 배선도 (자동 생성)</h3><span class="chev">▼</span></div>
  <div class="cardBody">
- <p class="small">"3. 채널→핀 매핑", "4. 입력 채널", "5. 키패드"에서 정한 핀 번호를 바탕으로 배선도를 자동으로 그립니다. 카메라로 실제 전선을 보는 것은 아니고, <b>설정값끼리 같은 핀을 겹쳐 쓰고 있거나, 원래 다른 용도로 고정된 핀(USB 통신 0·1번, OLED/외장 EEPROM용 I2C 20·21번)을 잘못 골랐는지</b> 검사해서 문제가 있는 곳을 빨간색으로 짚어줍니다. 다른 화면에서 핀 번호나 이름을 바꾸면 이 배선도도 자동으로 다시 그려집니다.</p>
+ <p class="small">"3. 릴레이 핀", "4. 입력 채널", "5. 키패드"에서 정한 핀 번호를 바탕으로 배선도를 자동으로 그립니다. 카메라로 실제 전선을 보는 것은 아니고, <b>설정값끼리 같은 핀을 겹쳐 쓰고 있거나, 원래 다른 용도로 고정된 핀(USB 통신 0·1번, OLED/외장 EEPROM용 I2C 20·21번)을 잘못 골랐는지</b> 검사해서 문제가 있는 곳을 빨간색으로 짚어줍니다. 다른 화면에서 핀 번호나 이름을 바꾸면 이 배선도도 자동으로 다시 그려집니다.</p>
  <div class="row">
   <button class="gray" onclick="renderWiringDiagram()">🔄 새로고침</button>
   <button onclick="withBtnFeedback(this, checkI2cHardware)">🔌 실제 I2C(OLED·외장 EEPROM) 연결 상태 확인</button>
@@ -886,6 +921,345 @@ button.btnFlash{animation:btnFlashKey .32s ease}
  <div class="row">
   <button onclick="openConfigPrintReport()" class="green">🖨 설정 전체 인쇄 / PDF로 저장</button>
  </div>
+ </div>
+</div>
+
+<div class="card collapsed" id="cardHmi" data-group="check">
+ <div class="cardHead" onclick="toggleCard('cardHmi')"><h3>14. HMI 화면 (TJC 7인치 터치 화면)</h3><span class="chev">▼</span></div>
+ <div class="cardBody">
+ <p class="small">TJC X2 시리즈 터치 화면을 메가2560에 붙여서, <b>PC 없이 현장에서 릴레이를 직접 누르고 상태를 보는 조작판</b>으로 쓰는 방법입니다. 이 페이지는 설정용이고, 화면은 운전용입니다. 아래는 <b>안내만</b> 들어 있으며, 이 항목을 열어도 기존 설정·보드 동작에는 아무 영향이 없습니다.</p>
+
+ <p class="small"><b>① 배선 (메가2560 Serial3 사용)</b> — Serial1(블루투스)·Serial2(와이파이)와 겹치지 않는 별도 통신 포트입니다.</p>
+ <table class="small" style="border-collapse:collapse">
+  <tr><td style="padding:2px 10px 2px 0">메가 TX3 (핀 14)</td><td>→ 화면 RX</td></tr>
+  <tr><td style="padding:2px 10px 2px 0">메가 RX3 (핀 15)</td><td>← 화면 TX</td></tr>
+  <tr><td style="padding:2px 10px 2px 0">GND</td><td>메가와 화면 공통 연결</td></tr>
+  <tr><td style="padding:2px 10px 2px 0">통신속도</td><td>기본 9600 (화면과 스케치 값이 같아야 함)</td></tr>
+ </table>
+  <div class="row" style="margin:8px 0">
+  <button class="green" onclick="openHmiWiringWindow()">🔌 배선연결도 새 창으로 보기</button>
+  <button class="green" onclick="openHmiManualWindow()">📖 사용설명서 새 창으로 보기</button>
+ </div>
+ <div id="hmiWireBox" style="display:none">
+<svg viewBox="0 0 700 330" width="700" role="img" aria-label="메가2560과 TJC 화면 배선도" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;min-width:600px;font-family:'Malgun Gothic','Noto Sans KR',sans-serif">
+ <!-- 메가 -->
+ <rect x="20" y="30" width="190" height="260" rx="8" fill="#e0f2fe" stroke="#0369a1" stroke-width="2"/>
+ <text x="115" y="58" text-anchor="middle" font-size="16" font-weight="700" fill="#0c4a6e">Arduino Mega 2560</text>
+ <text x="115" y="78" text-anchor="middle" font-size="12" fill="#0c4a6e">(5V 로직)</text>
+ <text x="196" y="116" text-anchor="end" font-size="13" fill="#0c4a6e">TX3 (핀 14)</text>
+ <text x="196" y="186" text-anchor="end" font-size="13" fill="#0c4a6e">RX3 (핀 15)</text>
+ <text x="196" y="256" text-anchor="end" font-size="13" fill="#0c4a6e">GND</text>
+ <!-- 화면 -->
+ <rect x="490" y="30" width="190" height="260" rx="8" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+ <text x="585" y="58" text-anchor="middle" font-size="16" font-weight="700" fill="#064e3b">TJC 7인치 화면</text>
+ <text x="585" y="78" text-anchor="middle" font-size="12" fill="#064e3b">TJC8048X270_011</text>
+ <text x="504" y="116" font-size="13" fill="#064e3b">RX</text>
+ <text x="504" y="186" font-size="13" fill="#064e3b">TX</text>
+ <text x="504" y="256" font-size="13" fill="#064e3b">GND</text>
+ <!-- 신호선: 메가 TX3 -> 화면 RX (점선 구간 = 3.3V 화면일 때 저항 분배) -->
+ <line x1="210" y1="110" x2="290" y2="110" stroke="#2563eb" stroke-width="3"/>
+ <rect x="290" y="100" width="64" height="20" fill="#fff" stroke="#2563eb" stroke-width="2" stroke-dasharray="5 3"/>
+ <text x="322" y="115" text-anchor="middle" font-size="12" fill="#1e3a8a">2kΩ</text>
+ <line x1="354" y1="110" x2="490" y2="110" stroke="#2563eb" stroke-width="3"/>
+ <circle cx="410" cy="110" r="4" fill="#2563eb"/>
+ <line x1="410" y1="110" x2="410" y2="150" stroke="#2563eb" stroke-width="2" stroke-dasharray="5 3"/>
+ <rect x="400" y="150" width="20" height="44" fill="#fff" stroke="#2563eb" stroke-width="2" stroke-dasharray="5 3"/>
+ <text x="432" y="176" font-size="12" fill="#1e3a8a">1kΩ</text>
+ <line x1="410" y1="194" x2="410" y2="250" stroke="#2563eb" stroke-width="2" stroke-dasharray="5 3"/>
+ <!-- 신호선: 화면 TX -> 메가 RX3 -->
+ <line x1="210" y1="180" x2="490" y2="180" stroke="#16a34a" stroke-width="3"/>
+ <!-- GND -->
+ <line x1="210" y1="250" x2="490" y2="250" stroke="#334155" stroke-width="3"/>
+ <circle cx="410" cy="250" r="4" fill="#334155"/>
+ <!-- 설명 -->
+ <text x="350" y="312" text-anchor="middle" font-size="12" fill="#475569">점선 부분은 화면이 3.3V 로직일 때만 넣습니다. 화면 전원은 데이터시트 사양대로 별도 공급합니다.</text>
+</svg>
+</div>
+ <p class="small" style="margin-top:6px"><b>선 색:</b> 파랑 = 메가 → 화면(TX3 → RX), 초록 = 화면 → 메가(TX → RX3), 검정 = GND 공통. 두 보드의 TX와 RX는 <b>서로 엇갈려</b> 연결합니다.</p>
+<script type="text/plain" id="hmiManualSrc">
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>TJC 터치 화면 + Mega2560 사용설명서</title>
+<style>
+:root{--bg:#f6f7f5;--card:#fff;--tx:#1c2420;--sub:#5b6761;--line:#d6dcd7;--ac:#1f6f54;--warn-bg:#fff4e0;--warn-bd:#e0a23a;--bad:#b3261e;--code:#eef2ef;}
+@media (prefers-color-scheme:dark){:root{--bg:#141816;--card:#1e2421;--tx:#e6ece8;--sub:#9aa7a0;--line:#33403a;--ac:#4fb58c;--warn-bg:#3a2f18;--warn-bd:#b98a2e;--bad:#ff8a80;--code:#27302b;}}
+*{box-sizing:border-box}
+html{scroll-padding-top:12px}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.7 "Malgun Gothic","Noto Sans KR",sans-serif;padding:16px}
+main{max-width:820px;margin:0 auto}
+h1{font-size:24px;margin:8px 0 4px}
+h2{font-size:19px;margin:0 0 10px;color:var(--ac)}
+h3{font-size:16px;margin:14px 0 4px}
+p{margin:6px 0}
+.lead{color:var(--sub);margin-bottom:16px}
+section{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:14px}
+nav{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 18px;margin-bottom:14px}
+nav a{display:inline-block;margin:2px 12px 2px 0;color:var(--ac);text-decoration:none}
+nav a:hover{text-decoration:underline}
+code{background:var(--code);padding:1px 6px;border-radius:4px;font-family:Consolas,monospace;font-size:14px}
+ol,ul{margin:6px 0;padding-left:22px}
+li{margin:3px 0}
+.warn{background:var(--warn-bg);border-left:4px solid var(--warn-bd);padding:8px 12px;border-radius:4px;margin:10px 0}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:480px;font-size:15px}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
+th{background:var(--code)}
+footer{color:var(--sub);font-size:13px;margin:16px 0 40px}
+a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+@media print{body{background:#fff;color:#000}nav{display:none}section{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+<h1>TJC 터치 화면 + Mega2560 사용설명서</h1>
+<p class="lead">TJC X2 시리즈 7인치 터치 화면(TJC8048X270_011)으로 메가2560의 릴레이 16개를 현장에서 직접 누르고 상태를 보는 방법입니다.</p>
+
+<nav aria-label="목차">
+  <a href="#s1">1. 전체 구성</a>
+  <a href="#s2">2. 준비물</a>
+  <a href="#s3">3. 시작 순서</a>
+  <a href="#s4">4. 배선</a>
+  <a href="#s5">5. 화면 만들기</a>
+  <a href="#s6">6. 통신 시험</a>
+  <a href="#s7">7. 펌웨어 올리기</a>
+  <a href="#s8">8. 사용법</a>
+  <a href="#s9">9. 문제 해결</a>
+  <a href="#s10">10. 주의사항</a>
+</nav>
+
+<section id="s1">
+<h2>1. 전체 구성</h2>
+<p>이 시스템은 역할이 둘로 나뉩니다.</p>
+<ul>
+  <li><b>웹 페이지(2560.html)</b> — PC에서 핀, 시퀀스, 센서를 <b>설정</b>하는 도구입니다.</li>
+  <li><b>TJC 터치 화면</b> — 설정이 끝난 뒤 현장에서 <b>운전</b>하는 조작판입니다.</li>
+</ul>
+<p>화면을 눌러 릴레이를 바꾸면 웹 페이지와 시퀀스, 키패드로 바뀐 릴레이도 화면 버튼에 같이 표시됩니다. 둘은 같은 릴레이 상태를 함께 봅니다.</p>
+</section>
+
+<section id="s2">
+<h2>2. 준비물</h2>
+<ul>
+  <li>Arduino Mega 2560 + 16채널 릴레이 보드</li>
+  <li>TJC8048X270_011 (X2 시리즈 7인치) 및 전원 (사양은 데이터시트 확인)</li>
+  <li>USB-TTL 변환기 (통신 시험용, 3.3V/5V 전환 가능한 것이 편리)</li>
+  <li>점퍼선, 저항 2kΩ·1kΩ 각 1개 (화면이 3.3V 로직일 때)</li>
+  <li>PC와 Chrome 또는 Edge 브라우저, 아두이노 IDE, TJC 편집기 <b>USART HMI</b></li>
+  <li>파일: <code>TJC_통신시험.html</code>, <code>Mega2560_16Relay_Firmware_keypad_TJC.ino</code>, <code>2560.html</code>(웹 설정 도구)</li>
+</ul>
+</section>
+
+<section id="s3">
+<h2>3. 시작 순서</h2>
+<p>문제가 생겼을 때 원인을 나누기 쉽도록, 아래 순서를 지켜 한 단계씩 확인하세요.</p>
+<ol>
+  <li>화면 편집기에서 화면 만들기 (5번)</li>
+  <li>PC와 화면만 연결해서 통신 시험 (6번)</li>
+  <li>메가에 펌웨어 올리고 화면과 연결 (7번)</li>
+  <li>릴레이 1~2개로 시험한 뒤 전체 연결 (8번)</li>
+</ol>
+</section>
+
+<section id="s4">
+<h2>4. 배선</h2>
+<h3>메가2560 ↔ 화면</h3>
+<div class="table-wrap">
+<table>
+  <tr><th>메가2560</th><th>화면</th><th>설명</th></tr>
+  <tr><td>TX3 (핀 14)</td><td>RX</td><td>메가 → 화면</td></tr>
+  <tr><td>RX3 (핀 15)</td><td>TX</td><td>화면 → 메가</td></tr>
+  <tr><td>GND</td><td>GND</td><td>반드시 공통 연결</td></tr>
+</table>
+</div>
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px;margin:10px 0;overflow-x:auto">
+<svg viewBox="0 0 700 330" width="700" role="img" aria-label="메가2560과 TJC 화면 배선도" xmlns="http://www.w3.org/2000/svg" style="max-width:100%;min-width:600px;font-family:'Malgun Gothic','Noto Sans KR',sans-serif">
+ <!-- 메가 -->
+ <rect x="20" y="30" width="190" height="260" rx="8" fill="#e0f2fe" stroke="#0369a1" stroke-width="2"/>
+ <text x="115" y="58" text-anchor="middle" font-size="16" font-weight="700" fill="#0c4a6e">Arduino Mega 2560</text>
+ <text x="115" y="78" text-anchor="middle" font-size="12" fill="#0c4a6e">(5V 로직)</text>
+ <text x="196" y="116" text-anchor="end" font-size="13" fill="#0c4a6e">TX3 (핀 14)</text>
+ <text x="196" y="186" text-anchor="end" font-size="13" fill="#0c4a6e">RX3 (핀 15)</text>
+ <text x="196" y="256" text-anchor="end" font-size="13" fill="#0c4a6e">GND</text>
+ <!-- 화면 -->
+ <rect x="490" y="30" width="190" height="260" rx="8" fill="#ecfdf5" stroke="#047857" stroke-width="2"/>
+ <text x="585" y="58" text-anchor="middle" font-size="16" font-weight="700" fill="#064e3b">TJC 7인치 화면</text>
+ <text x="585" y="78" text-anchor="middle" font-size="12" fill="#064e3b">TJC8048X270_011</text>
+ <text x="504" y="116" font-size="13" fill="#064e3b">RX</text>
+ <text x="504" y="186" font-size="13" fill="#064e3b">TX</text>
+ <text x="504" y="256" font-size="13" fill="#064e3b">GND</text>
+ <!-- 신호선: 메가 TX3 -> 화면 RX (점선 구간 = 3.3V 화면일 때 저항 분배) -->
+ <line x1="210" y1="110" x2="290" y2="110" stroke="#2563eb" stroke-width="3"/>
+ <rect x="290" y="100" width="64" height="20" fill="#fff" stroke="#2563eb" stroke-width="2" stroke-dasharray="5 3"/>
+ <text x="322" y="115" text-anchor="middle" font-size="12" fill="#1e3a8a">2kΩ</text>
+ <line x1="354" y1="110" x2="490" y2="110" stroke="#2563eb" stroke-width="3"/>
+ <circle cx="410" cy="110" r="4" fill="#2563eb"/>
+ <line x1="410" y1="110" x2="410" y2="150" stroke="#2563eb" stroke-width="2" stroke-dasharray="5 3"/>
+ <rect x="400" y="150" width="20" height="44" fill="#fff" stroke="#2563eb" stroke-width="2" stroke-dasharray="5 3"/>
+ <text x="432" y="176" font-size="12" fill="#1e3a8a">1kΩ</text>
+ <line x1="410" y1="194" x2="410" y2="250" stroke="#2563eb" stroke-width="2" stroke-dasharray="5 3"/>
+ <!-- 신호선: 화면 TX -> 메가 RX3 -->
+ <line x1="210" y1="180" x2="490" y2="180" stroke="#16a34a" stroke-width="3"/>
+ <!-- GND -->
+ <line x1="210" y1="250" x2="490" y2="250" stroke="#334155" stroke-width="3"/>
+ <circle cx="410" cy="250" r="4" fill="#334155"/>
+ <!-- 설명 -->
+ <text x="350" y="312" text-anchor="middle" font-size="12" fill="#475569">점선 부분은 화면이 3.3V 로직일 때만 넣습니다. 화면 전원은 데이터시트 사양대로 별도 공급합니다.</text>
+</svg>
+</div>
+<p>선 색: 파랑 = 메가 → 화면(TX3 → RX), 초록 = 화면 → 메가(TX → RX3), 검정 = GND 공통. 점선 부분은 화면이 3.3V 로직일 때만 넣습니다.</p>
+<p>화면 전원은 데이터시트의 사양대로 따로 공급하세요. 메가의 5V 핀에서 무작정 끌어 쓰지 마세요.</p>
+<div class="warn"><b>전압 주의</b> — 메가는 5V 로직입니다. 화면이 3.3V 로직이면 <b>메가 TX3(14) → 화면 RX</b> 선에 저항 분배(2kΩ와 1kΩ)를 넣어 전압을 낮춰야 합니다. 반대 방향(화면 TX → 메가 RX3)은 그대로 연결해도 됩니다. 전압은 반드시 모델 데이터시트에서 먼저 확인하세요.</div>
+<div class="warn"><b>핀 14·15번은 화면 통신 전용</b>입니다. 릴레이나 입력 채널에 지정하지 마세요. 웹 페이지의 "12. 배선도"가 이 핀을 쓰면 빨간 경고를 띄웁니다.</div>
+
+<h3>PC ↔ 화면 (시험용)</h3>
+<p>USB-TTL 변환기의 TX → 화면 RX, 변환기 RX → 화면 TX, GND 공통입니다. 이때 메가는 연결하지 않아도 됩니다.</p>
+</section>
+
+<section id="s5">
+<h2>5. 화면 만들기 (USART HMI)</h2>
+<p>화면 디자인은 웹이 아니라 전용 편집기에서만 만들 수 있습니다.</p>
+<ol>
+  <li>USART HMI에서 새 프로젝트를 만들고 모델 <b>TJC8048X270_011</b>을 선택합니다.</li>
+  <li><b>page 0</b>에 2상태 버튼(Dual-state button) 16개를 배치합니다.</li>
+  <li>버튼 이름(objname)을 <code>bt1</code>, <code>bt2</code>, … <code>bt16</code>으로 지정합니다.</li>
+  <li>컴포넌트 ID를 <b>1~16</b>이 되게 맞춥니다. 속성 창에서 확인할 수 있고, 만든 순서대로 번호가 매겨집니다.</li>
+  <li>각 버튼의 <b>"누름 이벤트"</b>에서 <b>Send Component ID</b>를 체크합니다.</li>
+  <li>통신속도는 <b>9600</b>으로 둡니다.</li>
+  <li>컴파일한 뒤 화면에 올립니다 (SD카드 또는 편집기에서 직접 — 방법은 제품 설명서를 따르세요).</li>
+</ol>
+<div class="warn">버튼 이름이 <code>r1</code>처럼 다르면 화면과 메가가 서로 알아보지 못합니다. 반드시 <code>bt1</code>~<code>bt16</code>이어야 합니다.</div>
+<p>한글 글자를 화면에 표시하려면 한글이 들어 있는 폰트를 따로 만들어야 합니다. 먼저 영문과 숫자로 시험하세요.</p>
+</section>
+
+<section id="s6">
+<h2>6. 통신 시험 (PC와 화면만)</h2>
+<ol>
+  <li>화면을 USB-TTL 변환기로 PC에 연결합니다.</li>
+  <li>Chrome이나 Edge에서 <code>TJC_통신시험.html</code>을 엽니다.</li>
+  <li>통신속도 <b>9600</b>을 선택하고 <b>연결</b>을 누릅니다.</li>
+  <li><code>page 0</code>을 보내 화면이 반응하는지 봅니다. 끝의 FF FF FF는 자동으로 붙습니다.</li>
+  <li><code>bt1.val=1</code>을 보내 버튼 1번이 눌린 모양으로 바뀌는지 봅니다.</li>
+  <li>화면의 버튼을 직접 눌러 아래 기록에 <b>"터치 이벤트: 페이지 0, 컴포넌트 1, 눌림"</b> 같은 줄이 뜨는지 확인합니다.</li>
+</ol>
+<p>이 세 가지가 되면 화면은 정상입니다. 안 되면 8번을 먼저 하지 말고 9번 문제 해결을 보세요.</p>
+</section>
+
+<section id="s7">
+<h2>7. 펌웨어 올리기</h2>
+<div class="warn"><b>먼저 백업하세요.</b> 지금 보드에 올라가 있는 펌웨어 파일을 따로 보관해 두세요. 문제가 생기면 그 파일을 다시 올려 원래대로 돌릴 수 있습니다.</div>
+<ol>
+  <li>아두이노 IDE에서 <code>Mega2560_16Relay_Firmware_keypad_TJC.ino</code>를 엽니다.</li>
+  <li>보드를 <b>Arduino Mega or Mega 2560</b>으로 선택합니다. 라이브러리 <b>U8g2</b>가 설치되어 있어야 합니다.</li>
+  <li>먼저 <b>확인(컴파일)</b>만 눌러서 오류가 없는지 봅니다. 오류가 나면 그 메시지를 알려주세요.</li>
+  <li>이상이 없으면 <b>업로드</b>합니다.</li>
+  <li>메가를 화면에 연결하고 전원을 켭니다. 약 2.5초 뒤 화면에 현재 릴레이 상태가 표시됩니다.</li>
+</ol>
+<p>웹 페이지(2560.html)는 이전과 똑같이 연결해서 쓰면 됩니다. 이 펌웨어도 같은 명령에 응답합니다.</p>
+</section>
+
+<section id="s8">
+<h2>8. 사용법</h2>
+<ul>
+  <li><b>릴레이 켜기/끄기</b> — 화면의 버튼(bt1~bt16)을 누르면 R1~R16이 토글됩니다.</li>
+  <li><b>상태 확인</b> — 버튼이 눌린 모양이면 릴레이 ON입니다.</li>
+  <li><b>웹이나 시퀀스로 바뀐 경우</b> — 화면 버튼도 자동으로 따라 바뀝니다.</li>
+  <li><b>설정 변경</b> — 핀 번호, 시퀀스, 릴레이 방식 등은 PC의 웹 페이지에서 바꿉니다. 화면에서는 바꿀 수 없습니다.</li>
+</ul>
+<p><b>처음 시험할 때</b>는 릴레이 1~2개만 연결하고 화면 버튼 1, 2번만 눌러 보세요. 정상이면 나머지를 연결합니다.</p>
+</section>
+
+<section id="s9">
+<h2>9. 문제 해결</h2>
+<div class="table-wrap">
+<table>
+  <tr><th>증상</th><th>확인할 것</th></tr>
+  <tr><td>통신 시험에서 아무 반응이 없다</td><td>TX/RX가 서로 엇갈려 연결됐는지(변환기 TX → 화면 RX), GND 공통, 통신속도 9600, 화면 전원</td></tr>
+  <tr><td>"잘못된 변수 이름(1A)"이 뜬다</td><td>통신은 정상입니다. 화면 편집기의 컴포넌트 이름과 보낸 이름이 같은지 확인</td></tr>
+  <tr><td>화면 버튼을 눌러도 기록에 터치가 안 뜬다</td><td>버튼 "누름 이벤트"의 Send Component ID 체크</td></tr>
+  <tr><td>버튼을 눌러도 릴레이가 안 움직인다</td><td>버튼 이름이 bt1~bt16인지, ID가 1~16인지, 메가 TX3/RX3 배선, 펌웨어가 _TJC 버전인지</td></tr>
+  <tr><td>릴레이는 움직이는데 화면 표시가 안 바뀐다</td><td>메가 TX3(14) → 화면 RX 배선, 3.3V/5V 레벨 변환</td></tr>
+  <tr><td>ON과 OFF가 반대로 동작한다</td><td>웹 페이지 "2. 릴레이 방식"에서 HIGH형/LOW형을 바꾸세요</td></tr>
+  <tr><td>부팅 직후 화면 표시가 비어 있다</td><td>화면 부팅이 늦은 경우입니다. 화면이 켜졌다고 알려오면 다시 보내므로 잠시 기다려 보세요</td></tr>
+  <tr><td>웹 페이지에서 14·15번에 빨간 경고</td><td>정상입니다. 두 핀은 화면 통신 전용이라 다른 용도로 쓸 수 없습니다</td></tr>
+</table>
+</div>
+</section>
+
+<section id="s10">
+<h2>10. 주의사항</h2>
+<ul>
+  <li>펌웨어를 올리기 전에 기존 펌웨어를 반드시 백업하세요.</li>
+  <li>화면의 전압(3.3V/5V)과 전원 사양은 구매하신 모델의 데이터시트로 직접 확인하세요.</li>
+  <li>릴레이에 모터나 히터 같은 큰 부하를 연결하는 작업은 정격과 전원 배선을 확인하고, 안전을 위해 처음에는 부하 없이 시험하세요.</li>
+  <li>웹 설정 도구(2560.html)로 USB 연결을 열면 메가가 자동으로 재시작되어 <b>릴레이가 모두 꺼집니다</b>. 가동 중인 장비가 있으면 연결하기 전에 멈추세요.</li>
+  <li>화면 터치는 원격 제어가 아니라 현장 조작입니다. 기계를 움직이는 릴레이는 주변에 사람이 없는지 확인한 뒤 누르세요.</li>
+  <li>이 설명서와 프로그램은 실제 장비로 충분히 시험된 것이 아닙니다. 처음 연결할 때는 위 순서대로 한 단계씩 확인하세요.</li>
+</ul>
+</section>
+
+<footer>TJC 터치 화면 + Mega2560 사용설명서</footer>
+</main>
+</body>
+</html>
+
+</script>
+<script>
+function openHmiManualWindow(){
+  var src=document.getElementById('hmiManualSrc');
+  if(!src){alert('사용설명서를 찾을 수 없습니다.');return;}
+  var w=window.open('','_blank');
+  if(!w){alert('새 창이 차단되었습니다. 브라우저 주소창의 팝업 차단을 해제한 뒤 다시 눌러주세요.');return;}
+  w.document.open();w.document.write(src.textContent);w.document.close();
+}
+</script>
+<script>
+function openHmiWiringWindow(){
+  var box=document.getElementById('hmiWireBox');
+  var svg=box?box.querySelector('svg'):null;
+  if(!svg){alert('배선도를 찾을 수 없습니다.');return;}
+  var w=window.open('','_blank');
+  if(!w){alert('새 창이 차단되었습니다. 브라우저 주소창의 팝업 차단을 해제한 뒤 다시 눌러주세요.');return;}
+  var html='<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">'
+   +'<meta name="viewport" content="width=device-width,initial-scale=1">'
+   +'<title>메가2560 - TJC 화면 배선연결도</title>'
+   +'<style>body{margin:0;padding:16px;font-family:"Malgun Gothic","Noto Sans KR",sans-serif;color:#1e293b;background:#fff}'
+   +'h1{font-size:20px;margin:0 0 4px}p{margin:4px 0 12px;color:#475569;font-size:14px}'
+   +'svg{width:100%!important;max-width:1100px;min-width:0!important;height:auto;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc}'
+   +'ul{font-size:14px;line-height:1.7;padding-left:20px}'
+   +'button{font:inherit;padding:8px 14px;border:1px solid #94a3b8;border-radius:6px;background:#fff;cursor:pointer;margin-bottom:12px}'
+   +'@media print{button{display:none}}</style></head><body>'
+   +'<h1>메가2560 - TJC 화면 배선연결도</h1>'
+   +'<p>파랑: 메가 TX3(14) → 화면 RX / 초록: 화면 TX → 메가 RX3(15) / 검정: GND 공통</p>'
+   +'<button onclick="window.print()">🖨 인쇄 / PDF로 저장</button>'
+   +svg.outerHTML
+   +'<ul><li>메가는 5V 로직입니다. 화면이 3.3V 로직이면 점선 부분(2kΩ + 1kΩ 저항 분배)을 넣으세요.</li>'
+   +'<li>핀 14·15번은 화면 통신 전용입니다. 릴레이·입력 채널에 쓰지 마세요.</li>'
+   +'<li>화면 전원은 구매하신 모델 데이터시트의 사양대로 별도로 공급하세요.</li></ul>'
+   +'</body></html>';
+  w.document.open();w.document.write(html);w.document.close();
+}
+</script>
+ <p class="small">⚠ <b>전압 확인</b>: 메가는 5V 로직입니다. 화면이 3.3V 로직이면 <b>메가 TX3(14) → 화면 RX</b> 방향은 저항 분배(예: 2kΩ+1kΩ)로 낮춰서 연결하세요. 화면 전원 사양도 구매하신 모델 데이터시트에서 꼭 확인하세요.</p>
+ <p class="small">⚠ <b>핀 14·15번은 다른 용도(릴레이·입력 채널 등)로 지정하지 마세요.</b> 화면을 쓰는 동안은 이 두 핀이 통신 전용입니다.</p>
+
+ <p class="small"><b>② 화면 편집기(USART HMI)에서 만들 것</b></p>
+ <ul class="small">
+  <li>page 0에 2상태 버튼(Dual-state button) 16개 — 이름 <code>bt1</code>~<code>bt16</code>, 컴포넌트 ID 1~16</li>
+  <li>각 버튼의 "누름 이벤트"에서 <b>Send Component ID</b> 체크</li>
+  <li>화면 디자인(버튼 배치·그림)은 이 웹이 아니라 전용 편집기에서만 만들 수 있습니다.</li>
+ </ul>
+
+ <p class="small"><b>③ 순서</b></p>
+ <ol class="small">
+  <li>먼저 "TJC_통신시험.html"로 PC와 화면만 연결해서 화면이 정상인지 확인</li>
+  <li>"TJC_Mega2560_Serial3.ino"를 메가에 올려서 버튼 ↔ 릴레이 연결 확인</li>
+  <li>정상이면 "Mega2560_16Relay_Firmware_keypad_TJC.ino"(화면 기능이 이미 합쳐진 펌웨어)를 메가에 올리기</li>
+ </ol>
+ <p class="small">⚠ <b>이 웹 페이지로 연결하면 메가가 자동으로 재시작</b>됩니다(USB 연결 시 정상 동작). 그동안 릴레이는 모두 꺼집니다.</p>
+ <p class="small">참고: 위 .ino 시험 스케치를 올리면 보드의 웹 제어용 펌웨어는 대체됩니다. 다시 이 페이지로 쓰려면 원래 펌웨어(.ino)를 다시 올리세요.</p>
  </div>
 </div>
 
@@ -1036,7 +1410,7 @@ function log(t){let x=document.getElementById('log');x.value+=new Date().toLocal
    - 각 섹션(카드)을 독립적으로 펼치거나 접을 수 있어, 다른 섹션의
      입력값·이벤트에 서로 영향을 주지 않습니다(부분별로 안전하게 분리).
 ========================================================= */
-const CARD_IDS=['card1','card2','card3','card4','card5','card6','card8','card9','card12','cardStep','cardUltra','cardLoad','cardTest','cardLog'];
+const CARD_IDS=['card1','card2','card3','card5','card6','card8','card9','card12','cardStep','cardUltra','cardLoad','cardTest','cardLog'];
 function toggleCard(id,force){
  const el=document.getElementById(id); if(!el) return;
  if(force===true) el.classList.remove('collapsed');
@@ -2013,6 +2387,12 @@ let i2cHwStatus=null;        // checkExtMemStatus() 결과 캐시: {connected,bo
 const RESERVED_PINS={
  0:'USB 시리얼 RX0 (PC 통신 전용)',
  1:'USB 시리얼 TX0 (PC 통신 전용)',
+ 14:'TX3 (TJC 화면 통신 전용)',
+ 15:'RX3 (TJC 화면 통신 전용)',
+ 16:'TX2 (Wi-Fi 브리지 통신 전용)',
+ 17:'RX2 (Wi-Fi 브리지 통신 전용)',
+ 18:'TX1 (블루투스 통신 전용)',
+ 19:'RX1 (블루투스 통신 전용)',
  20:'I2C SDA (OLED·외장 EEPROM 전용)',
  21:'I2C SCL (OLED·외장 EEPROM 전용)'
 };
@@ -4363,7 +4743,7 @@ function selectSequence(i){
  onSeqCountOnChange();
  renderSeqList();
  if(s.trigType==='code' && !kpEnabled){
-  log('⚠ "'+s.name+'" 시퀀스는 키패드 코드로 실행되지만, 지금은 키패드가 "사용 안 함"으로 꺼져 있어 코드 입력으로 실행되지 않습니다. 6번 섹션에서 키패드 사용을 켜주세요.');
+  log('⚠ "'+s.name+'" 시퀀스는 키패드 코드로 실행되지만, 지금은 키패드가 "사용 안 함"으로 꺼져 있어 코드 입력으로 실행되지 않습니다. 5번 섹션에서 키패드 사용을 켜주세요.');
  }
 }
 function relayOptionsHtml(selected){
@@ -4848,7 +5228,7 @@ function autoBackup(reason){
  const autos=Object.keys(presets).filter(n=>n.startsWith('자동백업 ')).sort();
  while(autos.length>10) delete presets[autos.shift()];
  savePresetsLocal(); refreshPresetSel();
- log('↪ '+reason+' 전 자동 백업: "'+bk+'" (프리셋에서 복구 가능)');
+ log('↪ '+reason+' 전 시퀀스를 임시 백업해 두었습니다.');
 }
 /* ---------- 저장 공용: 마지막으로 저장한 폴더를 기억해서 다음 저장창을 그 폴더에서 엽니다 ---------- */
 const SAVE_PICKER_ID='mega2560Save';
@@ -6017,6 +6397,7 @@ function setupHelpCollapse(){
   if(el.closest('.modalOverlay') || el.closest('.cardHead')) return;
   if(el.parentElement && el.parentElement.closest('[data-help-done]')) return; // 이미 접힌 설명 안쪽
   if(el.querySelector('input,select,textarea,button')) return;  // 조작 요소가 들어 있으면 그대로
+  if(/^\s*⚠/.test(el.textContent||'')) return;                  // ⚠ 경고(전압·핀 사용 금지 등)는 접지 않고 항상 보이게 둠
   const len=(el.textContent||'').trim().length;
   if(len<(el.tagName==='SPAN'?25:1)) return;                     // 단위(cm, ms 등) 같은 짧은 글자는 제외
   el.dataset.helpDone='1';
