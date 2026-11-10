@@ -498,7 +498,34 @@ button.btnFlash{animation:btnFlashKey .32s ease}
      <button onclick="exportSketch()">⬇ 아두이노 업로드용 스케치(.ino) 만들기</button>
     </div>
     <div class="small" data-help="스케치(.ino) 설명">마지막 버튼은 위 시퀀스 목록을 <b>값까지 코드에 박아 넣은 순수 아두이노 스케치</b>로 만듭니다. 이 페이지·시리얼 연결·UNO PLC 펌웨어 없이, 받은 <code>.ino</code>를 아두이노 IDE에서 직접 업로드하면 전원만으로 동작합니다(핀 번호는 지금 화면에 보이는 D번호 기준).</div>
-    <div id="boardInfo" class="small"></div>
+    <div id="lockBox" style="border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;margin:10px 0;background:#f8fafc">
+ <b>🔒 보드 사용기간 잠금</b> <span class="small">(⬇ 아두이노 스케치(.ino)에 넣는 기능)</span>
+ <div class="row">
+  <button id="lockBtnOn" type="button" class="gray" onclick="lockSet(true)">🔒 설정 작성</button>
+  <button id="lockBtnOff" type="button" class="green" onclick="lockSet(false)">선택하지 않음</button>
+  <span id="lockSum" class="small">잠금 없음</span>
+ </div>
+ <div id="lockFields" style="display:none">
+  <div class="row">
+   <label>사용 기간</label>
+   <input id="lockNum" type="number" min="1" value="3" style="width:80px" oninput="lockSum()">
+   <select id="lockUnit" onchange="lockSum()"><option value="1">시간</option><option value="24">일</option><option value="720" selected>개월</option><option value="8760">년</option></select>
+   <label style="margin-left:10px">해제 비밀번호</label>
+   <input id="lockPw" type="text" inputmode="numeric" maxlength="8" placeholder="숫자 4~8자리" style="width:130px" autocomplete="off">
+   <button type="button" class="gray" onclick="lockRand()">🎲 무작위</button>
+  </div>
+  <div class="small">· 기간은 <b>보드 전원이 켜져 있던 누적 시간</b>입니다(보드에는 달력이 없어 24시간 켜 둔 것으로 환산: 1일=24시간, 1개월=30일, 1년=365일).<br>
+  · 기간이 끝나면 <b>모든 릴레이가 꺼지고</b> 동작이 멈춥니다(작동 중이어도 즉시). 해제 비밀번호는 <b>스케치를 만들 때마다 새로 정하며 이 화면에 저장되지 않으니</b> 따로 적어 두세요.<br>
+  · 새 스케치를 보드에 올리면 사용시간은 0부터 다시 시작합니다. 전원이 꺼질 때 최대 5분의 사용시간은 반영되지 않을 수 있습니다.<br>
+  · 시리얼(D0/D1)과 EEPROM을 사용하므로 입·출력 핀으로 0·1번은 쓰지 마세요.</div>
+ </div>
+ <div class="row">
+  <button type="button" onclick="lockUnlockTool('unlock')">🔓 잠금 해제·재설정 (USB 연결)</button>
+  <button type="button" class="gray" onclick="lockUnlockTool('status')">ℹ 잠금 상태 확인 (USB 연결)</button>
+  <span class="small">보드를 USB로 연결 → 비밀번호 입력 → 해제하면 사용시간이 0이 되고, 그때 <b>다음번 새 비밀번호</b>도 정합니다.</span>
+ </div>
+</div>
+<div id="boardInfo" class="small"></div>
    </div>
   </div>
 
@@ -1568,7 +1595,200 @@ async function exportCmds(){
 
 
 /* ---------- 순수 아두이노 스케치 생성 ---------- */
+/* ---------- 🔒 보드 사용기간 잠금 (.ino 스케치 전용) ---------- */
+let lockOn=false;
+function lockSum(){
+ const el=document.getElementById('lockSum'); if(!el) return;
+ if(!lockOn){ el.textContent='잠금 없음 (선택하지 않음)'; return }
+ const n=parseFloat(document.getElementById('lockNum').value), u=+document.getElementById('lockUnit').value;
+ const h=Math.round(n*u);
+ el.textContent=(h>=1)?('보드 전원 누적 '+h.toLocaleString()+'시간 사용 후 잠김'):'기간을 입력하세요';
+}
+function lockSet(on){
+ lockOn=!!on;
+ document.getElementById('lockFields').style.display=on?'block':'none';
+ document.getElementById('lockBtnOn').className=on?'green':'gray';
+ document.getElementById('lockBtnOff').className=on?'gray':'green';
+ lockSum();
+}
+function lockRand(){
+ const a=new Uint32Array(1); crypto.getRandomValues(a);
+ document.getElementById('lockPw').value=String(100000+a[0]%900000);
+}
+function lockCfg(){   // null = 선택 안 함, false = 입력 오류(안내 후 중단), 객체 = 잠금 설정
+ if(!lockOn) return null;
+ const n=parseFloat(document.getElementById('lockNum').value), u=+document.getElementById('lockUnit').value;
+ const h=Math.round(n*u), pw=document.getElementById('lockPw').value.trim();
+ if(!(n>0)||h<1||h>87600){ alert('사용 기간은 1시간 이상, 최대 10년(87,600시간)까지 입력할 수 있습니다.'); return false }
+ if(!/^\d{4,8}$/.test(pw)){ alert('잠금 해제 비밀번호를 숫자 4~8자리로 입력하세요.\n(스케치를 만들 때마다 새로 정합니다. 🎲 무작위 버튼도 쓸 수 있습니다.)'); return false }
+ return {hours:h,pw:pw,id:(Date.now()%4294967290)+1};
+}
+function lockApply(src,cfg,kind){   // 만들어진 스케치 문장에 잠금 코드를 끼워 넣는다. 끼울 자리가 없으면 null
+ const uno=(kind==='uno');
+ const bootFrom=uno?'bool on = (OUT_BOOT[i] != 0);':'((BOOT_ON[i] != 0) == RELAY_ACTIVE_LOW)';
+ const bootTo=uno?'bool on = (OUT_BOOT[i] != 0) && !lkLocked;':'(((BOOT_ON[i] != 0) && !lkLocked) == RELAY_ACTIVE_LOW)';
+ if(src.split(bootFrom).length!==2||src.split('void setup() {').length!==2||src.split('void loop() {').length!==2||src.split('#define BOOT_HOLD_MS 3000UL').length!==2) return null;
+ const off=uno
+  ?'  for (uint8_t c = 1; c <= N_OUT; c++) setRelay(c, false);\n'
+  :'  for (uint8_t i = 0; i < 16; i++) if (OUT_PIN[i] != 0) digitalWrite(OUT_PIN[i], RELAY_ACTIVE_LOW ? HIGH : LOW);\n  for (uint8_t i = 0; i < N_MOT; i++) { mot[i].active = false; if (M_EN[i] > 0) digitalWrite(M_EN[i], HIGH); }\n';
+ const defs=String.raw`
+// ===== 🔒 사용기간 잠금 (웹페이지 "보드 사용기간 잠금" 설정값) =====
+// 보드 전원이 켜져 있던 누적 시간이 LK_LIMIT_MIN(분)에 이르면 모든 릴레이를 OFF로 하고 동작을 멈춥니다.
+// 해제: USB 시리얼(115200, 줄 끝 문자 포함)로  UNLOCK 현재비밀번호 [새비밀번호]  를 보내면
+//       사용시간이 0으로 돌아가고 보드가 다시 시작합니다(웹페이지의 "잠금 해제" 버튼이 같은 일을 합니다).
+// 상태 확인:  LOCK?    ※ 이 기능은 시리얼(D0/D1)과 EEPROM을 사용합니다.
+// 새 스케치를 올리면 사용시간은 0부터 다시 시작하고 비밀번호는 아래 LK_PW0로 돌아갑니다.
+#include <EEPROM.h>
+`+'#define LK_ID        '+cfg.id+'UL            // 이 스케치 고유번호(다르면 EEPROM을 새로 초기화)\n'
+ +'#define LK_LIMIT_MIN '+(cfg.hours*60)+'UL            // 허용 사용시간(분) = '+cfg.hours+'시간\n'
+ +String.raw`#define LK_SAVE_MIN  5                  // EEPROM에 사용시간을 기록하는 간격(분)
+#define LK_RING      16                 // 기록 칸 수(EEPROM 수명을 늘리려고 돌려가며 씀)
+`+'const char LK_PW0[] = "'+cfg.pw+'";   // 처음 해제 비밀번호(스케치를 만들 때 정한 값)\n';
+ const funcs=String.raw`// ---- 🔒 사용기간 잠금 동작 ----
+bool lkLocked = false;
+uint32_t lkMin = 0;                       // 누적 사용시간(분)
+char lkPw[9];
+unsigned long lkLastMs = 0, lkAccMs = 0, lkBadUntil = 0;
+char lkBuf[32];
+uint8_t lkLen = 0;
+
+void lkAllOff() {
+`+off+String.raw`}
+
+uint32_t lkRingMax() {
+  uint32_t m = 0, v = 0;
+  for (uint8_t i = 0; i < LK_RING; i++) { EEPROM.get(16 + i * 4, v); if (v != 0xFFFFFFFFUL && v > m) m = v; }
+  return m;
+}
+
+void lkSave() { uint32_t v = lkMin; EEPROM.put(16 + (uint8_t)((lkMin / LK_SAVE_MIN) % LK_RING) * 4, v); }
+
+void lkWipe() { uint32_t z = 0; for (uint8_t i = 0; i < LK_RING; i++) EEPROM.put(16 + i * 4, z); }
+
+void lkInit() {
+  Serial.begin(115200);
+  uint32_t id = 0;
+  EEPROM.get(0, id);
+  if (id != LK_ID) {                      // 새 스케치 → 사용시간 0부터, 비밀번호는 스케치에 정한 값
+    uint32_t nid = LK_ID;
+    EEPROM.put(0, nid);
+    for (uint8_t i = 0; i < 9; i++) EEPROM.update(4 + i, (i < sizeof(LK_PW0)) ? LK_PW0[i] : 0);
+    lkWipe();
+  }
+  for (uint8_t i = 0; i < 9; i++) lkPw[i] = EEPROM.read(4 + i);
+  lkPw[8] = 0;
+  lkMin = lkRingMax();
+  lkLastMs = millis();
+  if (lkMin >= LK_LIMIT_MIN) lkLocked = true;
+}
+
+bool lkPwOk(const char *s) {
+  uint8_t n = strlen(s);
+  if (n < 4 || n > 8) return false;
+  for (uint8_t i = 0; i < n; i++) if (s[i] < '0' || s[i] > '9') return false;
+  return true;
+}
+
+void lkCmd() {
+  if (lkBuf[0] == 0) return;
+  if (strncmp(lkBuf, "LOCK?", 5) == 0) {
+    Serial.print(F("LK ")); Serial.print(lkLocked ? F("LOCKED") : F("OK"));
+    Serial.print(F(" used_min=")); Serial.print(lkMin);
+    Serial.print(F(" limit_min=")); Serial.println(LK_LIMIT_MIN);
+    return;
+  }
+  if (strncmp(lkBuf, "UNLOCK ", 7) != 0) return;
+  if (lkBadUntil != 0 && (long)(millis() - lkBadUntil) < 0) { Serial.println(F("ERR WAIT")); return; }
+  char *a = lkBuf + 7;
+  char *b = strchr(a, ' ');
+  if (b) { *b++ = 0; while (*b == ' ') b++; }
+  if (strcmp(a, lkPw) != 0) { lkBadUntil = millis() + 3000UL; Serial.println(F("ERR PW")); return; }
+  if (b && *b) {                          // 다음번 잠금에 쓸 새 비밀번호
+    if (!lkPwOk(b)) { Serial.println(F("ERR NEWPW")); return; }
+    strncpy(lkPw, b, 8); lkPw[8] = 0;
+    for (uint8_t i = 0; i < 9; i++) EEPROM.update(4 + i, lkPw[i]);
+  }
+  lkWipe();
+  Serial.println(F("OK UNLOCKED"));
+  Serial.flush();
+  delay(50);
+  ((void (*)(void))0)();                  // 소프트 리셋: 사용시간 0으로 처음부터 다시 시작
+}
+
+void lkSerial() {
+  while (Serial.available()) {
+    char c = (char)Serial.read();
+    if (c == '\r' || c == '\n') { lkBuf[lkLen] = 0; lkLen = 0; lkCmd(); }
+    else if (lkLen < sizeof(lkBuf) - 1) lkBuf[lkLen++] = c;
+  }
+}
+
+bool lkTick() {                           // true = 잠김(loop()의 나머지를 건너뜀)
+  lkSerial();
+  unsigned long now = millis();
+  lkAccMs += now - lkLastMs; lkLastMs = now;
+  while (lkAccMs >= 60000UL) {
+    lkAccMs -= 60000UL;
+    if (lkLocked) continue;
+    lkMin++;
+    if (lkMin % LK_SAVE_MIN == 0) lkSave();
+    if (lkMin >= LK_LIMIT_MIN) { lkSave(); lkLocked = true; }
+  }
+  if (lkLocked) { lkAllOff(); return true; }
+  return false;
+}
+
+`;
+ const crlf=s=>s.replace(/\r?\n/g,'\r\n');
+ let out=src.replace(bootFrom,()=>bootTo);
+ out=out.replace('#define BOOT_HOLD_MS 3000UL',()=>'#define BOOT_HOLD_MS 3000UL'+crlf(defs));
+ out=out.replace('void setup() {',()=>crlf(funcs)+'void setup() {\r\n  lkInit();');
+ out=out.replace('void loop() {',()=>'void loop() {\r\n  if (lkTick()) return;');
+ return out;
+}
+async function lockUnlockTool(mode){   // USB로 보드에 직접 연결해서 해제/상태 확인 (이 페이지의 일반 "연결"과는 별개)
+ if(!('serial' in navigator)){ alert('Chrome 또는 Edge 브라우저에서 여세요.'); return }
+ let line='LOCK?';
+ if(mode==='unlock'){
+  const pw=prompt('현재 잠금 해제 비밀번호 (숫자 4~8자리)'); if(pw===null) return;
+  if(!/^\d{4,8}$/.test(pw.trim())){ alert('비밀번호는 숫자 4~8자리입니다.'); return }
+  const np=prompt('다음 잠금에 쓸 새 비밀번호 (숫자 4~8자리)\n비워 두면 지금 비밀번호를 그대로 씁니다.'); if(np===null) return;
+  if(np.trim()&&!/^\d{4,8}$/.test(np.trim())){ alert('새 비밀번호는 숫자 4~8자리입니다.'); return }
+  line='UNLOCK '+pw.trim()+(np.trim()?' '+np.trim():'');
+ }
+ let p=null,w=null,r=null,out='',failed=false;
+ try{
+  p=await navigator.serial.requestPort(); await p.open({baudRate:115200});
+  w=p.writable.getWriter(); r=p.readable.getReader();
+  await new Promise(s=>setTimeout(s,2200));   // 연결하면 보드가 재시작되는 시간
+  await w.write(new TextEncoder().encode(line+'\n'));
+  const dec=new TextDecoder(), end=Date.now()+2500;
+  while(Date.now()<end && !/\n/.test(out)){
+   const x=await Promise.race([r.read(),new Promise(s=>setTimeout(()=>s(null),Math.max(1,end-Date.now())))]);
+   if(!x||x.done) break; out+=dec.decode(x.value);
+  }
+ }catch(e){ failed=true; if(!(e&&e.name==='NotFoundError')) alert('연결하지 못했습니다: '+e.message+'\n(이 페이지에서 이미 보드에 "연결"되어 있다면 먼저 연결을 해제하세요.)') }
+ finally{
+  try{ if(r){ await r.cancel(); r.releaseLock() } }catch(e){}
+  try{ if(w) w.releaseLock() }catch(e){}
+  try{ if(p) await p.close() }catch(e){}
+ }
+ if(failed) return;
+ out=out.trim();
+ if(!out){ alert('보드의 응답이 없습니다.\n잠금을 켜서 만든 스케치가 올라간 보드가 맞는지, 포트를 제대로 골랐는지 확인하세요.'); return }
+ let m;
+ if(out.startsWith('OK UNLOCKED')) alert('🔓 잠금이 해제되었습니다.\n사용시간이 0으로 돌아갔고 보드가 다시 시작합니다.');
+ else if(out.startsWith('ERR PW')) alert('비밀번호가 맞지 않습니다.');
+ else if(out.startsWith('ERR WAIT')) alert('비밀번호를 잘못 넣은 직후입니다. 3초 뒤에 다시 시도하세요.');
+ else if(out.startsWith('ERR NEWPW')) alert('새 비밀번호 형식이 맞지 않아 해제하지 않았습니다(숫자 4~8자리).');
+ else if((m=out.match(/^LK (\S+) used_min=(\d+) limit_min=(\d+)/))){
+  const u=+m[2], l=+m[3];
+  alert((m[1]==='LOCKED'?'🔒 잠김':'🟢 사용 가능')+'\n사용 '+(u/60).toFixed(1)+'시간 / 허용 '+(l/60).toLocaleString()+'시간'+(m[1]==='LOCKED'?'':'\n남은 시간 '+Math.max(0,(l-u)/60).toFixed(1)+'시간'));
+ }
+ else alert('보드 응답: '+out);
+}
 async function exportSketch(){
+ const lk=lockCfg(); if(lk===false) return;
  if(!seqs.length){alert('만들 내용이 없습니다. 시퀀스를 먼저 만들고 "저장"을 누르세요.');return}
  const bad=seqs.filter(s=>!s.steps.length);
  if(bad.length){alert('동작이 없는 시퀀스가 있습니다: '+bad.map(s=>s.name).join(', '));return}
@@ -1727,8 +1947,10 @@ void loop() {
   }
 }
 `);
- const r=await saveFileAs(L.join('\r\n'),'uno_sequence.ino','text/plain','아두이노 스케치','.ino');
- if(r) log('아두이노 스케치 생성: '+r.name+' (시퀀스 '+n+'개)');
+ let src=L.join('\r\n');
+ if(lk){ src=lockApply(src,lk,'uno'); if(!src){alert('잠금 코드를 넣을 자리를 찾지 못해 스케치를 만들지 않았습니다.');return} }
+ const r=await saveFileAs(src,'uno_sequence.ino','text/plain','아두이노 스케치','.ino');
+ if(r) log('아두이노 스케치 생성: '+r.name+' (시퀀스 '+n+'개'+(lk?', 🔒 잠금 '+lk.hours+'시간':'')+')');
 }
 
 /* ---------- 물음표(?) 도움말: data-help 붙은 긴 안내문은 클릭할 때만 펼쳐진다 ---------- */
