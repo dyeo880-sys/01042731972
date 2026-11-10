@@ -857,13 +857,20 @@ window.addEventListener('load',function(){
  <div id="lockFields" style="display:none">
   <div class="row">
    <label>사용 기간</label>
-   <input id="lockNum" type="number" min="1" value="3" style="width:80px" oninput="lockSum()">
-   <select id="lockUnit" onchange="lockSum()"><option value="1">시간</option><option value="24">일</option><option value="720" selected>개월</option><option value="8760">년</option></select>
+   <input id="lockY" type="number" min="0" value="0" style="width:62px" oninput="lockSum()">년
+   <input id="lockM" type="number" min="0" value="3" style="width:62px" oninput="lockSum()">개월
+   <input id="lockD" type="number" min="0" value="0" style="width:62px" oninput="lockSum()">일
+   <input id="lockH" type="number" min="0" value="0" style="width:62px" oninput="lockSum()">시간
+  </div>
+  <div class="row">
+   <label>또는 날짜·시각으로</label>
+   <input id="lockDT" type="datetime-local" onchange="lockFromDT()">
+   <span class="small">→ 지금부터 그 시각까지의 시간을 위 칸에 채웁니다(보드 전원을 계속 켜 둔다고 가정).</span>
    <label style="margin-left:10px">해제 비밀번호</label>
    <input id="lockPw" type="text" inputmode="numeric" maxlength="8" placeholder="숫자 4~8자리" style="width:130px" autocomplete="off">
    <button type="button" class="gray" onclick="lockRand()">🎲 무작위</button>
   </div>
-  <div class="small">· 기간은 <b>보드 전원이 켜져 있던 누적 시간</b>입니다(보드에는 달력이 없어 24시간 켜 둔 것으로 환산: 1일=24시간, 1개월=30일, 1년=365일).<br>
+  <div class="small">· 기간은 <b>보드 전원이 켜져 있던 누적 시간</b>입니다. 년·개월·일·시간을 합산하며(1일=24시간, 1개월=30일, 1년=365일), 보드에는 시계가 없어 <b>실제 달력 날짜와는 다를 수 있습니다</b>.<br>
   · 기간이 끝나면 <b>모든 릴레이가 꺼지고</b> 동작이 멈춥니다(작동 중이어도 즉시). 해제 비밀번호는 <b>스케치를 만들 때마다 새로 정하며 이 화면에 저장되지 않으니</b> 따로 적어 두세요.<br>
   · 새 스케치를 보드에 올리면 사용시간은 0부터 다시 시작합니다. 전원이 꺼질 때 최대 5분의 사용시간은 반영되지 않을 수 있습니다.<br>
   · 시리얼(D0/D1)과 EEPROM을 사용하므로 입·출력 핀으로 0·1번은 쓰지 마세요.</div>
@@ -5473,9 +5480,20 @@ let lockOn=false;
 function lockSum(){
  const el=document.getElementById('lockSum'); if(!el) return;
  if(!lockOn){ el.textContent='잠금 없음 (선택하지 않음)'; return }
- const n=parseFloat(document.getElementById('lockNum').value), u=+document.getElementById('lockUnit').value;
- const h=Math.round(n*u);
- el.textContent=(h>=1)?('보드 전원 누적 '+h.toLocaleString()+'시간 사용 후 잠김'):'기간을 입력하세요';
+ const h=lockHours();
+ el.textContent=(h>=1)?('보드 전원 누적 '+h.toLocaleString()+'시간('+(h/24).toFixed(1)+'일) 사용 후 잠김'):'기간을 입력하세요';
+}
+function lockHours(){   // 년·개월·일·시간 칸을 모두 시간으로 합산 (1일=24시간, 1개월=30일, 1년=365일)
+ const g=id=>Math.max(0,parseFloat(document.getElementById(id).value)||0);
+ return Math.round(g('lockY')*8760+g('lockM')*720+g('lockD')*24+g('lockH'));
+}
+function lockFromDT(){   // 날짜·시각 → 지금부터 그때까지의 시간을 년·개월·일·시간 칸으로 나눠 채움
+ const v=document.getElementById('lockDT').value; if(!v) return;
+ let h=Math.ceil((new Date(v).getTime()-Date.now())/3600000);
+ if(!(h>=1)){ alert('지금보다 뒤의 날짜·시각을 고르세요.'); return }
+ const y=Math.floor(h/8760); h-=y*8760; const m=Math.floor(h/720); h-=m*720; const d=Math.floor(h/24); h-=d*24;
+ document.getElementById('lockY').value=y; document.getElementById('lockM').value=m; document.getElementById('lockD').value=d; document.getElementById('lockH').value=h;
+ lockSum();
 }
 function lockSet(on){
  lockOn=!!on;
@@ -5490,9 +5508,8 @@ function lockRand(){
 }
 function lockCfg(){   // null = 선택 안 함, false = 입력 오류(안내 후 중단), 객체 = 잠금 설정
  if(!lockOn) return null;
- const n=parseFloat(document.getElementById('lockNum').value), u=+document.getElementById('lockUnit').value;
- const h=Math.round(n*u), pw=document.getElementById('lockPw').value.trim();
- if(!(n>0)||h<1||h>87600){ alert('사용 기간은 1시간 이상, 최대 10년(87,600시간)까지 입력할 수 있습니다.'); return false }
+ const h=lockHours(), pw=document.getElementById('lockPw').value.trim();
+ if(h<1||h>87600){ alert('사용 기간은 1시간 이상, 최대 10년(87,600시간)까지 입력할 수 있습니다.'); return false }
  if(!/^\d{4,8}$/.test(pw)){ alert('잠금 해제 비밀번호를 숫자 4~8자리로 입력하세요.\n(스케치를 만들 때마다 새로 정합니다. 🎲 무작위 버튼도 쓸 수 있습니다.)'); return false }
  return {hours:h,pw:pw,id:(Date.now()%4294967290)+1};
 }
