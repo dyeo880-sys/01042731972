@@ -499,7 +499,7 @@ button.btnFlash{animation:btnFlashKey .32s ease}
     </div>
     <div class="small" data-help="스케치(.ino) 설명">마지막 버튼은 위 시퀀스 목록을 <b>값까지 코드에 박아 넣은 순수 아두이노 스케치</b>로 만듭니다. 이 페이지·시리얼 연결·UNO PLC 펌웨어 없이, 받은 <code>.ino</code>를 아두이노 IDE에서 직접 업로드하면 전원만으로 동작합니다(핀 번호는 지금 화면에 보이는 D번호 기준).</div>
     <div id="lockBox" style="border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;margin:10px 0;background:#f8fafc">
- <b>🔒 보드 사용기간 잠금</b> <span class="small">(⬇ 아두이노 스케치(.ino)에 넣는 기능)</span>
+ <b>🔒 보드 사용기간 잠금</b>
  <div class="row">
   <button id="lockBtnOn" type="button" class="gray" onclick="lockSet(true)">🔒 설정 작성</button>
   <button id="lockBtnOff" type="button" class="green" onclick="lockSet(false)">선택하지 않음</button>
@@ -521,15 +521,10 @@ button.btnFlash{animation:btnFlashKey .32s ease}
    <input id="lockPw" type="text" inputmode="numeric" maxlength="8" placeholder="숫자 4~8자리" style="width:130px" autocomplete="off">
    <button type="button" class="gray" onclick="lockRand()">🎲 무작위</button>
   </div>
-  <div class="small">· 기간은 <b>보드 전원이 켜져 있던 누적 시간</b>입니다. 년·개월·일·시간을 합산하며(1일=24시간, 1개월=30일, 1년=365일), 보드에는 시계가 없어 <b>실제 달력 날짜와는 다를 수 있습니다</b>.<br>
-  · 기간이 끝나면 <b>모든 릴레이가 꺼지고</b> 동작이 멈춥니다(작동 중이어도 즉시). 해제 비밀번호는 <b>스케치를 만들 때마다 새로 정하며 이 화면에 저장되지 않으니</b> 따로 적어 두세요.<br>
-  · 새 스케치를 보드에 올리면 사용시간은 0부터 다시 시작합니다. 전원이 꺼질 때 최대 5분의 사용시간은 반영되지 않을 수 있습니다.<br>
-  · 시리얼(D0/D1)과 EEPROM을 사용하므로 입·출력 핀으로 0·1번은 쓰지 마세요.</div>
  </div>
  <div class="row">
   <button type="button" onclick="lockUnlockTool('unlock')">🔓 잠금 해제·재설정 (USB 연결)</button>
   <button type="button" class="gray" onclick="lockUnlockTool('status')">ℹ 잠금 상태 확인 (USB 연결)</button>
-  <span class="small">보드를 USB로 연결 → 비밀번호 입력 → 해제하면 사용시간이 0이 되고, 그때 <b>다음번 새 비밀번호</b>도 정합니다.</span>
  </div>
 </div>
 <div id="boardInfo" class="small"></div>
@@ -880,10 +875,10 @@ async function connectDevice(){
   readLoop();
   $('status').textContent='● 연결됨 — UNO 재시작 대기 중...';
   log('시리얼 연결. 보드 재시작 대기(약 2초)');
-  await sleep(2200);
+  await sleep(3000);   // 호환 보드(CH340)는 재시작이 느려 넉넉히 기다린다
   let id=null;
-  for(let k=0;k<3&&!id;k++){ const r=await cmd('ID?',700); if(r&&r.startsWith('ID ')) id=r }
-  if(!id){ $('status').textContent='● 연결됨 (UNO PLC 응답 없음)'; alert('UNO PLC 펌웨어 응답이 없습니다.\nUNO_PLC_Firmware.ino v1.1 이상이 올라가 있는지 확인하세요.\n\n※ 만든 스케치(.ino)를 올린 보드라면 이 경고는 정상입니다(PC 연결용 펌웨어가 아니라서 응답하지 않습니다).\n잠금을 풀려면 먼저 "연결 해제"를 누른 뒤, 잠금 칸의 "🔓 잠금 해제·재설정" 버튼을 쓰세요.'); return false }
+  for(let k=0;k<6&&!id;k++){ const r=await cmd('ID?',900); if(r&&r.startsWith('ID ')) id=r }
+  if(!id){ $('status').textContent='● 연결됨 (UNO PLC 응답 없음)'; alert('UNO PLC 펌웨어 응답이 없습니다.\nUNO_PLC_Firmware.ino v1.1 이상이 올라가 있는지 확인하세요.'); return false }
   const m=id.match(/ID\s+(\S+)\s+(\S+)/); fwVer=m?m[2]:null;
   $('status').textContent='● 연결됨 ('+(m?m[1]+' v'+m[2]:id)+')';
   if(fwVer && parseFloat(fwVer)<1.1) alert('펌웨어 v'+fwVer+' 입니다. 시퀀스는 v1.1 이상이 필요합니다.');

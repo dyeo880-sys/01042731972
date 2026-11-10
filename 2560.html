@@ -848,7 +848,7 @@ window.addEventListener('load',function(){
    <button onclick="stopMonitor()" class="red small">■ 감시 중지</button>
   </div>
   <div id="lockBox" style="border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;margin:10px 0;background:#f8fafc">
- <b>🔒 보드 사용기간 잠금</b> <span class="small">(⬇ 아두이노 스케치(.ino)에 넣는 기능)</span>
+ <b>🔒 보드 사용기간 잠금</b>
  <div class="row">
   <button id="lockBtnOn" type="button" class="gray" onclick="lockSet(true)">🔒 설정 작성</button>
   <button id="lockBtnOff" type="button" class="green" onclick="lockSet(false)">선택하지 않음</button>
@@ -870,15 +870,10 @@ window.addEventListener('load',function(){
    <input id="lockPw" type="text" inputmode="numeric" maxlength="8" placeholder="숫자 4~8자리" style="width:130px" autocomplete="off">
    <button type="button" class="gray" onclick="lockRand()">🎲 무작위</button>
   </div>
-  <div class="small">· 기간은 <b>보드 전원이 켜져 있던 누적 시간</b>입니다. 년·개월·일·시간을 합산하며(1일=24시간, 1개월=30일, 1년=365일), 보드에는 시계가 없어 <b>실제 달력 날짜와는 다를 수 있습니다</b>.<br>
-  · 기간이 끝나면 <b>모든 릴레이가 꺼지고</b> 동작이 멈춥니다(작동 중이어도 즉시). 해제 비밀번호는 <b>스케치를 만들 때마다 새로 정하며 이 화면에 저장되지 않으니</b> 따로 적어 두세요.<br>
-  · 새 스케치를 보드에 올리면 사용시간은 0부터 다시 시작합니다. 전원이 꺼질 때 최대 5분의 사용시간은 반영되지 않을 수 있습니다.<br>
-  · 시리얼(D0/D1)과 EEPROM을 사용하므로 입·출력 핀으로 0·1번은 쓰지 마세요.</div>
  </div>
  <div class="row">
   <button type="button" onclick="lockUnlockTool('unlock')">🔓 잠금 해제·재설정 (USB 연결)</button>
   <button type="button" class="gray" onclick="lockUnlockTool('status')">ℹ 잠금 상태 확인 (USB 연결)</button>
-  <span class="small">보드를 USB로 연결 → 비밀번호 입력 → 해제하면 사용시간이 0이 되고, 그때 <b>다음번 새 비밀번호</b>도 정합니다.</span>
  </div>
 </div>
 <div class="row" style="margin-top:-2px">
