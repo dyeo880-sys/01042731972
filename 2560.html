@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="color-scheme" content="light dark">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Mega2560 + 16릴레이 전용 제어 프로그램</title>
 <style>
@@ -325,11 +326,183 @@ input,select,textarea{background:#fbfaf7}
  .groupTab,.dBtn.l,.status{background:#262c35;border-color:#374151;color:#d8dde6}
  .groupTab.active{background:#2563eb;color:#fff;border-color:#2563eb}
 }
+
+/* ================= 디자인 리뉴얼 v3 : 계기판(콘솔) 스타일 ================= */
+:root{color-scheme:light dark;--bg:#eef1f6;--sf:#fff;--sf2:#f5f7fb;--line:#dfe4ee;--ink:#121a2b;--mute:#5b6679;--ac:#3a5bff;--acs:#e8edff;--on:#10b981;--ons:#dcfbec;--onk:#04281c;--dg:#e5384f;--dgs:#fdecee;--wn:#f59e0b;--wns:#fff6e0;--sh:0 1px 2px rgba(18,26,43,.05),0 10px 28px -14px rgba(18,26,43,.22);--mono:"JetBrains Mono","D2Coding",Consolas,monospace}
+@media(prefers-color-scheme:dark){:root{--bg:#0a0e16;--sf:#131a26;--sf2:#1a2332;--line:#263247;--ink:#e6ebf5;--mute:#93a0b6;--ac:#7b94ff;--acs:#1b2650;--on:#34d399;--ons:#0f2e24;--dg:#ff6b7f;--dgs:#3a1a21;--wn:#fbbf24;--wns:#35290f;--sh:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7)}}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{font-family:Pretendard,"Noto Sans KR","Malgun Gothic",-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+*{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+h3{font-size:16px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+label,th,td,h1,h2,h4{color:var(--ink)}
+label{font-weight:600}
+.small,p.small,.card .small{color:var(--mute);font-size:13px;line-height:1.6}
+hr{border:0 !important;border-top:1px solid var(--line) !important;margin:18px 0 !important}
+code{font-family:var(--mono);background:var(--sf2);color:var(--ink);padding:1px 6px;border-radius:6px;font-size:.92em}
+
+/* 헤더 */
+header{background:linear-gradient(115deg,#0b1222,#17223d 70%);color:#fff;padding:14px 24px;font-size:18px;font-weight:700;gap:14px;flex-wrap:wrap;box-shadow:none;border-bottom:1px solid #ffffff14}
+header .brandTitle{display:inline-flex;align-items:center;gap:10px;letter-spacing:-.01em}
+header .brandTitle::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--ac);box-shadow:0 0 14px 2px var(--ac)}
+.headerBadge{background:#ffffff14;border:1px solid #ffffff26;box-shadow:none;font-family:var(--mono);font-size:12px;font-weight:500;padding:4px 12px;color:#cdd6ee}
+.connHdrTxt{font-size:12px;margin-left:-4px}
+.headerClock{font-family:var(--mono);font-size:12px;color:#9aa8c7}
+.headerClock b,#clockNow{color:#fff;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.bugReport{font-family:inherit;font-size:11px;color:#7f8db0}
+
+/* 문서 바 */
+.docBarM{background:color-mix(in srgb,var(--sf) 86%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);box-shadow:none;padding:8px 24px;gap:12px;color:var(--ink)}
+.docBarM .small{font-size:12px;color:var(--mute)}
+.docStateM{font-size:12px}
+.docStateM.dirty{background:var(--wns);color:var(--wn)}.docStateM.ok{background:var(--ons);color:var(--on)}
+#docNoteM{background:var(--wns);border-color:var(--wn);color:var(--ink)}
+
+/* 버튼 */
+button,.dBtn{font-family:inherit;font-size:14px;font-weight:600;padding:9px 15px;border:1px solid transparent;border-radius:10px;background:var(--ac);color:#fff;box-shadow:inset 0 1px 0 #ffffff2e,0 1px 2px rgba(18,26,43,.2);transition:transform .12s,box-shadow .12s,background .12s,border-color .12s}
+button:hover,.dBtn:hover{filter:none;transform:translateY(-1px);box-shadow:inset 0 1px 0 #ffffff2e,0 6px 16px -6px var(--ac)}
+button:active,.dBtn:active{transform:translateY(0)}
+button.gray,.dBtn.l{background:var(--sf2);color:var(--ink);border-color:var(--line);box-shadow:none}
+button.gray:hover,.dBtn.l:hover{border-color:var(--ac);box-shadow:none;color:var(--ac)}
+button.green,.dBtn.g{background:var(--on);color:var(--onk);box-shadow:inset 0 1px 0 #ffffff40,0 4px 14px -6px var(--on)}
+button.green:hover,.dBtn.g:hover{box-shadow:inset 0 1px 0 #ffffff40,0 8px 18px -6px var(--on)}
+button.red,.dBtn.r{background:var(--dg);color:#fff}
+button.red:hover{box-shadow:0 6px 16px -6px var(--dg)}
+button.small{padding:6px 11px;font-size:13px;color:#fff}
+button.small.gray{color:var(--ink)}button.small.green{color:var(--onk)}
+.docBarM .dBtn{padding:6px 13px;font-size:13px}
+button:disabled{opacity:.45;box-shadow:none;transform:none}
+.btnGrid button{font-size:11.5px;border-radius:9px}
+
+/* 입력 */
+input,select,textarea{font-family:inherit;font-size:14px;padding:9px 12px;background:var(--sf);color:var(--ink);border:1px solid var(--line);border-radius:10px}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--ac);box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 25%,transparent)}
+input[type=checkbox],input[type=radio]{accent-color:var(--ac)}
+::placeholder{color:var(--mute);opacity:.7}
+#log{background:#0a1020;color:#8ff0c0;border:1px solid #1f2b46;font-family:var(--mono);font-size:12px;line-height:1.6;border-radius:12px}
+.status{background:var(--sf2);border:1px solid var(--line);border-radius:10px;font-weight:600;padding:10px 14px}
+
+/* 좌측 메뉴 + 본문 2단 구조 */
+.layout{max-width:1500px;margin:0 auto;padding:22px 24px 80px;display:grid;grid-template-columns:252px minmax(0,1fr);gap:24px;align-items:start}
+.sidenav{position:sticky;top:64px;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:2px;max-height:calc(100vh - 84px);overflow:auto;padding:12px;background:var(--sf);border:1px solid var(--line);border-radius:16px;box-shadow:var(--sh)}
+.groupTabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.groupTab{background:var(--sf2);border:1px solid var(--line);border-radius:10px;color:var(--mute);padding:8px 6px;font-size:12.5px}
+.groupTab:hover{background:var(--acs);color:var(--ac)}
+.groupTab.active{background:var(--ac);border-color:var(--ac);color:#fff;box-shadow:0 6px 14px -6px var(--ac)}
+.navGroup{font-size:11.5px;color:var(--mute);font-weight:600;padding:12px 8px 4px;letter-spacing:0}
+.sidenav a{color:var(--ink);font-weight:500;font-size:13.5px;padding:8px 10px;border-radius:9px;position:relative}
+.sidenav a:hover{background:var(--sf2)}
+.sidenav a.active{background:var(--acs);color:var(--ac);font-weight:700}
+.sidenav a.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--ac)}
+.sidenav a .navOff{color:var(--dg)}
+.layout > .wrap{min-width:0}
+@media(max-width:1100px){
+ .layout{grid-template-columns:1fr;padding:12px 14px 60px;gap:12px}
+ .sidenav{position:static;max-height:none;flex-direction:row;flex-wrap:wrap}
+ .groupTabs{flex-basis:100%;grid-template-columns:repeat(4,1fr)}
+ .navGroup{flex-basis:100%}
+ .sidenav a.active::before{display:none}
+}
+@media(max-width:880px){.sidenav{overflow-x:auto;flex-wrap:nowrap;border-radius:14px}.groupTabs{min-width:520px}}
+
+/* 카드 */
+.card{background:var(--sf);border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin-bottom:16px;box-shadow:var(--sh)}
+.cardHead h3{display:flex;align-items:center;gap:10px}
+.cardHead h3::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--ac)}
+.cardHead:hover h3{color:var(--ac)}
+.cardHead .chev{width:26px;height:26px;display:grid;place-items:center;border-radius:8px;background:var(--sf2);color:var(--mute);font-size:11px}
+.card .cardBody{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.card.collapsed{padding-bottom:18px}
+.guideCard{background:linear-gradient(135deg,var(--acs),var(--sf) 60%);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:var(--sh)}
+.guideSteps{gap:10px}
+.guideStep{background:var(--sf);border:1px solid var(--line);border-radius:12px;padding:12px 14px;transition:transform .12s,border-color .12s}
+.guideStep:hover{border-color:var(--ac);background:var(--sf);transform:translateY(-2px)}
+.guideStep b{color:var(--ac)}.guideStep span{color:var(--mute)}
+.optRow{border-top:1px dashed var(--line)}
+.optChip{background:var(--sf);border:1px solid var(--line);color:var(--mute);font-weight:600;border-radius:999px;box-shadow:none}
+.optChip:hover{border-color:var(--ac);color:var(--ac);transform:none;box-shadow:none}
+.optChip.on{background:var(--ons);border-color:var(--on);color:var(--on)}
+.helpBody,.helpShown{background:var(--sf2);border-left:3px solid var(--ac);color:var(--ink)}
+.card button.helpQ,.settings button.helpQ{background:var(--sf2);color:var(--mute);border:1px solid var(--line);box-shadow:none}
+.card button.helpQ.open,.settings button.helpQ.open{background:var(--ac);color:#fff;border-color:var(--ac)}
+.dupNote,.vBox{background:var(--wns);border-color:var(--wn);color:var(--ink)}
+
+/* 릴레이·입력 상태 표시 */
+.relayGrid{gap:12px}
+.relayBox,.inputChip,.kpEnableRow,.wireDiagramBox,.seqTestStep{background:var(--sf2);border:1px solid var(--line);border-radius:12px;color:var(--ink)}
+.relayBox{padding:14px}
+.relayDot,.dot{background:var(--line);box-shadow:inset 0 0 0 1px #0002}
+.relayDot.on,.dot.on{background:var(--on);box-shadow:0 0 0 3px color-mix(in srgb,var(--on) 25%,transparent),0 0 10px var(--on)}
+.editRelayDot.on{background:var(--dg);box-shadow:0 0 10px var(--dg)}
+.relayBtns button{padding:8px;font-size:13px}
+.vChip,.seqTestGroup,.sTag,.seqMon .chip{background:var(--sf);border:1px solid var(--line);color:var(--ink)}
+.vChip.active{background:var(--wns);border-color:var(--wn)}
+.seqMon{background:var(--sf2);border:1px solid var(--line);border-radius:14px}
+.seqMon .chip.on{background:var(--ons);border-color:var(--on)}
+#seqMon .mHead{background:var(--sf2)}
+@media(min-width:1500px){#seqMon{border:1px solid var(--ac);box-shadow:var(--sh)}}
+
+/* 시퀀스 */
+.list button{background:var(--sf2);color:var(--ink);border:1px solid var(--line);box-shadow:none;font-weight:500}
+.list button.active{background:var(--ac);color:#fff;border-color:var(--ac)}
+.seqItem button.body{background:var(--sf2);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:none;font-weight:400}
+.seqItem button.body:hover{border-color:var(--ac);transform:none}
+.seqItem button.body.sel{background:var(--ac);color:#fff;border-color:var(--ac)}
+.seqItem .seqNo,.seqItem .seqGrip{background:var(--sf);border-color:var(--line);color:var(--ink);border-radius:8px}
+.seqBulkBar,.pinConflict{background:var(--dgs);border-color:var(--dg)}
+.stepRow{border-bottom:1px solid var(--line)}
+.stepRow.dragOver,.relayBox.dragOver{border-color:var(--ac)}
+.seqItem .seqChk{background:var(--dgs);border-color:var(--dg)}
+
+/* 표 */
+table{border-collapse:separate;border-spacing:0}
+th{background:var(--sf2);color:var(--mute);font-size:12.5px;text-transform:none;letter-spacing:0;font-weight:600}
+th:first-child{border-radius:10px 0 0 10px}th:last-child{border-radius:0 10px 10px 0}
+th,td{border-bottom:1px solid var(--line);padding:10px 12px}
+
+/* 배선도·팝업 */
+.wireHwChip{background:var(--sf2);border-color:var(--line);color:var(--ink)}
+.wireHwChip.ok,.wireOkBox{background:var(--ons);border-color:var(--on);color:var(--ink)}
+.wireHwChip.bad,.wireErrItem,.monNotice{background:var(--dgs);border-color:var(--dg);color:var(--ink)}
+.modalOverlay,.docOv{background:#080c1599;backdrop-filter:blur(6px)}
+.modalBox,.docModal{background:var(--sf);color:var(--ink);border:1px solid var(--line);border-radius:20px;box-shadow:0 30px 70px -20px #0009}
+.docMsg{color:var(--ink)}
+
+/* ---- 점검 후 보완 ---- */
+.docBarM{flex-wrap:wrap}
+.docBarM .small{flex:1 1 180px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.docBarM .docBtnsM{flex:none}
+@media(max-width:880px){.layout > .wrap{padding:0}.docBarM{padding:8px 14px}.docBarM .small{white-space:normal}}
+/* 코드에 직접 박힌 밝은 배경/글자색이 다크 모드에서도 읽히도록 */
+[style*="background:#f8fafc"]{background:var(--sf2) !important;border-color:var(--line) !important}
+[style*="background:#fff;"]{background:var(--sf) !important;border-color:var(--line) !important}
+[style*="background:#fffbeb"]{background:var(--wns) !important;border-color:var(--wn) !important}
+[style*="color:#334155"]{color:var(--ink) !important}
+[style*="color:#64748b"]{color:var(--mute) !important}
+
+/* ---- 9. 시퀀스 화면: 목록 패널을 왼쪽 메뉴 바로 아래 칸으로 ---- */
+@media(min-width:1101px){
+ .layout:has(#card7:not(.grpHidden)){row-gap:0}
+ .layout:has(#card7:not(.grpHidden)) > .wrap,
+ .layout:has(#card7:not(.grpHidden)) #card7{display:contents}
+ .layout:has(#card7:not(.grpHidden)) > .sidenav{grid-column:1;grid-row:1;position:static;max-height:none;margin-bottom:16px}
+ .layout:has(#card7:not(.grpHidden)) > .wrap > *,
+ .layout:has(#card7:not(.grpHidden)) #card7 > .card:not(.list){grid-column:2;min-width:0}
+ .layout:has(#card7:not(.grpHidden)) #card7 > .list{grid-column:1;padding:16px;min-width:0}
+ .layout:has(#card7:not(.grpHidden)) #card7 > .list > .small:first-of-type{display:none}
+}
+
+/* ---- 버튼 글자색 보정: 카드 안 .small(설명문 회색)이 버튼 글자색을 덮어쓰던 문제 ---- */
+.card button.small,.settings button.small,.seqMon button.small,.docBarM button.small{color:#fff}
+.card button.small.gray,.settings button.small.gray,.seqMon button.small.gray{color:var(--ink)}
+.card button.small.green,.settings button.small.green{color:var(--onk)}
+.card button.small.red,.settings button.small.red{color:#fff}
+.card button.small:hover.gray,.settings button.small.gray:hover{color:var(--ac)}
 </style>
 </head>
 <body>
 <div id="connFloat"><span class="connLamp"></span><span id="connFloatTxt">연결 안 됨</span></div>
-<header>Mega2560 + 16릴레이 전용 제어 프로그램 <span class="headerBadge">보드: Arduino Mega 2560</span>
+<header><span class="brandTitle">Mega2560 + 16릴레이 전용 제어 프로그램</span> <span class="headerBadge">보드: Arduino Mega 2560</span>
  <span class="connLamp" id="connLamp" title="연결 안 됨"></span><span class="connHdrTxt warn" id="connHdrTxt">⚠ USB 연결 안 됨</span>
  <span class="headerClock" id="headerClock">
   <div id="clockNow">--:--:--</div>
