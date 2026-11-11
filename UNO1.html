@@ -2621,7 +2621,7 @@ function simInit(){
 let docName=null, docDirty=false, docNote='';
 let docFileHandle=null;   // 실제 파일과 연결된 핸들(지원 브라우저) — 있으면 "저장"이 이 파일에 바로 덮어씁니다. 여러 명이 같은 파일(예: 공유 폴더/USB)을 열고 저장하며 쓸 수 있습니다.
 function stripExt(n){ return String(n||'').replace(/\.json$/i,'') }
-function docSerialize(){ return JSON.stringify({__type:'unoDocV1', name:docName||'', seqs:seqs, names:names}, null, 2) }
+function docSerialize(){ return JSON.stringify({__type:'unoDocV1', name:docName||'', seqs:seqs, names:names, seqOrderMode:!!seqOrderMode, pins:pinOver}, null, 2) }
 function docLegacyDone(){ try{localStorage.setItem('unoLegacyDoneV1','1')}catch(e){} docNote='' }
 function edNorm(x){ return JSON.stringify({name:String(x.name||'').trim(),trigCh:+x.trigCh||0,trigCond:x.trigCond||'ON',condMode:x.condMode==='OR'?'OR':'AND',
  conds:(x.conds||[]).map(c=>({ch:+c.ch,state:c.state})),
@@ -2781,19 +2781,31 @@ async function docOpen(){
   if(Array.isArray(loadedNames.inv)) merged.inv=loadedNames.inv.slice(0,N_IN).concat(merged.inv.slice(loadedNames.inv.length)).slice(0,N_IN);
   if(Array.isArray(loadedNames.boot)) merged.boot=loadedNames.boot.slice(0,4).concat(merged.boot.slice(loadedNames.boot.length)).slice(0,4);
   if(Array.isArray(loadedNames.outinv)) merged.outinv=loadedNames.outinv.slice(0,4).concat(merged.outinv.slice(loadedNames.outinv.length)).slice(0,4);
-  const sameAsNow=JSON.stringify(merged)===JSON.stringify(names);
-  const localIsEmpty=!names.relay.some(Boolean) && !names.inp.some(Boolean);   // 지금 이 컴퓨터에 이름표가 하나도 안 적혀 있는 상태(=완전 빈 화면)일 때만 조용히 채워 넣음
-  if(sameAsNow){ namesApplied=false }
-  else if(localIsEmpty){ names=merged; saveNames(); namesApplied=true }
-  else if(confirm('이 파일에는 CH·릴레이 이름표(핀 번호·타이머·캡핑기 등 문구)도 들어 있습니다.\n지금 이 컴퓨터(브라우저)에 이미 적혀 있는 이름표를 이 파일의 이름표로 덮어쓸까요?\n\n확인 = 파일의 이름표로 덮어씀 (지금 컴퓨터에 적어둔 이름표는 사라짐)\n취소 = 시퀀스만 불러오고, 지금 컴퓨터에 적힌 이름표는 그대로 둠')){
-   names=merged; saveNames(); namesApplied=true;
-  }
+  namesApplied=(JSON.stringify(merged)!==JSON.stringify(names));
+  names=merged; saveNames();   // 파일에 저장된 이름표·입력 반전·출력 반전·부팅 상태를 묻지 않고 그대로 적용
  }
+ if(typeof obj.seqOrderMode==='boolean'){ seqOrderMode=obj.seqOrderMode; seqOrderIdx=0; saveSeqOrderLocal(); const oc=$('seqOrderChk'); if(oc) oc.checked=seqOrderMode }
+ if(obj.pins && obj.pins.out && obj.pins.inp){ pinOver={out:obj.pins.out,inp:obj.pins.inp}; outPins=DEF_OUT.slice(); inPins=DEF_IN.slice(); applyPinOver(); savePins() }
  newSeq(); if(seqs.length) selectSeq(0); docUI();
  buildStatic(); syncInvBoxes(); syncBootBoxes(); syncOutInvBoxes(); renderEditor(); renderSeqList();   // CH·릴레이 이름표를 쓰는 화면(② 릴레이·입력, ③ 시퀀스 목록)을 즉시 새로고침
  if(typeof simRefresh==='function') simRefresh();   // 지금 ④ 가상 테스트 탭이 열려 있어도(탭을 다시 안 눌러도) 새 이름표·시퀀스가 바로 반영되게
- const namesMsg=!loadedNames?' · 이 파일에는 이름표가 없어 CH·릴레이 이름은 그대로 둠':(namesApplied?' · CH·릴레이 이름표도 함께 적용됨':' · 이 컴퓨터의 기존 이름표를 유지함(파일의 이름표는 적용 안 함)');
- log('📂 열기: “'+nm+'” ('+seqs.length+'개, 파일: '+(fname||'-')+')'+namesMsg+' — 보드에 반영하려면 "⚡ 전체 시퀀스를 보드에 저장"을 누르세요');
+ const namesMsg=!loadedNames?' · 이 파일에는 이름표가 없어 CH·릴레이 이름은 그대로 둠':(namesApplied?' · CH·릴레이 이름표도 함께 적용됨':' · 이름표·반전 설정이 이미 파일과 같음');
+ log('📂 열기: “'+nm+'” ('+seqs.length+'개, 파일: '+(fname||'-')+')'+namesMsg+' — PC 자동 감시·가상 테스트에는 바로 적용됩니다. 보드 단독 동작용은 "⚡ 전체 시퀀스를 보드에 저장"을 누르세요');
+ if(loadedNames && connected()) await pushHwSettings();
+}
+/* 파일에서 열은 입력 반전·출력 반전·전원 투입 시 시작 상태를 보드에도 바로 보냅니다(보드에 연결되어 있을 때). */
+async function pushHwSettings(){
+ if(!connected()) return;
+ let bad=[];
+ const verOK=n=>fwVer && verNum(fwVer)>=n;
+ if(verOK(107)) for(let k=0;k<N_IN;k++){ if(!await cmdOK('SETINV '+(k+1)+' '+(names.inv[k]?1:0))) { bad.push('입력 반전'); break } }
+ else if(names.inv.some(v=>v)) bad.push('입력 반전(펌웨어 v1.7 이상 필요)');
+ if(verOK(108)) for(let k=0;k<N_OUT;k++){ if(!await cmdOK('SETBOOT '+(k+1)+' '+(names.boot[k]?1:0))) { bad.push('시작 상태'); break } }
+ else if(names.boot.some(v=>v)) bad.push('시작 상태(펌웨어 v1.8 이상 필요)');
+ for(let k=0;k<N_OUT;k++){ if(!await cmdOK('SETOUTINV '+(k+1)+' '+(names.outinv[k]?1:0))) { if(names.outinv.some(v=>v)) bad.push('출력 반전(펌웨어 v1.9.1 이상 필요)'); break } }
+ await refreshInputs();
+ if(bad.length){ log('⚠ 파일의 설정 중 보드에 못 보낸 항목: '+bad.join(', ')); alert('파일을 열었지만 다음 설정은 보드에 적용되지 않았습니다:\n'+bad.join('\n')+'\n(로그 참고)') }
+ else { log('✅ 파일의 입력 반전·출력 반전·시작 상태를 보드에 적용했습니다'); okToast('✅ 설정을 보드에 적용했습니다') }
 }
 function docInit(){
  window.addEventListener('beforeunload',e=>{ if(isDirty()){ e.preventDefault(); e.returnValue=''; return '' } });   // 저장 안 한 변경이 있을 때만 브라우저 기본 확인창(자동 저장은 하지 않음)
