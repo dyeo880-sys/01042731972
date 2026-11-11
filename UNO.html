@@ -335,7 +335,7 @@ button.btnFlash{animation:btnFlashKey .32s ease}
     <button class="light" onclick="newDocument()">📄 새 문서</button>
    </span>
   </div>
-  <div class="small" data-help="저장·열기 설명" style="margin-top:6px"><b>자동으로 저장되지 않습니다.</b> <b>💾 저장</b>은 실제 .json 파일로 저장되고, <b>📂 열기</b>는 그 파일을 직접 불러옵니다. 파일을 공유 폴더(회사 서버, USB, 클라우드 동기화 폴더 등)에 두면 여러 명이 같은 파일을 열고·수정하고·다시 저장하는 방식으로 공유해서 쓸 수 있습니다(이 프로그램의 "프리셋" 기능과 달리, 이 저장 방식은 한 브라우저 안에 갇혀 있지 않습니다). "다른 이름으로 저장"은 새 파일로 따로 저장합니다. 저장하지 않은 채 새 문서·열기·창 닫기를 하면 저장할지 물어봅니다. (Ctrl+S = 저장)</div>
+  <div class="small" data-help="저장·열기 설명" style="margin-top:6px"><b>파일로는 자동 저장되지 않습니다.</b> (새로고침·실수로 창을 닫은 경우를 대비해 이 브라우저에 임시 보관본이 자동으로 남고 다시 열면 복원되지만, 다른 컴퓨터와는 공유되지 않으니 꼭 💾 저장을 눌러 파일로 남기세요.) <b>💾 저장</b>은 실제 .json 파일로 저장되고, <b>📂 열기</b>는 그 파일을 직접 불러옵니다. 파일을 공유 폴더(회사 서버, USB, 클라우드 동기화 폴더 등)에 두면 여러 명이 같은 파일을 열고·수정하고·다시 저장하는 방식으로 공유해서 쓸 수 있습니다(이 프로그램의 "프리셋" 기능과 달리, 이 저장 방식은 한 브라우저 안에 갇혀 있지 않습니다). "다른 이름으로 저장"은 새 파일로 따로 저장합니다. 저장하지 않은 채 새 문서·열기·창 닫기를 하면 저장할지 물어봅니다. (Ctrl+S = 저장)</div>
   <div class="warn hidden" id="docNote" style="margin-bottom:0"></div>
  </div>
  <div class="box" style="margin-top:0">
@@ -1858,6 +1858,7 @@ async function exportSketch(){
  L.push('//  생성: '+new Date().toLocaleString()+'   시퀀스 '+n+'개');
  L.push('//  릴레이 = active-LOW(LOW=ON), 입력 = INPUT_PULLUP(버튼이 GND로 붙으면 "눌림")');
  L.push('//  전원 투입 후 3초간은 입력을 무시합니다. 시리얼 통신은 사용하지 않습니다.');
+ L.push('//  IN_INV=1(입력 반전) 채널도 내부 풀업(INPUT_PULLUP)을 씁니다 — 아무것도 연결하지 않으면 HIGH(=눌림)로 읽히며, B접점(평소 GND에 붙어 있다가 열리면 눌림)으로 쓰는 용도입니다. 외부 풀다운을 쓰려면 내부 풀업(약 20~50kΩ)보다 훨씬 작은 저항이어야 합니다.');
  L.push('//  OUT_BOOT: 전원 투입 시 각 릴레이의 시작 상태(1=ON으로 시작, 기본 0=OFF로 시작) — 웹페이지 릴레이 박스 체크박스 값');
  L.push('//  OUT_INV : 릴레이별 출력 반전(1 = 이 릴레이만 반대 극성/active-HIGH로 동작) — 웹페이지 "출력 반전(A접점/B접점)" 체크박스 값');
  L.push('//  각 동작 줄은 waitCh=0이면 delayMs만큼 기다린 뒤 다음 줄, waitCh>=1이면 그 채널이 waitOn(1=눌림 0=뗌)이');
@@ -1892,7 +1893,7 @@ async function exportSketch(){
  L.push('};');
  L.push('');
  if(n){
-  L.push('const Seq SEQS[N_SEQ] = {');
+  L.push('const Seq SEQS[N_SEQ] PROGMEM = {   // 프로그램 메모리(플래시)에 보관 — UNO의 SRAM(2KB)을 아끼기 위함');
   seqs.forEach((q,i)=>{
    const cc=Array(condMax).fill(0), co=Array(condMax).fill(0);
    realConds(q).slice(0,condMax).forEach((c,k)=>{cc[k]=c.ch; co[k]=c.state==='ON'?1:0});
@@ -1901,7 +1902,7 @@ async function exportSketch(){
    L.push('  { '+q.trigCh+', '+condNum(q.trigCond)+', '+Math.min(realConds(q).length,condMax)+', {'+cc.join(',')+'}, {'+co.join(',')+'}, '+(q.condMode==='OR'?1:0)+', '+(q.orderExempt?1:0)+', '+st.length+', { '+st.join(', ')+' } }'+(i<n-1?',':''));
   });
   L.push('};');
- } else L.push('const Seq SEQS[1] = { };   // 시퀀스 없음');
+ } else L.push('const Seq SEQS[1] PROGMEM = { };   // 시퀀스 없음');
  L.push('');
  L.push(String.raw`bool inLast[N_IN], inStable[N_IN];
 unsigned long inChangedAt[N_IN];
@@ -1940,7 +1941,7 @@ bool interlockOK(const Seq &S) {
 }
 
 void startSeq(uint8_t s) {
-  if (s >= N_SEQ || sqRun[s] || SEQS[s].nSteps == 0) return;
+  if (s >= N_SEQ || sqRun[s] || pgm_read_byte(&SEQS[s].nSteps) == 0) return;
   sqRun[s] = true; sqStep[s] = 0; sqDue[s] = millis();
 }
 `);
@@ -1966,7 +1967,8 @@ void loop() {
   unsigned long now = millis();
   bool holding = (now < BOOT_HOLD_MS);
   for (uint8_t s = 0; s < N_SEQ; s++) {
-    const Seq &S = SEQS[s];
+    Seq S;
+    memcpy_P(&S, &SEQS[s], sizeof(Seq));   // 플래시의 시퀀스 한 개를 읽어 옴
     if (S.trigCh >= 1) {
       bool cur = inStable[S.trigCh - 1];
       if (holding) sqPrev[s] = cur;
