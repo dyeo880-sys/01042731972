@@ -518,6 +518,11 @@ th,td{border-bottom:1px solid var(--line);padding:10px 12px}
   <button class="dBtn l" onclick="docOpen()">📂 열기</button>
   <button class="dBtn l" onclick="docNew()">📄 새 문서</button>
  </span>
+ <span class="docBtnsM" style="flex-basis:100%">
+  <button class="dBtn l" onclick="docOpenPlain()">📂 열기(간편: 일반 파일 선택)</button>
+  <button class="dBtn l" onclick="docOpenPaste()">📋 내용 붙여넣어 열기</button>
+  <span id="docDrop" style="border:2px dashed #94a3b8;border-radius:10px;padding:6px 12px;font-size:13px">⬇ 여기에 <b>.json 파일을 끌어다 놓으면</b> 바로 열립니다</span>
+ </span>
  <div id="docNoteM"></div>
 </div>
 <div class="layout">
@@ -5641,6 +5646,54 @@ async function docOpenFromDisk(fromStart){
  if(!docStage({name:suggest,suggest,data:d,dirty:false,note:'파일 "'+fname+'"에서 불러왔습니다. 보드에 [연결]하면 이 파일의 설정(핀 매핑·시작 상태·릴레이 방식 등)이 보드에 그대로 적용됩니다.'+extraNote})) return false;
  docReload(); return true;
 }
+
+/* ---------- 추가 열기 방법: 일반 파일선택 / 붙여넣기 / 끌어놓기 (선택 창이 안 뜨거나 취소될 때용) ---------- */
+async function docOpenFromText(text,fname,handle,fromStart){
+ let raw; try{ raw=JSON.parse(text) }catch(e){ alert('올바른 문서 파일이 아닙니다.\n'+e.message); return false }
+ let d={}, extraNote='';
+ DOC_KEYS.forEach(k=>{ if(raw[k]!==undefined) d[k]=(typeof raw[k]==='string')?raw[k]:JSON.stringify(raw[k]) });
+ if(!Object.keys(d).length){
+  const conv=convertLegacyDoc(raw);
+  if(!conv){ alert('이 프로그램의 문서 파일이 아닌 것 같습니다.'); return false }
+  d=conv.data;
+  if(conv.notes.length) extraNote=' ⚠ '+conv.notes.join(' ');
+ }
+ if(!Object.keys(d).length){ alert('이 프로그램의 문서 파일이 아닌 것 같습니다.'); return false }
+ if(!fromStart && !await docConfirmLeave('파일을 열면')) return false;
+ docFileHandle=handle||null; try{ idbSet('currentDocHandle',handle||null) }catch(e){}
+ const suggest=String(fname||'문서').replace(/\.json$/i,'');
+ if(!docStage({name:suggest,suggest,data:d,dirty:false,note:'파일 "'+fname+'"에서 불러왔습니다. 보드에 [연결]하면 이 파일의 설정이 보드에 그대로 적용됩니다.'+extraNote})) return false;
+ docReload(); return true;
+}
+async function docOpenPlain(){
+ try{
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json,text/plain';
+  inp.style.display='none'; document.body.appendChild(inp);
+  inp.onchange=async()=>{ const f=inp.files[0]; inp.remove(); if(!f){ log('📂 간편 열기: 선택 없음'); return }
+   try{ const t=await f.text(); log('📂 간편 열기: '+f.name+' 읽음('+t.length+'자)'); await docOpenFromText(t,f.name,null,false) }
+   catch(e){ log('⚠ 간편 열기 오류: '+e.message); alert('열기 오류: '+e.message) } };
+  inp.click();
+ }catch(e){ alert('열기 오류: '+e.message) }
+}
+async function docOpenPaste(){
+ const k=await docAsk('내용 붙여넣어 열기','.json 파일을 메모장으로 열어 <b>전체 선택(Ctrl+A) → 복사(Ctrl+C)</b> 한 뒤 아래에 붙여넣으세요.<br><textarea style="width:100%;height:200px;margin-top:6px;font-family:Consolas,monospace;font-size:12px"></textarea>',
+  [{k:'open',t:'📂 열기',cls:'green'},{k:'cancel',t:'취소',cls:'gray'}],{noEsc:true});
+ if(k!=='open') return;
+ const t=(docAsk.lastText||'').trim(); if(!t){ alert('붙여넣은 내용이 없습니다.'); return }
+ try{ await docOpenFromText(t,'붙여넣기.json',null,false) }catch(e){ log('⚠ 붙여넣기 열기 오류: '+e.message); alert('열기 오류: '+e.message) }
+}
+(function(){
+ const z=document.getElementById('docDrop');
+ ['dragenter','dragover'].forEach(ev=>document.addEventListener(ev,e=>{ e.preventDefault(); if(z) z.style.background='#dbeafe' }));
+ ['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{ e.preventDefault(); if(z) z.style.background='' }));
+ document.addEventListener('drop',async e=>{
+  if(!(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length)) return;
+  const f=e.dataTransfer.files[0]; if(!/\.json$/i.test(f.name)) return;
+  e.preventDefault();
+  try{ const t=await f.text(); log('📂 끌어놓기 열기: '+f.name); await docOpenFromText(t,f.name,null,false) }
+  catch(err){ log('⚠ 끌어놓기 열기 오류: '+err.message); alert('열기 오류: '+err.message) }
+ });
+})();
 async function exportPresetsFile(){
  if(!Object.keys(presets).length){ alert('저장된 프리셋이 없습니다. 먼저 "현재 목록 저장"으로 프리셋을 만드세요.'); return }
  const data=JSON.stringify(presets,null,2);
@@ -7134,7 +7187,7 @@ function docAsk(title,msg,btns,opts){   // 버튼이 여러 개인 확인 창
   ov.innerHTML='<div class="docModal" role="dialog"><h3>'+esc(title)+'</h3><div class="docMsg">'+msg+'</div><div class="docBtns">'+btns.map(b=>'<button class="dBtn '+(cm[b.cls||'gray']||'')+'" data-k="'+b.k+'">'+esc(b.t)+'</button>').join('')+'</div></div>';
   document.body.appendChild(ov);
   const cancelKey=(btns.find(b=>b.k==='cancel')||{}).k;
-  const done=k=>{ const sel=ov.querySelector('select'); docAsk.last=sel?sel.value:null; const inp=ov.querySelector('input'); docAsk.lastInput=inp?inp.value:null; document.removeEventListener('keydown',onKey,true); ov.remove(); res(k) };
+  const done=k=>{ const sel=ov.querySelector('select'); docAsk.last=sel?sel.value:null; const inp=ov.querySelector('input'); docAsk.lastInput=inp?inp.value:null; const ta=ov.querySelector('textarea'); docAsk.lastText=ta?ta.value:null; document.removeEventListener('keydown',onKey,true); ov.remove(); res(k) };
   const onKey=e=>{ if(e.key==='Escape'&&cancelKey&&!opts.noEsc){ e.stopPropagation(); done(cancelKey) } };
   document.addEventListener('keydown',onKey,true);
   ov.querySelectorAll('button').forEach(b=>b.onclick=()=>done(b.dataset.k));
