@@ -1,6 +1,6 @@
 {
   "__type": "unoDocV1",
-  "name": "캡핑기",
+  "name": "캡핑기2026",
   "seqs": [
     {
       "name": "센서 신호를 받을때  1 타이머 작동",
@@ -151,5 +151,10 @@
       ],
       "orderExempt": false
     }
-  ]
+  ],
+  "seqOrderMode": false,
+  "pins": {
+    "out": {},
+    "inp": {}
+  }
 }
