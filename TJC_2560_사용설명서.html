@@ -2,190 +2,963 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TJC 터치 화면 + Mega2560 사용설명서</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TJC 화면 편집 도구 (800×480)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Gothic+A1&family=Jua&family=Nanum+Gothic&family=Nanum+Myeongjo&family=Noto+Sans+KR&display=swap">
 <style>
-:root{--bg:#f6f7f5;--card:#fff;--tx:#1c2420;--sub:#5b6761;--line:#d6dcd7;--ac:#1f6f54;--warn-bg:#fff4e0;--warn-bd:#e0a23a;--bad:#b3261e;--code:#eef2ef;}
-@media (prefers-color-scheme:dark){:root{--bg:#141816;--card:#1e2421;--tx:#e6ece8;--sub:#9aa7a0;--line:#33403a;--ac:#4fb58c;--warn-bg:#3a2f18;--warn-bd:#b98a2e;--bad:#ff8a80;--code:#27302b;}}
+:root{
+  --bg:#14181f; --panel:#1d232d; --line:#2f3745; --text:#e6eaf0; --sub:#93a0b4;
+  --accent:#f0b43c; --relay:#2e8b64; --page:#3b6fd4; --btn:#7a5fa8;
+}
 *{box-sizing:border-box}
-html{scroll-padding-top:12px}
-body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.7 "Malgun Gothic","Noto Sans KR",sans-serif;padding:16px}
-main{max-width:820px;margin:0 auto}
-h1{font-size:24px;margin:8px 0 4px}
-h2{font-size:19px;margin:0 0 10px;color:var(--ac)}
-h3{font-size:16px;margin:14px 0 4px}
-p{margin:6px 0}
-.lead{color:var(--sub);margin-bottom:16px}
-section{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin-bottom:14px}
-nav{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 18px;margin-bottom:14px}
-nav a{display:inline-block;margin:2px 12px 2px 0;color:var(--ac);text-decoration:none}
-nav a:hover{text-decoration:underline}
-code{background:var(--code);padding:1px 6px;border-radius:4px;font-family:Consolas,monospace;font-size:14px}
-ol,ul{margin:6px 0;padding-left:22px}
-li{margin:3px 0}
-.warn{background:var(--warn-bg);border-left:4px solid var(--warn-bd);padding:8px 12px;border-radius:4px;margin:10px 0}
-.table-wrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%;min-width:480px;font-size:15px}
-th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;vertical-align:top}
-th{background:var(--code)}
-footer{color:var(--sub);font-size:13px;margin:16px 0 40px}
-a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
-@media print{body{background:#fff;color:#000}nav{display:none}section{break-inside:avoid}}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.45 "Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+header{padding:10px 16px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:16px;margin:0;font-weight:700}
+header .hint{color:var(--sub);font-size:12px}
+main{display:grid;grid-template-columns:minmax(0,1fr) 360px;height:calc(100% - 49px)}
+@media(max-width:900px){main{grid-template-columns:1fr;height:auto}}
+#left{padding:12px;overflow:auto;min-width:0}
+#right{border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:12px}
+button,select,input{font:inherit}
+button{background:#2a3342;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:hover{background:#364154}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button.on{background:var(--accent);color:#1a1405;border-color:var(--accent)}
+button.danger{color:#ff9b9b}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.tabs button.cur{background:var(--accent);color:#1a1405;border-color:var(--accent);font-weight:700}
+#holder{position:relative;margin:0 auto 10px;border:1px solid var(--line);background:#000}
+#stage{position:absolute;left:0;top:0;width:800px;height:480px;transform-origin:0 0;background-size:800px 480px;background-repeat:no-repeat;overflow:hidden;touch-action:none}
+#gridov{position:absolute;inset:0;pointer-events:none;display:none;
+  background-image:linear-gradient(to right,rgba(255,255,255,.12) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,.12) 1px,transparent 1px);
+  background-size:50px 50px}
+.item{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;
+  border:2px dashed rgba(255,255,255,.75);border-radius:6px;cursor:move;user-select:none;overflow:hidden;padding:0 4px;
+  background:var(--c);opacity:.92}
+.item.sel{border:2px solid var(--accent);box-shadow:0 0 0 2px rgba(240,180,60,.35);opacity:1;z-index:5}
+.item .rs{position:absolute;right:0;bottom:0;width:14px;height:14px;background:var(--accent);cursor:nwse-resize;display:none}
+.item.sel .rs{display:block}
+.item small{position:absolute;left:3px;top:1px;font-size:10px;opacity:.8}
+.coord{font-size:12px;color:var(--sub);margin:0 0 10px;min-height:18px}
+.opts{display:flex;gap:14px;flex-wrap:wrap;align-items:center;color:var(--sub);font-size:13px}
+.opts label{display:flex;gap:4px;align-items:center}
+h2{font-size:13px;margin:14px 0 6px;color:var(--accent)}
+h2:first-child{margin-top:0}
+.field{display:grid;grid-template-columns:78px 1fr;gap:6px;align-items:center;margin-bottom:6px}
+.field input,.field select{width:100%;background:#12161d;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 7px}
+.xy{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6px}
+.xy label{font-size:11px;color:var(--sub);display:block}
+.xy input{width:100%;background:#12161d;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 6px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{border-bottom:1px solid var(--line);padding:3px 4px;text-align:left}
+th{color:var(--sub);font-weight:400}
+tr.sel td{background:rgba(240,180,60,.15)}
+tr{cursor:pointer}
+textarea{width:100%;height:190px;background:#12161d;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px;font:12px/1.5 Consolas,"D2Coding",monospace;resize:vertical}
+.empty{color:var(--sub);font-size:13px;padding:8px 0}
+.kbd{font-size:12px;color:var(--sub)}
+#holder.test .item{cursor:pointer;border:2px solid rgba(255,255,255,.3);opacity:1}
+#holder.test .item small{display:none}
+#holder.test .item:active{filter:brightness(1.3)}
+#holder.test{outline:3px solid var(--accent)}
+.tcard{border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-bottom:6px;background:#12161d}
+.trow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:3px 0;font-size:12px}
+.trow label{display:flex;gap:4px;align-items:center;color:var(--sub)}
+.trow input[type=number]{width:78px}
+.trow input[type=text]{flex:1;min-width:120px}
+.tcard input,.tcard select{background:#1d232d;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+details.guide{border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-top:14px;background:#12161d}
+details.guide summary{cursor:pointer;color:var(--accent);font-weight:700}
+details.guide ol{padding-left:20px;margin:8px 0}
+details.guide li{margin-bottom:8px;font-size:13px}
+details.guide li small{display:block;color:var(--sub)}
+.item.txtI{background:transparent;color:var(--c);border:2px dashed rgba(255,255,255,.35);text-align:left}
+#holder.test .item.txtI{border-color:transparent}
+.ctx{position:fixed;z-index:1000;display:none;min-width:250px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.55)}
+.ctx .ctxh{font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px}
+.ctx .field{grid-template-columns:96px 1fr}
+.ctx input[type=color]{height:30px;padding:2px}
+.ctx .row{margin:8px 0 0;justify-content:flex-end}
+.testbar{background:rgba(240,180,60,.14);border:1px solid var(--accent);border-radius:6px;padding:6px 10px;margin-bottom:8px;font-size:13px;display:none}
 </style>
 </head>
 <body>
+<header>
+  <h1>TJC 화면 편집 도구 (800×480)</h1>
+  <span class="hint">미리보기에서 버튼을 끌어 옮기고, 오른쪽 아래 노란 모서리로 크기를 바꿉니다.</span>
+</header>
 <main>
-<h1>TJC 터치 화면 + Mega2560 사용설명서</h1>
-<p class="lead">TJC X2 시리즈 7인치 터치 화면(TJC8048X270_011)으로 메가2560의 릴레이 16개를 현장에서 직접 누르고 상태를 보는 방법입니다.</p>
+  <section id="left">
+    <div class="tabs" id="pageTabs"></div>
+    <div class="row">
+      <button id="addRelay">+ 릴레이 버튼</button>
+      <button id="addPage">+ 페이지 이동 버튼</button>
+      <button id="addBtn">+ 일반 버튼</button>
+      <button id="addText">+ 글자</button>
+      <button id="fontLoad">글꼴 가져오기</button><input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2" multiple hidden>
+      <button id="undoBtn">되돌리기 (Ctrl+Z)</button>
+      <button id="delBtn" class="danger">선택 삭제</button>
+      <button id="testBtn">시험 보기</button>
+    </div>
+    <div class="testbar" id="testbar"></div>
+    <div id="holder"><div id="stage"><div id="gridov"></div></div></div>
+    <p class="coord" id="coord"></p>
+    <div class="opts">
+      <label>확대
+        <select id="zoomSel">
+          <option value="0">화면에 맞춤</option>
+          <option value="1">100%</option>
+          <option value="0.75">75%</option>
+          <option value="0.5">50%</option>
+        </select>
+      </label>
+      <label>이동 간격
+        <select id="gridSel">
+          <option value="1">1px</option>
+          <option value="5" selected>5px</option>
+          <option value="10">10px</option>
+          <option value="20">20px</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="showGrid"> 격자 보기</label>
+      <label>배경색 <input type="color" id="bgColor" value="#1c2636"></label>
+      <label><button id="bgLoad">배경 그림 불러오기</button><input type="file" id="bgFile" accept="image/*" hidden></label>
+      <button id="bgClear">배경 그림 지우기</button>
+    </div>
+    <p class="kbd">방향키: 선택한 버튼 이동 (Shift는 10px) · Delete: 삭제 · Ctrl+D: 복제 · 버튼을 두 번 누르면 글자 수정 · 버튼/글자를 오른쪽 클릭하면 글꼴·색상·핀 번호·연결 페이지 메뉴</p>
+  </section>
 
-<nav aria-label="목차">
-  <a href="#s1">1. 전체 구성</a>
-  <a href="#s2">2. 준비물</a>
-  <a href="#s3">3. 시작 순서</a>
-  <a href="#s4">4. 배선</a>
-  <a href="#s5">5. 화면 만들기</a>
-  <a href="#s6">6. 통신 시험</a>
-  <a href="#s7">7. 펌웨어 올리기</a>
-  <a href="#s8">8. 사용법</a>
-  <a href="#s9">9. 문제 해결</a>
-  <a href="#s10">10. 주의사항</a>
-</nav>
+  <aside id="right">
+    <h2>선택한 버튼</h2>
+    <div id="props"></div>
 
-<section id="s1">
-<h2>1. 전체 구성</h2>
-<p>이 시스템은 역할이 둘로 나뉩니다.</p>
-<ul>
-  <li><b>웹 페이지(2560.html)</b> — PC에서 핀, 시퀀스, 센서를 <b>설정</b>하는 도구입니다.</li>
-  <li><b>TJC 터치 화면</b> — 설정이 끝난 뒤 현장에서 <b>운전</b>하는 조작판입니다.</li>
-</ul>
-<p>화면을 눌러 릴레이를 바꾸면 웹 페이지와 시퀀스, 키패드로 바뀐 릴레이도 화면 버튼에 같이 표시됩니다. 둘은 같은 릴레이 상태를 함께 봅니다.</p>
-</section>
+    <h2>타이머 (이 페이지)</h2>
+    <div id="timerBox"></div>
 
-<section id="s2">
-<h2>2. 준비물</h2>
-<ul>
-  <li>Arduino Mega 2560 + 16채널 릴레이 보드</li>
-  <li>TJC8048X270_011 (X2 시리즈 7인치) 및 전원 (사양은 데이터시트 확인)</li>
-  <li>USB-TTL 변환기 (통신 시험용, 3.3V/5V 전환 가능한 것이 편리)</li>
-  <li>점퍼선, 저항 2kΩ·1kΩ 각 1개 (화면이 3.3V 로직일 때)</li>
-  <li>PC와 Chrome 또는 Edge 브라우저, 아두이노 IDE, TJC 편집기 <b>USART HMI</b></li>
-  <li>파일: <code>TJC_통신시험.html</code>, <code>Mega2560_16Relay_Firmware_keypad_TJC.ino</code>, <code>2560.html</code>(웹 설정 도구)</li>
-</ul>
-</section>
+    <h2>신호 받기 (메가 → 화면)</h2>
+    <div class="row">
+      <button id="addSig">+ 신호</button>
+      <label class="opts">연결 <select id="serSel"><option>Serial1</option><option>Serial2</option><option>Serial3</option></select></label>
+      <label class="opts">속도 <select id="baudSel"><option>9600</option><option>57600</option><option>115200</option></select></label>
+    </div>
+    <div id="sigBox"></div>
+    <textarea id="sigCode" readonly style="height:170px"></textarea>
+    <div class="row" style="margin-top:6px"><button id="copySig">메가 코드 복사</button></div>
 
-<section id="s3">
-<h2>3. 시작 순서</h2>
-<p>문제가 생겼을 때 원인을 나누기 쉽도록, 아래 순서를 지켜 한 단계씩 확인하세요.</p>
-<ol>
-  <li>화면 편집기에서 화면 만들기 (5번)</li>
-  <li>PC와 화면만 연결해서 통신 시험 (6번)</li>
-  <li>메가에 펌웨어 올리고 화면과 연결 (7번)</li>
-  <li>릴레이 1~2개로 시험한 뒤 전체 연결 (8번)</li>
-</ol>
-</section>
+    <h2>이 페이지의 버튼 목록</h2>
+    <div id="tableBox"></div>
 
-<section id="s4">
-<h2>4. 배선</h2>
-<h3>메가2560 ↔ 화면</h3>
-<div class="table-wrap">
-<table>
-  <tr><th>메가2560</th><th>화면</th><th>설명</th></tr>
-  <tr><td>TX3 (핀 14)</td><td>RX</td><td>메가 → 화면</td></tr>
-  <tr><td>RX3 (핀 15)</td><td>TX</td><td>화면 → 메가</td></tr>
-  <tr><td>GND</td><td>GND</td><td>반드시 공통 연결</td></tr>
-</table>
-</div>
-<p>화면 전원은 데이터시트의 사양대로 따로 공급하세요. 메가의 5V 핀에서 무작정 끌어 쓰지 마세요.</p>
-<div class="warn"><b>전압 주의</b> — 메가는 5V 로직입니다. 화면이 3.3V 로직이면 <b>메가 TX3(14) → 화면 RX</b> 선에 저항 분배(2kΩ와 1kΩ)를 넣어 전압을 낮춰야 합니다. 반대 방향(화면 TX → 메가 RX3)은 그대로 연결해도 됩니다. 전압은 반드시 모델 데이터시트에서 먼저 확인하세요.</div>
-<div class="warn"><b>핀 14·15번은 화면 통신 전용</b>입니다. 릴레이나 입력 채널에 지정하지 마세요. 웹 페이지의 "12. 배선도"가 이 핀을 쓰면 빨간 경고를 띄웁니다.</div>
+    <h2>편집기에 넣을 내용</h2>
+    <textarea id="code" readonly></textarea>
+    <div class="row" style="margin-top:6px">
+      <button id="copyCode">복사</button>
+      <button id="saveCodes">전체 페이지 코드 저장 (.txt)</button>
+    </div>
 
-<h3>PC ↔ 화면 (시험용)</h3>
-<p>USB-TTL 변환기의 TX → 화면 RX, 변환기 RX → 화면 TX, GND 공통입니다. 이때 메가는 연결하지 않아도 됩니다.</p>
-</section>
-
-<section id="s5">
-<h2>5. 화면 만들기 (USART HMI)</h2>
-<p>화면 디자인은 웹이 아니라 전용 편집기에서만 만들 수 있습니다.</p>
-<ol>
-  <li>USART HMI에서 새 프로젝트를 만들고 모델 <b>TJC8048X270_011</b>을 선택합니다.</li>
-  <li><b>page 0</b>에 2상태 버튼(Dual-state button) 16개를 배치합니다.</li>
-  <li>버튼 이름(objname)을 <code>bt1</code>, <code>bt2</code>, … <code>bt16</code>으로 지정합니다.</li>
-  <li>컴포넌트 ID를 <b>1~16</b>이 되게 맞춥니다. 속성 창에서 확인할 수 있고, 만든 순서대로 번호가 매겨집니다.</li>
-  <li>각 버튼의 <b>"누름 이벤트"</b>에서 <b>Send Component ID</b>를 체크합니다.</li>
-  <li>통신속도는 <b>9600</b>으로 둡니다.</li>
-  <li>컴파일한 뒤 화면에 올립니다 (SD카드 또는 편집기에서 직접 — 방법은 제품 설명서를 따르세요).</li>
-</ol>
-<div class="warn">버튼 이름이 <code>r1</code>처럼 다르면 화면과 메가가 서로 알아보지 못합니다. 반드시 <code>bt1</code>~<code>bt16</code>이어야 합니다.</div>
-<p>한글 글자를 화면에 표시하려면 한글이 들어 있는 폰트를 따로 만들어야 합니다. 먼저 영문과 숫자로 시험하세요.</p>
-</section>
-
-<section id="s6">
-<h2>6. 통신 시험 (PC와 화면만)</h2>
-<ol>
-  <li>화면을 USB-TTL 변환기로 PC에 연결합니다.</li>
-  <li>Chrome이나 Edge에서 <code>TJC_통신시험.html</code>을 엽니다.</li>
-  <li>통신속도 <b>9600</b>을 선택하고 <b>연결</b>을 누릅니다.</li>
-  <li><code>page 0</code>을 보내 화면이 반응하는지 봅니다. 끝의 FF FF FF는 자동으로 붙습니다.</li>
-  <li><code>bt1.val=1</code>을 보내 버튼 1번이 눌린 모양으로 바뀌는지 봅니다.</li>
-  <li>화면의 버튼을 직접 눌러 아래 기록에 <b>"터치 이벤트: 페이지 0, 컴포넌트 1, 눌림"</b> 같은 줄이 뜨는지 확인합니다.</li>
-</ol>
-<p>이 세 가지가 되면 화면은 정상입니다. 안 되면 8번을 먼저 하지 말고 9번 문제 해결을 보세요.</p>
-</section>
-
-<section id="s7">
-<h2>7. 펌웨어 올리기</h2>
-<div class="warn"><b>먼저 백업하세요.</b> 지금 보드에 올라가 있는 펌웨어 파일을 따로 보관해 두세요. 문제가 생기면 그 파일을 다시 올려 원래대로 돌릴 수 있습니다.</div>
-<ol>
-  <li>아두이노 IDE에서 <code>Mega2560_16Relay_Firmware_keypad_TJC.ino</code>를 엽니다.</li>
-  <li>보드를 <b>Arduino Mega or Mega 2560</b>으로 선택합니다. 라이브러리 <b>U8g2</b>가 설치되어 있어야 합니다.</li>
-  <li>먼저 <b>확인(컴파일)</b>만 눌러서 오류가 없는지 봅니다. 오류가 나면 그 메시지를 알려주세요.</li>
-  <li>이상이 없으면 <b>업로드</b>합니다.</li>
-  <li>메가를 화면에 연결하고 전원을 켭니다. 약 2.5초 뒤 화면에 현재 릴레이 상태가 표시됩니다.</li>
-</ol>
-<p>웹 페이지(2560.html)는 이전과 똑같이 연결해서 쓰면 됩니다. 이 펌웨어도 같은 명령에 응답합니다.</p>
-</section>
-
-<section id="s8">
-<h2>8. 사용법</h2>
-<ul>
-  <li><b>릴레이 켜기/끄기</b> — 화면의 버튼(bt1~bt16)을 누르면 R1~R16이 토글됩니다.</li>
-  <li><b>상태 확인</b> — 버튼이 눌린 모양이면 릴레이 ON입니다.</li>
-  <li><b>웹이나 시퀀스로 바뀐 경우</b> — 화면 버튼도 자동으로 따라 바뀝니다.</li>
-  <li><b>설정 변경</b> — 핀 번호, 시퀀스, 릴레이 방식 등은 PC의 웹 페이지에서 바꿉니다. 화면에서는 바꿀 수 없습니다.</li>
-</ul>
-<p><b>처음 시험할 때</b>는 릴레이 1~2개만 연결하고 화면 버튼 1, 2번만 눌러 보세요. 정상이면 나머지를 연결합니다.</p>
-</section>
-
-<section id="s9">
-<h2>9. 문제 해결</h2>
-<div class="table-wrap">
-<table>
-  <tr><th>증상</th><th>확인할 것</th></tr>
-  <tr><td>통신 시험에서 아무 반응이 없다</td><td>TX/RX가 서로 엇갈려 연결됐는지(변환기 TX → 화면 RX), GND 공통, 통신속도 9600, 화면 전원</td></tr>
-  <tr><td>"잘못된 변수 이름(1A)"이 뜬다</td><td>통신은 정상입니다. 화면 편집기의 컴포넌트 이름과 보낸 이름이 같은지 확인</td></tr>
-  <tr><td>화면 버튼을 눌러도 기록에 터치가 안 뜬다</td><td>버튼 "누름 이벤트"의 Send Component ID 체크</td></tr>
-  <tr><td>버튼을 눌러도 릴레이가 안 움직인다</td><td>버튼 이름이 bt1~bt16인지, ID가 1~16인지, 메가 TX3/RX3 배선, 펌웨어가 _TJC 버전인지</td></tr>
-  <tr><td>릴레이는 움직이는데 화면 표시가 안 바뀐다</td><td>메가 TX3(14) → 화면 RX 배선, 3.3V/5V 레벨 변환</td></tr>
-  <tr><td>ON과 OFF가 반대로 동작한다</td><td>웹 페이지 "2. 릴레이 방식"에서 HIGH형/LOW형을 바꾸세요</td></tr>
-  <tr><td>부팅 직후 화면 표시가 비어 있다</td><td>화면 부팅이 늦은 경우입니다. 화면이 켜졌다고 알려오면 다시 보내므로 잠시 기다려 보세요</td></tr>
-  <tr><td>웹 페이지에서 14·15번에 빨간 경고</td><td>정상입니다. 두 핀은 화면 통신 전용이라 다른 용도로 쓸 수 없습니다</td></tr>
-</table>
-</div>
-</section>
-
-<section id="s10">
-<h2>10. 주의사항</h2>
-<ul>
-  <li>펌웨어를 올리기 전에 기존 펌웨어를 반드시 백업하세요.</li>
-  <li>화면의 전압(3.3V/5V)과 전원 사양은 구매하신 모델의 데이터시트로 직접 확인하세요.</li>
-  <li>릴레이에 모터나 히터 같은 큰 부하를 연결하는 작업은 정격과 전원 배선을 확인하고, 안전을 위해 처음에는 부하 없이 시험하세요.</li>
-  <li>웹 설정 도구(2560.html)로 USB 연결을 열면 메가가 자동으로 재시작되어 <b>릴레이가 모두 꺼집니다</b>. 가동 중인 장비가 있으면 연결하기 전에 멈추세요.</li>
-  <li>화면 터치는 원격 제어가 아니라 현장 조작입니다. 기계를 움직이는 릴레이는 주변에 사람이 없는지 확인한 뒤 누르세요.</li>
-  <li>이 설명서와 프로그램은 실제 장비로 충분히 시험된 것이 아닙니다. 처음 연결할 때는 위 순서대로 한 단계씩 확인하세요.</li>
-</ul>
-</section>
-
-<footer>TJC 터치 화면 + Mega2560 사용설명서</footer>
+    <h2>저장</h2>
+    <div class="row">
+      <label class="opts"><input type="checkbox" id="pngFrames" checked> PNG에 버튼 틀 그리기</label>
+    </div>
+    <div class="row">
+      <button id="savePng">이 페이지 배경 PNG 저장</button>
+      <button id="saveProj">작업 저장 (.json)</button>
+      <button id="loadProj">작업 불러오기</button>
+      <input type="file" id="projFile" accept=".json,application/json" hidden>
+    </div>
+  <details class="guide" open>
+      <summary>작업이 끝나면 이렇게 적용하세요</summary>
+      <ol>
+        <li><b>이 도구에서 저장</b>
+          <small>"이 페이지 배경 PNG 저장"을 페이지마다 누릅니다. 편집기에 진짜 버튼을 올릴 거면 "PNG에 버튼 틀 그리기"를 끄고 저장하세요. "전체 페이지 코드 저장"으로 editor_codes.txt도 받고, "작업 저장"도 눌러 두세요.</small></li>
+        <li><b>TJC 편집기(USART HMI)에서 새 프로젝트</b>
+          <small>기종은 TJC8048X270_011을 고르고, 화면 방향은 800×480 가로로 맞춥니다.</small></li>
+        <li><b>배경 그림 넣기</b>
+          <small>편집기의 그림 창에서 저장한 PNG를 추가합니다. 해당 페이지를 선택하고 배경을 "그림"으로 바꾼 뒤 방금 넣은 그림을 고릅니다.</small></li>
+        <li><b>글자 확인</b>
+          <small>"+ 글자"로 만든 글자 중 "PNG 그림에 글자 넣기"가 켜진 것은 배경 PNG에 이미 들어 있어서 편집기에서 할 일이 없습니다. 껐다면 코드 칸의 내용대로 Text 부품을 올립니다.</small></li>
+        <li><b>버튼 올리기</b>
+          <small>도구상자의 Button을 화면에 올리고, 속성에서 x, y, 너비, 높이를 이 도구의 "버튼 목록" 표 값 그대로 넣습니다. 글자는 txt 칸에 넣습니다.</small></li>
+        <li><b>동작 코드 넣기</b>
+          <small>버튼을 선택하고 Touch Release Event(손 뗄 때 실행) 칸에 이 도구가 보여주는 한 줄(예: page 1)을 붙여 넣습니다. 릴레이 버튼은 코드 대신 Send Component ID를 체크합니다.</small></li>
+        <li><b>타이머 넣기 (사용할 때만)</b>
+          <small>Timer 부품을 올리고 tim, en 값을 넣은 뒤 Timer Event 칸에 코드 한 줄을 붙여 넣습니다.</small></li>
+        <li><b>편집기에서 먼저 시험</b>
+          <small>편집기의 디버그(시뮬레이터)로 버튼을 눌러 화면이 넘어가는지 확인합니다. 이 도구의 "시험 보기"와 같은 결과여야 합니다.</small></li>
+        <li><b>화면에 올리기</b>
+          <small>컴파일한 뒤 USB-TTL로 다운로드하거나, 만들어진 .tft 파일을 microSD에 복사해 화면에 꽂고 전원을 껐다 켭니다.</small></li>
+        <li><b>메가에 올리기 (신호를 쓸 때만)</b>
+          <small>"메가 코드 복사" 내용을 Arduino IDE에 붙여 넣고 setup() 안에 Serial1.begin(9600); 줄을 추가한 뒤 업로드합니다. 배선은 화면 TX → 메가 RX1(19번), 화면 RX → 메가 TX1(18번), GND끼리 연결입니다. 화면 속도(baud)와 코드의 속도가 같아야 합니다.</small></li>
+      </ol>
+      <small style="color:var(--sub)">편집기 버전에 따라 메뉴 이름이 조금 다를 수 있습니다.</small>
+    </details>
+  </aside>
 </main>
+
+<div class="ctx" id="ctx" role="menu" aria-label="속성 메뉴"></div>
+<script>
+(function(){
+"use strict";
+var W=800,H=480;
+var COLORS={relay:"#2e8b64",page:"#3b6fd4",btn:"#7a5fa8",text:"#ffffff"};
+var TYPE_NAME={relay:"릴레이",page:"페이지 이동",btn:"일반",text:"글자"};
+var S={pages:[newPage()],cur:0,sel:null,grid:5,zoom:0,uid:1,test:false,signals:[],serial:"Serial1",baud:9600,fonts:[]};
+var undo=[];
+var drag=null;
+var bgCache={};
+
+function newPage(){return {bg:null,color:"#1c2636",items:[],timers:[]};}
+function $(id){return document.getElementById(id);}
+function page(){return S.pages[S.cur];}
+function find(id){return page().items.filter(function(i){return i.id===id;})[0];}
+function sel(){return S.sel==null?null:find(S.sel);}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function snapV(v){var g=S.grid;return g>1?Math.round(v/g)*g:Math.round(v);}
+
+function nameIn(p,it){
+  var grp=it.type==="text"?"t":"b",n=0;
+  for(var i=0;i<p.items.length;i++){
+    if(p.items[i].id===it.id)break;
+    if((p.items[i].type==="text"?"t":"b")===grp)n++;
+  }
+  return grp+n;
+}
+function rgb565(hex){
+  var r=parseInt(hex.substr(1,2),16),g=parseInt(hex.substr(3,2),16),b=parseInt(hex.substr(5,2),16);
+  return ((r>>3)<<11)|((g>>2)<<5)|(b>>3);
+}
+var BASE_FONT="'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif";
+function hasFont(it){return !!it.font&&it.font!=="기본";}
+var BUILTIN=[
+  {n:"맑은 고딕",f:"Malgun Gothic",g:"sys"},{n:"돋움",f:"Dotum",g:"sys"},{n:"굴림",f:"Gulim",g:"sys"},
+  {n:"바탕",f:"Batang",g:"sys"},{n:"궁서",f:"Gungsuh",g:"sys"},
+  {n:"노토 산스",f:"Noto Sans KR",g:"web"},{n:"나눔고딕",f:"Nanum Gothic",g:"web"},{n:"나눔명조",f:"Nanum Myeongjo",g:"web"},
+  {n:"고딕 A1",f:"Gothic A1",g:"web"},{n:"블랙 한 산스",f:"Black Han Sans",g:"web"},{n:"도현체",f:"Do Hyeon",g:"web"},{n:"주아체",f:"Jua",g:"web"}
+];
+function builtinOf(n){for(var i=0;i<BUILTIN.length;i++)if(BUILTIN[i].n===n)return BUILTIN[i];return null;}
+function fontCss(it){
+  if(!hasFont(it))return BASE_FONT;
+  var b=builtinOf(it.font);
+  return "'"+(b?b.f:it.font)+"',"+BASE_FONT;
+}
+function fontOptionsHtml(){
+  function opt(n){return '<option value="'+n+'">'+n+'</option>';}
+  var h='<option value="기본">기본 (맑은 고딕 굵게)</option>';
+  h+='<optgroup label="컴퓨터에 있는 글꼴">'+BUILTIN.filter(function(b){return b.g==="sys";}).map(function(b){return opt(b.n);}).join("")+'</optgroup>';
+  h+='<optgroup label="인터넷 글꼴 (인터넷 연결 필요)">'+BUILTIN.filter(function(b){return b.g==="web";}).map(function(b){return opt(b.n);}).join("")+'</optgroup>';
+  if(S.fonts.length)h+='<optgroup label="가져온 글꼴">'+S.fonts.map(opt).join("")+'</optgroup>';
+  return h;
+}
+function snap(){
+  undo.push(JSON.stringify(S.pages.map(function(p){return {i:p.items,t:p.timers};})));
+  if(undo.length>80)undo.shift();
+}
+function doUndo(){
+  var s=undo.pop();if(!s)return;
+  var a=JSON.parse(s);
+  S.pages.forEach(function(p,i){if(a[i]){p.items=a[i].i;p.timers=a[i].t;}});
+  if(!sel())S.sel=null;
+  renderAll();
+}
+
+/* ---------- 항목 추가 ---------- */
+function addItem(type){
+  snap();
+  var n=page().items.filter(function(i){return i.type===type;}).length+1;
+  var it={id:S.uid++,type:type,text:"",x:20,y:60,w:150,h:60,target:0,color:COLORS[type]};
+  if(type==="relay"){it.text="릴레이"+n+" ON";it.y=60+((n-1)%5)*70;}
+  if(type==="page"){it.text="설정";it.target=Math.min(1,S.pages.length-1);it.x=W-170;it.y=10;it.w=150;it.h=50;}
+  if(type==="btn"){it.text="버튼"+n;it.x=200;it.y=200;}
+  if(type==="text"){it.text="제목";it.x=20;it.y=10;it.w=300;it.h=50;it.size=32;it.align="left";it.bake=true;}
+  page().items.push(it);
+  S.sel=it.id;
+  renderAll();
+}
+
+/* ---------- 미리보기 ---------- */
+function zoomVal(){
+  if(S.zoom)return S.zoom;
+  var w=$("left").clientWidth-26;
+  return clamp(w/W,0.3,1.6);
+}
+function renderStage(){
+  var z=zoomVal(),st=$("stage"),h=$("holder");
+  h.classList.toggle("test",S.test);
+  h.style.width=(W*z)+"px";h.style.height=(H*z)+"px";
+  st.style.transform="scale("+z+")";
+  var p=page();
+  st.style.backgroundColor=p.color;
+  st.style.backgroundImage=p.bg?"url("+p.bg+")":"none";
+  $("gridov").style.display=$("showGrid").checked?"block":"none";
+  $("gridov").style.backgroundSize=(S.grid>=5?S.grid*10:50)+"px "+(S.grid>=5?S.grid*10:50)+"px";
+  var old=st.querySelectorAll(".item");
+  for(var i=0;i<old.length;i++)st.removeChild(old[i]);
+  p.items.forEach(function(it,idx){
+    var el=document.createElement("div");
+    el.className="item"+(it.type==="text"?" txtI":"")+(it.id===S.sel&&!S.test?" sel":"");
+    el.dataset.id=it.id;
+    el.style.setProperty("--c",it.color);
+    var s=document.createElement("small");s.textContent=tagOf(p,it);
+    var t=document.createElement("span");t.className="lbl";
+    el.appendChild(s);el.appendChild(t);
+    var rs=document.createElement("div");rs.className="rs";el.appendChild(rs);
+    st.appendChild(el);
+    paintEl(it,el);
+  });
+}
+function tagOf(p,it){
+  var t=nameIn(p,it);
+  if(it.type!=="text"&&it.type!=="page"&&it.pin!==undefined&&it.pin!=="")t+=" · 핀 "+it.pin;
+  return t;
+}
+function paintEl(it,el){
+  el=el||$("stage").querySelector('.item[data-id="'+it.id+'"]');
+  if(!el)return;
+  var sm=el.querySelector("small");if(sm)sm.textContent=tagOf(page(),it);
+  el.style.left=it.x+"px";el.style.top=it.y+"px";
+  el.style.width=it.w+"px";el.style.height=it.h+"px";
+  el.style.fontSize=(it.type==="text"?it.size:clamp(Math.round(it.h*0.38),12,34))+"px";
+  if(it.type==="text"){
+    el.style.justifyContent=it.align==="center"?"center":(it.align==="right"?"flex-end":"flex-start");
+    el.style.fontFamily=fontCss(it);
+    el.style.fontWeight=hasFont(it)?"normal":"bold";
+  }else{
+    el.style.fontFamily=hasFont(it)?fontCss(it):"";
+  }
+  el.style.setProperty("--c",it.color);
+  var t=el.querySelector(".lbl");
+  t.textContent=it.text+(it.type==="page"&&!S.test?"  → page "+it.target:"");
+}
+function markSel(){
+  var els=$("stage").querySelectorAll(".item");
+  for(var i=0;i<els.length;i++){
+    els[i].classList.toggle("sel",Number(els[i].dataset.id)===S.sel);
+  }
+}
+
+/* ---------- 끌기 / 크기 조절 ---------- */
+$("stage").addEventListener("pointerdown",function(e){
+  var el=e.target.closest(".item");
+  if(S.test){
+    if(!el)return;
+    var ti=find(Number(el.dataset.id));if(!ti)return;
+    e.preventDefault();
+    if(ti.type==="page"){
+      if(ti.target<S.pages.length){S.cur=ti.target;renderAll();startTimers();}
+    }else{
+      flash(ti.type==="relay"?"릴레이 버튼"+(ti.pin!==undefined&&ti.pin!==""?"(핀 "+ti.pin+")":"")+": 실제 화면에서는 메가로 신호를 보냅니다.":"일반 버튼: 눌러도 화면은 바뀌지 않습니다.");
+    }
+    return;
+  }
+  if(!el){S.sel=null;markSel();renderSide();return;}
+  var it=find(Number(el.dataset.id));if(!it)return;
+  e.preventDefault();
+  var changed=S.sel!==it.id;
+  S.sel=it.id;
+  if(changed){markSel();renderSide();}
+  if(e.button!==0)return;
+  snap();
+  drag={it:it,mode:e.target.classList.contains("rs")?"rs":"mv",sx:e.clientX,sy:e.clientY,x:it.x,y:it.y,w:it.w,h:it.h,moved:false};
+});
+window.addEventListener("pointermove",function(e){
+  if(!drag)return;
+  var z=zoomVal(),dx=(e.clientX-drag.sx)/z,dy=(e.clientY-drag.sy)/z;
+  var it=drag.it;
+  if(Math.abs(dx)+Math.abs(dy)>1)drag.moved=true;
+  if(drag.mode==="mv"){
+    it.x=clamp(snapV(drag.x+dx),0,W-it.w);
+    it.y=clamp(snapV(drag.y+dy),0,H-it.h);
+  }else{
+    it.w=clamp(snapV(drag.w+dx),20,W-it.x);
+    it.h=clamp(snapV(drag.h+dy),20,H-it.y);
+  }
+  paintEl(it);
+  $("coord").textContent="x="+it.x+"  y="+it.y+"  너비="+it.w+"  높이="+it.h;
+  fillProps(it);
+  renderOut();
+});
+window.addEventListener("pointerup",function(){
+  if(!drag)return;
+  if(!drag.moved)undo.pop();
+  drag=null;
+});
+$("stage").addEventListener("dblclick",function(e){
+  if(S.test)return;
+  var el=e.target.closest(".item");if(!el)return;
+  var it=find(Number(el.dataset.id));if(!it)return;
+  var v=prompt("버튼 글자",it.text);
+  if(v!==null){snap();it.text=v;renderAll();}
+});
+
+/* ---------- 오른쪽 속성 ---------- */
+function renderProps(){
+  var it=sel(),box=$("props");
+  if(!it){box.innerHTML='<div class="empty">미리보기에서 버튼을 누르거나, 위의 추가 버튼으로 만드세요.</div>';return;}
+  var opts="";
+  for(var i=0;i<S.pages.length;i++)opts+='<option value="'+i+'"'+(i===it.target?" selected":"")+'>page '+i+'</option>';
+  box.innerHTML=
+   '<div class="field"><span>종류</span><span>'+TYPE_NAME[it.type]+'</span></div>'+
+   '<div class="field"><span>글자</span><input id="p_text" type="text"></div>'+
+   (it.type==="page"?'<div class="field"><span>이동할 페이지</span><select id="p_target">'+opts+'</select></div>':'')+
+   (it.type==="text"?'<div class="field"><span>글자 크기</span><select id="p_size">'+[16,20,24,32,40,48,64].map(function(v){return '<option value="'+v+'">'+v+'px</option>';}).join("")+'</select></div>'+
+     '<div class="field"><span>정렬</span><select id="p_align"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div>'+
+     '<div class="field"><span>넣는 방법</span><label style="font-size:12px"><input type="checkbox" id="p_bake"> 배경 PNG 그림에 글자 넣기 (쉬움)</label></div>':'')+
+   '<div class="field"><span>글꼴</span><select id="p_font">'+fontOptionsHtml()+'</select></div>'+
+   (it.type==="relay"||it.type==="btn"?'<div class="field"><span>핀 번호</span><input id="p_pin" type="number" min="0" max="99" placeholder="없음"></div>':'')+
+   '<div class="xy">'+
+     '<div><label for="p_x">x</label><input id="p_x" type="number" min="0" max="'+W+'"></div>'+
+     '<div><label for="p_y">y</label><input id="p_y" type="number" min="0" max="'+H+'"></div>'+
+     '<div><label for="p_w">너비</label><input id="p_w" type="number" min="20" max="'+W+'"></div>'+
+     '<div><label for="p_h">높이</label><input id="p_h" type="number" min="20" max="'+H+'"></div>'+
+   '</div>'+
+   '<div class="field"><span>'+(it.type==="text"?"글자색":"색")+'</span><input id="p_c" type="color"></div>'+
+   '<div class="row"><button id="p_dup">복제</button><button id="p_del" class="danger">삭제</button></div>';
+  fillProps(it);
+  var ids=["p_text","p_x","p_y","p_w","p_h","p_c","p_target","p_size","p_align","p_bake","p_font","p_pin"];
+  ids.forEach(function(id){
+    var el=$(id);if(!el)return;
+    el.addEventListener("focus",snap);
+    el.addEventListener("input",function(){applyProps(id);});
+  });
+  $("p_dup").onclick=dup;
+  $("p_del").onclick=del;
+}
+function fillProps(it){
+  if(!$("p_x")||document.activeElement&&document.activeElement.id&&document.activeElement.id.indexOf("p_")===0&&!drag)return;
+  $("p_text").value=it.text;
+  $("p_x").value=it.x;$("p_y").value=it.y;$("p_w").value=it.w;$("p_h").value=it.h;
+  $("p_c").value=it.color;
+  if($("p_font"))$("p_font").value=it.font||"기본";
+  if($("p_pin"))$("p_pin").value=(it.pin===undefined?"":it.pin);
+  if($("p_target"))$("p_target").value=String(it.target);
+  if($("p_size")){$("p_size").value=String(it.size);$("p_align").value=it.align;$("p_bake").checked=!!it.bake;}
+}
+function applyProps(id){
+  var it=sel();if(!it)return;
+  var n=function(k){return Number($(k).value)||0;};
+  if(id==="p_text")it.text=$("p_text").value;
+  if(id==="p_target")it.target=Number($("p_target").value);
+  if(id==="p_c")it.color=$("p_c").value;
+  if(id==="p_size")it.size=Number($("p_size").value);
+  if(id==="p_font")it.font=$("p_font").value;
+  if(id==="p_align")it.align=$("p_align").value;
+  if(id==="p_bake")it.bake=$("p_bake").checked;
+  if(id==="p_pin"){var pv=$("p_pin").value;it.pin=pv===""?"":clamp(Math.round(Number(pv)),0,99);}
+  if(id==="p_w"||id==="p_h"){it.w=clamp(n("p_w"),20,W);it.h=clamp(n("p_h"),20,H);}
+  if(id==="p_x"||id==="p_y"||id==="p_w"||id==="p_h"){
+    it.x=clamp(n("p_x"),0,W-it.w);it.y=clamp(n("p_y"),0,H-it.h);
+  }
+  paintEl(it);
+  $("coord").textContent="x="+it.x+"  y="+it.y+"  너비="+it.w+"  높이="+it.h;
+  renderOut();
+}
+function dup(){
+  var it=sel();if(!it)return;
+  snap();
+  var c=JSON.parse(JSON.stringify(it));
+  c.id=S.uid++;c.x=clamp(it.x+20,0,W-it.w);c.y=clamp(it.y+20,0,H-it.h);
+  page().items.push(c);S.sel=c.id;renderAll();
+}
+function del(){
+  var it=sel();if(!it)return;
+  snap();
+  page().items=page().items.filter(function(i){return i.id!==it.id;});
+  S.sel=null;renderAll();
+}
+
+/* ---------- 목록 / 코드 ---------- */
+function codeFor(pi){
+  var p=S.pages[pi],out=["// ===== page "+pi+" ====="];
+  if(!p.items.length&&!p.timers.length)out.push("(버튼 없음)");
+  p.items.forEach(function(it,i){
+    var nm=nameIn(p,it);
+    if(it.type==="text"){
+      if(it.bake){out.push("["+nm+"] 글자 \""+it.text+"\" → 배경 PNG에 들어 있습니다. 편집기에 올릴 것이 없습니다.");}
+      else{
+        out.push("["+nm+"] 글자(Text) 부품 \""+it.text+"\"");
+        out.push("  x="+it.x+" y="+it.y+" w="+it.w+" h="+it.h);
+        out.push("  txt=\""+it.text+"\"  xcen="+(it.align==="center"?1:(it.align==="right"?2:0))+"  pco="+rgb565(it.color)+"  font=약 "+it.size+"px 글꼴을 만들어 선택");
+      }
+      return;
+    }
+    out.push("["+nm+"] "+TYPE_NAME[it.type]+" 버튼 \""+it.text+"\"");
+    out.push("  x="+it.x+" y="+it.y+" w="+it.w+" h="+it.h);
+    if(it.pin!==undefined&&it.pin!=="")out.push("  연결 핀: "+it.pin);
+    if(it.type==="page")out.push("  Touch Release Event:  page "+it.target);
+    else if(it.type==="relay")out.push("  Touch Press/Release Event:  Send Component ID 체크 (메가로 신호 전송)");
+    else out.push("  Touch Release Event:  (필요한 명령 직접 입력)");
+  });
+  p.timers.forEach(function(t,i){
+    out.push("[tm"+i+"] 타이머 (보이지 않는 부품)  tim="+t.tim+"  en="+(t.en?1:0));
+    out.push("  Timer Event:  "+(t.action==="page"?"page "+t.target:(t.code||"(직접 입력)")));
+  });
+  return out.join("\n");
+}
+function renderOut(){
+  var p=page(),rows="";
+  p.items.forEach(function(it,i){
+    rows+='<tr data-id="'+it.id+'"'+(it.id===S.sel?' class="sel"':'')+'><td>'+nameIn(p,it)+'</td><td>'+TYPE_NAME[it.type]+(it.type==="text"&&it.bake?" (PNG)":"")+
+      '</td><td>'+it.x+'</td><td>'+it.y+'</td><td>'+it.w+'</td><td>'+it.h+'</td><td>'+
+      (it.type==="page"?"→p"+it.target:(it.type!=="text"&&it.pin!==undefined&&it.pin!==""?"핀"+it.pin:""))+'</td></tr>';
+  });
+  $("tableBox").innerHTML=p.items.length?
+    '<table><tr><th>이름</th><th>종류</th><th>x</th><th>y</th><th>w</th><th>h</th><th>핀/이동</th></tr>'+rows+'</table>':
+    '<div class="empty">아직 버튼이 없습니다.</div>';
+  $("code").value=codeFor(S.cur);
+}
+$("tableBox").addEventListener("click",function(e){
+  var tr=e.target.closest("tr[data-id]");if(!tr)return;
+  S.sel=Number(tr.dataset.id);markSel();renderSide();
+});
+
+/* ---------- 페이지 탭 ---------- */
+function renderTabs(){
+  var box=$("pageTabs");box.innerHTML="";
+  S.pages.forEach(function(p,i){
+    var b=document.createElement("button");
+    b.textContent="page "+i;
+    if(i===S.cur)b.className="cur";
+    b.onclick=function(){S.cur=i;S.sel=null;renderAll();startTimers();};
+    box.appendChild(b);
+  });
+  var a=document.createElement("button");a.textContent="+ 페이지";
+  a.onclick=function(){S.pages.push(newPage());S.cur=S.pages.length-1;S.sel=null;renderAll();};
+  box.appendChild(a);
+  if(S.pages.length>1){
+    var d=document.createElement("button");d.textContent="이 페이지 삭제";d.className="danger";
+    d.disabled=S.test;
+    d.onclick=deletePage;
+    box.appendChild(d);
+  }
+}
+
+function deletePage(){
+  var k=S.cur;
+  if(S.pages.length<2)return;
+  if(!confirm("page "+k+"을 삭제할까요?\n이 페이지의 버튼과 타이머가 함께 사라지고, 뒤 페이지 번호는 하나씩 당겨집니다.\n이 페이지로 가던 이동은 page 0으로 바뀝니다."))return;
+  S.pages.splice(k,1);
+  function fix(t){return t===k?0:(t>k?t-1:t);}
+  S.pages.forEach(function(pg){
+    pg.items.forEach(function(it){if(it.type==="page")it.target=fix(it.target);});
+    pg.timers.forEach(function(t){if(t.action==="page")t.target=fix(t.target);});
+  });
+  S.signals.forEach(function(sg){if(sg.action==="page")sg.target=fix(sg.target);});
+  S.cur=Math.min(k,S.pages.length-1);S.sel=null;undo=[];
+  renderAll();startTimers();
+}
+var flashT=null;
+function flash(msg){
+  var b=$("testbar");b.textContent=msg;
+  clearTimeout(flashT);flashT=setTimeout(renderTestBar,2200);
+}
+function renderTestBar(){
+  var b=$("testbar");
+  b.style.display=S.test?"block":"none";
+  if(S.test){
+    var msg="시험 보기 중 — 현재 page "+S.cur+". 페이지 이동 버튼을 눌러 보세요.";
+    page().timers.forEach(function(t){
+      if(t.en&&t.action==="page")msg+=" 이 페이지는 "+(t.tim/1000)+"초 뒤 page "+t.target+"(으)로 넘어갑니다.";
+    });
+    b.textContent=msg;
+  }
+}
+var timerHandles={};
+function clearAllTimers(){Object.keys(timerHandles).forEach(function(k){clearTimeout(timerHandles[k]);});timerHandles={};}
+function runTimer(t){
+  clearTimeout(timerHandles[t.id]);
+  if(t.action!=="page")return;
+  timerHandles[t.id]=setTimeout(function(){
+    if(S.test&&t.target<S.pages.length){S.cur=t.target;S.sel=null;renderAll();startTimers();}
+  },Math.max(50,t.tim));
+}
+function startTimers(){
+  clearAllTimers();
+  if(!S.test)return;
+  page().timers.forEach(function(t){if(t.en)runTimer(t);});
+}
+
+/* ---------- 신호 받기 (메가 -> 화면) ---------- */
+function sigCmd(sg){
+  if(sg.action==="page")return "page "+sg.target;
+  if(sg.action==="timer_on")return (sg.obj||"tm0")+".en=1";
+  if(sg.action==="timer_off")return (sg.obj||"tm0")+".en=0";
+  return (sg.obj||"b0")+'.txt="'+(sg.text||"")+'"';
+}
+function cEsc(t){return t.replace(/\\/g,"\\\\").replace(/"/g,'\\"');}
+function megaCode(){
+  var ser=S.serial,o=[];
+  o.push("// ===== 메가 -> TJC 화면 신호 ("+ser+", "+S.baud+") =====");
+  o.push("// setup()에 추가:  "+ser+".begin("+S.baud+");");
+  o.push("");
+  o.push("void tjcSend(const char *cmd) {");
+  o.push("  "+ser+".print(cmd);");
+  o.push("  "+ser+".write(0xFF); "+ser+".write(0xFF); "+ser+".write(0xFF);  // 끝 표시 3바이트");
+  o.push("}");
+  S.signals.forEach(function(sg,i){
+    o.push("");
+    o.push("// "+(sg.name||"신호"+(i+1)));
+    o.push("void tjcSignal"+i+"() { tjcSend(\""+cEsc(sigCmd(sg))+"\"); }");
+  });
+  if(!S.signals.length)o.push("\n// (신호가 없습니다)");
+  return o.join("\n");
+}
+function updateSigCode(){$("sigCode").value=megaCode();}
+function renderSignals(){
+  var box=$("sigBox"),h="";
+  if(!S.signals.length)h+='<div class="empty">신호가 없습니다. 센서가 들어오면 경고 화면으로 넘기는 식으로 만들어 보세요.</div>';
+  S.signals.forEach(function(sg,i){
+    var opts="";
+    for(var k=0;k<S.pages.length;k++)opts+='<option value="'+k+'"'+(k===sg.target?" selected":"")+'>page '+k+'</option>';
+    var act='<option value="page"'+(sg.action==="page"?" selected":"")+'>페이지 이동</option>'+
+      '<option value="timer_on"'+(sg.action==="timer_on"?" selected":"")+'>타이머 켜기</option>'+
+      '<option value="timer_off"'+(sg.action==="timer_off"?" selected":"")+'>타이머 끄기</option>'+
+      '<option value="text"'+(sg.action==="text"?" selected":"")+'>글자 바꾸기</option>';
+    var extra="";
+    if(sg.action==="page")extra='<label><select data-k="target">'+opts+'</select></label>';
+    else if(sg.action==="text")extra='<label>부품 <input type="text" data-k="obj" size="5"></label><label>글자 <input type="text" data-k="text" size="10"></label>';
+    else extra='<label>타이머 <input type="text" data-k="obj" size="5"></label>';
+    h+='<div class="tcard" data-id="'+sg.id+'">'+
+      '<div class="trow"><b>신호'+(i+1)+'</b><input type="text" data-k="name" placeholder="사건 이름 (예: 센서1 감지)" style="flex:1;min-width:110px">'+
+      '<button data-k="del" class="danger">삭제</button></div>'+
+      '<div class="trow"><label>동작 <select data-k="action">'+act+'</select></label>'+extra+
+      '<button data-k="send"'+(S.test?"":" disabled")+'>시험 신호</button></div></div>';
+  });
+  box.innerHTML=h;
+  var cards=box.querySelectorAll(".tcard");
+  for(var j=0;j<cards.length;j++){
+    var sg2=S.signals.filter(function(x){return x.id===Number(cards[j].dataset.id);})[0];if(!sg2)continue;
+    ["name","obj","text"].forEach(function(k){
+      var inp=cards[j].querySelector('input[data-k="'+k+'"]');if(inp)inp.value=sg2[k]||"";
+    });
+  }
+  updateSigCode();
+}
+function sigOf(el){
+  var c=el.closest(".tcard");if(!c)return null;
+  return S.signals.filter(function(x){return x.id===Number(c.dataset.id);})[0]||null;
+}
+function sendSignal(sg){
+  var a=sg.action;
+  if(a==="page"){
+    if(sg.target<S.pages.length){S.cur=sg.target;S.sel=null;renderAll();startTimers();}
+    return;
+  }
+  if(a==="timer_on"||a==="timer_off"){
+    var m=/^tm(\d+)$/.exec(sg.obj||""),t=m?page().timers[Number(m[1])]:null;
+    if(!t){flash((sg.obj||"타이머")+" 타이머가 이 페이지에 없습니다.");return;}
+    if(a==="timer_on"){runTimer(t);flash(sg.obj+" 켜짐");}
+    else{clearTimeout(timerHandles[t.id]);flash(sg.obj+" 꺼짐");}
+    return;
+  }
+  var it=null,mt=/^([bt])(\d+)$/.exec(sg.obj||"");
+  if(mt)page().items.forEach(function(x){if(nameIn(page(),x)===sg.obj)it=x;});
+  if(!it){flash((sg.obj||"부품")+" 부품이 이 페이지에 없습니다.");return;}
+  if(it.bake){flash("PNG에 들어간 글자는 신호로 바꿀 수 없습니다. 글자의 \"PNG 그림에 글자 넣기\"를 끄세요.");return;}
+  var el=$("stage").querySelector('.item[data-id="'+it.id+'"] .lbl');
+  if(el)el.textContent=sg.text||"";
+}
+$("addSig").onclick=function(){
+  S.signals.push({id:S.uid++,name:"신호"+(S.signals.length+1),action:"page",target:Math.min(1,S.pages.length-1),obj:"tm0",text:""});
+  renderSignals();
+};
+$("serSel").onchange=function(){S.serial=this.value;updateSigCode();};
+$("baudSel").onchange=function(){S.baud=Number(this.value);updateSigCode();};
+$("copySig").onclick=function(){
+  var ta=$("sigCode");ta.select();
+  try{if(navigator.clipboard)navigator.clipboard.writeText(ta.value);else document.execCommand("copy");}
+  catch(e){document.execCommand("copy");}
+};
+$("sigBox").addEventListener("click",function(e){
+  var sg=sigOf(e.target);if(!sg)return;
+  var k=e.target.dataset.k;
+  if(k==="del"){S.signals=S.signals.filter(function(x){return x.id!==sg.id;});renderSignals();}
+  else if(k==="send"&&S.test)sendSignal(sg);
+});
+$("sigBox").addEventListener("input",function(e){
+  var sg=sigOf(e.target),k=e.target.dataset.k;if(!sg)return;
+  if(k==="name"||k==="obj"||k==="text"){sg[k]=e.target.value;updateSigCode();}
+});
+$("sigBox").addEventListener("change",function(e){
+  var sg=sigOf(e.target),k=e.target.dataset.k;if(!sg)return;
+  if(k==="target"){sg.target=Number(e.target.value);updateSigCode();}
+  else if(k==="action"){sg.action=e.target.value;renderSignals();}
+});
+function syncSerial(){$("serSel").value=S.serial;$("baudSel").value=String(S.baud);}
+
+function renderTimers(){
+  var box=$("timerBox"),p=page(),h="";
+  h+='<div class="row"><button id="addTimer"'+(S.test?" disabled":"")+'>+ 타이머</button></div>';
+  if(!p.timers.length)h+='<div class="empty">타이머가 없습니다. 시작 화면을 몇 초 뒤 자동으로 넘기려면 추가하세요.</div>';
+  p.timers.forEach(function(t,i){
+    var opts="";
+    for(var k=0;k<S.pages.length;k++)opts+='<option value="'+k+'"'+(k===t.target?" selected":"")+'>page '+k+'</option>';
+    h+='<div class="tcard" data-id="'+t.id+'">'+
+      '<div class="trow"><b>tm'+i+'</b>'+
+      '<label>간격(ms) <input type="number" data-k="tim" min="50" step="50" value="'+t.tim+'"></label>'+
+      '<label><input type="checkbox" data-k="en"'+(t.en?" checked":"")+'> 시작 시 동작</label>'+
+      '<button data-k="del" class="danger">삭제</button></div>'+
+      '<div class="trow"><label>동작 <select data-k="action">'+
+        '<option value="page"'+(t.action==="page"?" selected":"")+'>시간이 되면 페이지 이동</option>'+
+        '<option value="code"'+(t.action==="code"?" selected":"")+'>직접 코드</option></select></label>'+
+      (t.action==="page"?'<label><select data-k="target">'+opts+'</select></label>':
+        '<input type="text" data-k="code" placeholder="예: tm0.en=0">')+
+      '</div></div>';
+  });
+  box.innerHTML=h;
+  var cs=box.querySelectorAll('input[data-k="code"]');
+  for(var j=0;j<cs.length;j++){
+    var tt=p.timers.filter(function(x){return x.id===Number(cs[j].closest(".tcard").dataset.id);})[0];
+    if(tt)cs[j].value=tt.code||"";
+  }
+}
+function timerOf(el){
+  var c=el.closest(".tcard");if(!c)return null;
+  return page().timers.filter(function(x){return x.id===Number(c.dataset.id);})[0]||null;
+}
+$("timerBox").addEventListener("click",function(e){
+  if(e.target.id==="addTimer"){
+    snap();
+    page().timers.push({id:S.uid++,tim:3000,en:1,action:"page",target:Math.min(1,S.pages.length-1),code:""});
+    renderTimers();renderOut();renderTestBar();return;
+  }
+  if(e.target.dataset.k==="del"){
+    var t=timerOf(e.target);if(!t)return;
+    snap();
+    page().timers=page().timers.filter(function(x){return x.id!==t.id;});
+    renderTimers();renderOut();renderTestBar();
+  }
+});
+$("timerBox").addEventListener("focusin",function(e){
+  if(e.target.dataset&&e.target.dataset.k&&e.target.dataset.k!=="del")snap();
+});
+$("timerBox").addEventListener("input",function(e){
+  var t=timerOf(e.target),k=e.target.dataset.k;if(!t)return;
+  if(k==="tim")t.tim=Math.max(50,Number(e.target.value)||50);
+  else if(k==="code")t.code=e.target.value;
+  else return;
+  renderOut();renderTestBar();
+});
+$("timerBox").addEventListener("change",function(e){
+  var t=timerOf(e.target),k=e.target.dataset.k;if(!t)return;
+  if(k==="tim")e.target.value=t.tim;
+  else if(k==="en")t.en=e.target.checked?1:0;
+  else if(k==="target")t.target=Number(e.target.value);
+  else if(k==="action"){t.action=e.target.value;renderTimers();}
+  renderOut();renderTestBar();
+});
+
+function setTest(on){
+  S.test=on;drag=null;closeCtx();
+  if(on)S.sel=null;
+  var t=$("testBtn");t.textContent=on?"시험 끝내기":"시험 보기";t.classList.toggle("on",on);
+  ["addRelay","addPage","addBtn","addText","undoBtn","delBtn"].forEach(function(id){$(id).disabled=on;});
+  renderAll();startTimers();
+}
+function renderSide(){
+  renderTestBar();renderProps();renderTimers();renderSignals();renderOut();
+  var it=sel();
+  $("coord").textContent=S.test?"":(it?"x="+it.x+"  y="+it.y+"  너비="+it.w+"  높이="+it.h:"");
+}
+function renderAll(){closeCtx();renderTabs();renderStage();renderSide();}
+
+/* ---------- 배경 ---------- */
+$("bgColor").addEventListener("input",function(){page().color=this.value;renderStage();});
+$("bgLoad").onclick=function(){$("bgFile").click();};
+$("bgFile").addEventListener("change",function(){
+  var f=this.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){page().bg=r.result;renderStage();};
+  r.readAsDataURL(f);this.value="";
+});
+$("fontLoad").onclick=function(){$("fontFile").click();};
+$("fontFile").addEventListener("change",function(){
+  var files=Array.prototype.slice.call(this.files);this.value="";
+  files.forEach(function(f){
+    var r=new FileReader();
+    r.onload=function(){
+      var name=f.name.replace(/\.[^.]+$/,"").replace(/[^\w가-힣\-]/g,"_");
+      var ff=new FontFace(name,r.result);
+      ff.load().then(function(){
+        document.fonts.add(ff);
+        if(S.fonts.indexOf(name)<0)S.fonts.push(name);
+        var it=sel();
+        if(it&&it.type==="text"){snap();it.font=name;}
+        renderAll();
+        $("coord").textContent="글꼴 \""+name+"\"을(를) 가져왔습니다."+(it&&it.type==="text"?" 선택한 글자에 적용했습니다.":" 글자를 선택하고 글꼴 칸에서 고르세요.");
+      }).catch(function(){alert("글꼴 파일을 읽지 못했습니다. .ttf, .otf, .woff 파일인지 확인해 주세요.");});
+    };
+    r.readAsArrayBuffer(f);
+  });
+});
+$("bgClear").onclick=function(){page().bg=null;renderStage();};
+
+/* ---------- 저장 ---------- */
+function download(name,blob){
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+}
+$("savePng").onclick=function(){
+  var p=page(),c=document.createElement("canvas");c.width=W;c.height=H;
+  var g=c.getContext("2d");
+  g.fillStyle=p.color;g.fillRect(0,0,W,H);
+  function frames(){
+    p.items.forEach(function(it){
+      if(it.type==="text"){
+        if(!it.bake)return;
+        g.fillStyle=it.color;g.font=(hasFont(it)?"normal ":"bold ")+it.size+"px "+fontCss(it);
+        g.textBaseline="middle";g.textAlign=it.align;
+        var tx=it.align==="center"?it.x+it.w/2:(it.align==="right"?it.x+it.w-4:it.x+4);
+        g.fillText(it.text,tx,it.y+it.h/2,it.w-8);
+        return;
+      }
+      if(!$("pngFrames").checked)return;
+      g.setLineDash([8,5]);g.lineWidth=2;g.strokeStyle="#ffffff";
+      g.strokeRect(it.x+1,it.y+1,it.w-2,it.h-2);
+      g.setLineDash([]);g.fillStyle="#ffffff";
+      g.font=hasFont(it)?"normal "+clamp(Math.round(it.h*0.38),12,34)+"px "+fontCss(it):"bold "+clamp(Math.round(it.h*0.38),12,34)+"px sans-serif";
+      g.textAlign="center";g.textBaseline="middle";
+      g.fillText(it.text,it.x+it.w/2,it.y+it.h/2,it.w-8);
+    });
+    c.toBlob(function(b){download("page"+S.cur+"_background.png",b);});
+  }
+  function go(){
+    if(p.bg){var im=new Image();im.onload=function(){g.drawImage(im,0,0,W,H);frames();};im.src=p.bg;}
+    else frames();
+  }
+  var jobs=[];
+  p.items.forEach(function(it){
+    if(hasFont(it)&&(it.type==="text"?it.bake:$("pngFrames").checked)&&document.fonts&&document.fonts.load)
+      jobs.push(document.fonts.load((it.type==="text"?it.size:clamp(Math.round(it.h*0.38),12,34))+"px "+fontCss(it),it.text));
+  });
+  Promise.all(jobs).then(go,go);
+};
+$("saveCodes").onclick=function(){
+  var t=[];for(var i=0;i<S.pages.length;i++)t.push(codeFor(i));if(S.signals.length)t.push(megaCode());
+  download("editor_codes.txt",new Blob([t.join("\n\n")+"\n"],{type:"text/plain;charset=utf-8"}));
+};
+$("copyCode").onclick=function(){
+  var ta=$("code");ta.select();
+  try{
+    if(navigator.clipboard)navigator.clipboard.writeText(ta.value);else document.execCommand("copy");
+  }catch(e){document.execCommand("copy");}
+};
+$("saveProj").onclick=function(){
+  var d={v:1,uid:S.uid,cur:S.cur,pages:S.pages,signals:S.signals,serial:S.serial,baud:S.baud};
+  download("tjc_project.json",new Blob([JSON.stringify(d)],{type:"application/json"}));
+};
+$("loadProj").onclick=function(){$("projFile").click();};
+$("projFile").addEventListener("change",function(){
+  var f=this.files[0];if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var d=JSON.parse(r.result);
+      if(!d.pages||!d.pages.length)throw new Error("형식");
+      S.pages=d.pages;S.pages.forEach(function(pg){pg.timers=pg.timers||[];pg.items=pg.items||[];});S.uid=d.uid||100;S.signals=d.signals||[];S.serial=d.serial||"Serial1";S.baud=d.baud||9600;syncSerial();
+      var miss=[];
+      S.pages.forEach(function(pg){pg.items.forEach(function(it){if(hasFont(it)&&!builtinOf(it.font)&&S.fonts.indexOf(it.font)<0&&miss.indexOf(it.font)<0)miss.push(it.font);});});
+      if(miss.length)setTimeout(function(){alert("이 작업에서 쓴 글꼴을 다시 가져와 주세요: "+miss.join(", ")+"\n(글꼴 가져오기 버튼, 같은 이름의 파일)");},50);S.cur=clamp(d.cur||0,0,d.pages.length-1);S.sel=null;undo=[];
+      renderAll();
+    }catch(e){alert("작업 파일을 읽지 못했습니다. 이 도구에서 저장한 .json 파일인지 확인해 주세요.");}
+  };
+  r.readAsText(f);this.value="";
+});
+
+/* ---------- 오른쪽 버튼 메뉴 ---------- */
+var ctx=$("ctx"),ctxId=null,ctxSnap="";
+function closeCtx(){ctx.style.display="none";ctxId=null;ctxSnap="";}
+function ctxField(label,inner){return '<div class="field"><span>'+label+'</span>'+inner+'</div>';}
+function openCtx(it,x,y){
+  ctxId=it.id;
+  var h='<div class="ctxh">'+tagOf(page(),it)+' · '+TYPE_NAME[it.type]+'</div>';
+  h+=ctxField("글꼴",'<select id="c_font">'+fontOptionsHtml()+'</select>');
+  h+=ctxField(it.type==="text"?"글자색":"색상",'<input id="c_c" type="color">');
+  if(it.type==="relay"||it.type==="btn")h+=ctxField("핀 번호",'<input id="c_pin" type="number" min="0" max="99" placeholder="없음">');
+  if(it.type==="page"){
+    var o="";for(var i=0;i<S.pages.length;i++)o+='<option value="'+i+'">page '+i+'</option>';
+    h+=ctxField("연결할 페이지",'<select id="c_page">'+o+'</select>');
+  }
+  h+='<div class="row"><button id="c_close">닫기</button></div>';
+  ctx.innerHTML=h;
+  $("c_font").value=it.font||"기본";
+  $("c_c").value=it.color;
+  if($("c_pin"))$("c_pin").value=(it.pin===undefined?"":it.pin);
+  if($("c_page"))$("c_page").value=String(it.target);
+  ctx.style.display="block";
+  ctx.style.left=clamp(x,4,Math.max(4,window.innerWidth-ctx.offsetWidth-4))+"px";
+  ctx.style.top=clamp(y,4,Math.max(4,window.innerHeight-ctx.offsetHeight-4))+"px";
+  var f=$("c_font");if(f)f.focus();
+}
+$("stage").addEventListener("contextmenu",function(e){
+  if(S.test)return;
+  var el=e.target.closest(".item");if(!el)return;
+  var it=find(Number(el.dataset.id));if(!it)return;
+  e.preventDefault();
+  S.sel=it.id;markSel();renderSide();
+  openCtx(it,e.clientX,e.clientY);
+});
+ctx.addEventListener("input",function(e){
+  var it=find(ctxId);if(!it)return;
+  var id=e.target.id,v=e.target.value;
+  if(id!==ctxSnap){snap();ctxSnap=id;}
+  if(id==="c_font")it.font=v;
+  else if(id==="c_c")it.color=v;
+  else if(id==="c_pin")it.pin=v===""?"":clamp(Math.round(Number(v)),0,99);
+  else if(id==="c_page")it.target=Number(v);
+  else return;
+  paintEl(it);fillProps(it);renderOut();
+});
+ctx.addEventListener("click",function(e){if(e.target.id==="c_close")closeCtx();});
+ctx.addEventListener("contextmenu",function(e){e.stopPropagation();});
+document.addEventListener("pointerdown",function(e){
+  if(ctx.style.display==="block"&&!ctx.contains(e.target))closeCtx();
+},true);
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"&&ctx.style.display==="block"){e.preventDefault();closeCtx();}
+});
+window.addEventListener("resize",closeCtx);
+$("left").addEventListener("scroll",closeCtx);
+
+/* ---------- 기타 ---------- */
+$("addRelay").onclick=function(){addItem("relay");};
+$("addPage").onclick=function(){addItem("page");};
+$("addBtn").onclick=function(){addItem("btn");};
+$("addText").onclick=function(){addItem("text");};
+$("undoBtn").onclick=doUndo;
+$("delBtn").onclick=function(){if(sel())del();else $("coord").textContent="삭제할 버튼을 미리보기에서 먼저 눌러 선택하세요.";};
+$("testBtn").onclick=function(){setTest(!S.test);};
+$("zoomSel").onchange=function(){S.zoom=Number(this.value);renderStage();};
+$("gridSel").onchange=function(){S.grid=Number(this.value);renderStage();};
+$("showGrid").onchange=renderStage;
+window.addEventListener("resize",renderStage);
+
+document.addEventListener("keydown",function(e){
+  if(S.test)return;
+  var tag=(document.activeElement&&document.activeElement.tagName)||"";
+  var typing=tag==="INPUT"||tag==="TEXTAREA"||tag==="SELECT";
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&!typing){e.preventDefault();doUndo();return;}
+  if(typing)return;
+  var it=sel();if(!it)return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"){e.preventDefault();dup();return;}
+  if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault();del();return;}
+  var step=e.shiftKey?10:1,dx=0,dy=0;
+  if(e.key==="ArrowLeft")dx=-step;
+  else if(e.key==="ArrowRight")dx=step;
+  else if(e.key==="ArrowUp")dy=-step;
+  else if(e.key==="ArrowDown")dy=step;
+  else return;
+  e.preventDefault();snap();
+  it.x=clamp(it.x+dx,0,W-it.w);it.y=clamp(it.y+dy,0,H-it.h);
+  paintEl(it);renderSide();
+});
+
+renderAll();
+})();
+</script>
 </body>
 </html>
