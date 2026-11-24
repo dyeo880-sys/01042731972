@@ -1,5 +1,5 @@
 // ============================================================
-//  UNO_PLC_Firmware.ino  v2.0   (Arduino UNO R3 / 115200bps)
+//  UNO_PLC_Firmware.ino  v2.1   (Arduino UNO R3 / 115200bps)
 //  UNO.html (UNO PLC 제어 프로그램)과 시리얼로 통신하는 보드용 펌웨어
 //
 //  - 릴레이 R1~R4  : 핀 3,4,5,6   (기본 active-LOW: LOW = ON)
@@ -16,11 +16,19 @@
 //    GETINV? SETINV ch v     GETBOOT? SETBOOT r v   GETOUTINV? SETOUTINV r v
 //    GETSEQORDER? SETSEQORDER v
 //    SEQCLR SEQDEF SEQCOND SEQSTEP SEQSAVE SEQABORT SEQGET?
+//    SEQX i startN startWin stopN repeatN flags stopCh     (v2.1: 횟수·반복 설정)
+//
+//  v2.1 추가 기능 (모두 컴퓨터 없이 보드 단독으로 동작, EEPROM에 저장):
+//    - 시작 횟수 : 트리거 신호를 startN번 받아야 시작 (startWin초 안에 받아야 하며 0이면 시간 제한 없음)
+//    - 반복      : flags bit0 = 반복 실행. repeatN회 돌면 자동 정지(0 = 무한)
+//    - 정지 횟수 : 반복 중 정지 신호를 stopN번 받으면 정지 (stopCh 0 = 시작과 같은 신호)
+//    - flags bit1 = 정지할 때 이 시퀀스의 릴레이 모두 OFF, bit2 = 정지 신호를 "뗄 때"로
+//    - v2.0으로 저장한 시퀀스는 그대로 읽히며 횟수 설정은 기본값(1회·반복 없음)이 됩니다.
 // ============================================================
 #include <EEPROM.h>
 
 #define FW_NAME "UNO_PLC"
-#define FW_VER  "2.0"
+#define FW_VER  "2.1"
 
 #define N_OUT      4
 #define N_IN       12
@@ -49,6 +57,21 @@ struct Seq {
   Step    st[MAX_STEPS];
 };
 
+// v2.1 확장 설정 (시퀀스별) — v2.0 EEPROM 배치를 건드리지 않으려고 따로 저장
+#define XF_LOOP    1   // 반복 실행
+#define XF_LOOPOFF 2   // 정지할 때 릴레이 모두 OFF
+#define XF_STOPREL 4   // 다른 채널을 정지 신호로 쓸 때 "뗄 때" 정지(0이면 "누를 때")
+struct SeqX {
+  uint8_t startN;     // 시작에 필요한 신호 횟수 (1~99)
+  uint8_t startWin;   // 그 횟수를 채워야 하는 제한 시간(초, 0 = 제한 없음)
+  uint8_t stopN;      // 정지에 필요한 신호 횟수 (1~99)
+  uint8_t repeatN;    // 반복 횟수 (0 = 무한)
+  uint8_t flags;
+  uint8_t stopCh;     // 0 = 시작과 같은 신호, 1~12 = CH
+};
+static inline void xDefault(SeqX &x) { x.startN = 1; x.startWin = 0; x.stopN = 1; x.repeatN = 0; x.flags = XF_LOOPOFF; x.stopCh = 0; }
+static inline bool xIsDefault(const SeqX &x) { return x.startN == 1 && x.startWin == 0 && x.stopN == 1 && x.repeatN == 0 && x.flags == XF_LOOPOFF && x.stopCh == 0; }
+
 static inline uint8_t stRelay(const Step &s)  { return (s.b & 3) + 1; }
 static inline bool    stOn(const Step &s)     { return (s.b >> 2) & 1; }
 static inline bool    stWaitOn(const Step &s) { return (s.b >> 3) & 1; }
@@ -62,7 +85,10 @@ static inline uint8_t stWaitCh(const Step &s) { return s.b >> 4; }
 #define EA_INV     4     // 12바이트
 #define EA_BOOT    16    // 4바이트
 #define EA_OUTINV  20    // 4바이트
-#define EA_SEQ     32    // Seq x 12
+#define EA_SEQ     32    // Seq x 12  (v2.0 배치 그대로 — 12 x 39 = 468바이트 → 끝 500)
+#define EA_XMAG    503   // v2.1 확장 영역 표시(XMAGIC이면 아래 확장값이 유효)
+#define EA_X       504   // SeqX x 12 (12 x 6 = 72바이트)
+#define XMAGIC     0xB1
 #define MAGIC      0xA7
 
 // ---------------- 상태 ----------------
@@ -70,6 +96,7 @@ uint8_t mode = 0;
 bool    seqOrderMode = false;
 uint8_t inInv[N_IN], outBoot[N_OUT], outInv[N_OUT];
 Seq     seqs[MAX_SEQ];
+SeqX    sx[MAX_SEQ];
 uint8_t nSeq = 0;
 bool    staging = false;          // 시퀀스를 받는 중에는 보드 실행을 멈춤
 
@@ -79,6 +106,9 @@ unsigned long inChangedAt[N_IN];
 
 bool sqRun[MAX_SEQ], sqPrev[MAX_SEQ], sqCondWait[MAX_SEQ], sqWaitBase[MAX_SEQ];
 uint8_t sqStep[MAX_SEQ];
+uint8_t sqStartCnt[MAX_SEQ], sqStopCnt[MAX_SEQ], sqRounds[MAX_SEQ];
+bool sqStopPrev[MAX_SEQ];
+unsigned long sqStartAt[MAX_SEQ];
 unsigned long sqDue[MAX_SEQ];
 uint8_t seqOrderIdx = 0;
 unsigned long bootAt = 0;
@@ -126,6 +156,7 @@ void loadAll() {
 
 void loadSeqs() {
   memset(seqs, 0, sizeof(seqs));
+  for (uint8_t i = 0; i < MAX_SEQ; i++) xDefault(sx[i]);
   nSeq = EEPROM.read(EA_NSEQ); if (nSeq > MAX_SEQ) nSeq = 0;
   for (uint8_t i = 0; i < nSeq; i++) {
     EEPROM.get(EA_SEQ + i * sizeof(Seq), seqs[i]);
@@ -134,16 +165,29 @@ void loadSeqs() {
     if (seqs[i].nConds > MAX_CONDS) seqs[i].nConds = MAX_CONDS;
     if (seqs[i].trigCh > N_IN) seqs[i].trigCh = 0;
   }
+  if (EEPROM.read(EA_XMAG) == XMAGIC) {          // v2.1로 저장된 확장값이 있을 때만 읽음(v2.0 저장분은 기본값)
+    for (uint8_t i = 0; i < nSeq; i++) {
+      EEPROM.get(EA_X + i * sizeof(SeqX), sx[i]);
+      if (sx[i].startN < 1 || sx[i].startN > 99) sx[i].startN = 1;
+      if (sx[i].startWin > 250) sx[i].startWin = 0;
+      if (sx[i].stopN < 1 || sx[i].stopN > 99) sx[i].stopN = 1;
+      if (sx[i].repeatN > 250) sx[i].repeatN = 0;
+      if (sx[i].flags > 7) sx[i].flags = XF_LOOPOFF;
+      if (sx[i].stopCh > N_IN) sx[i].stopCh = 0;
+    }
+  }
 }
 
 void saveSeqs() {
   EEPROM.update(EA_NSEQ, nSeq);
   for (uint8_t i = 0; i < nSeq; i++) EEPROM.put(EA_SEQ + i * sizeof(Seq), seqs[i]);   // put은 바뀐 바이트만 기록
+  EEPROM.update(EA_XMAG, XMAGIC);
+  for (uint8_t i = 0; i < nSeq; i++) EEPROM.put(EA_X + i * sizeof(SeqX), sx[i]);
 }
 
 // ---------------- 시퀀스 실행 ----------------
 void stopAllSeq() {
-  for (uint8_t s = 0; s < MAX_SEQ; s++) { sqRun[s] = false; sqCondWait[s] = false; sqWaitBase[s] = false; sqStep[s] = 0; }
+  for (uint8_t s = 0; s < MAX_SEQ; s++) { sqRun[s] = false; sqCondWait[s] = false; sqWaitBase[s] = false; sqStep[s] = 0; sqStartCnt[s] = 0; sqStopCnt[s] = 0; sqRounds[s] = 0; }
   seqOrderIdx = 0;
 }
 
@@ -166,6 +210,25 @@ bool interlockOK(const Seq &S) {
 void startSeq(uint8_t s) {
   if (s >= nSeq || sqRun[s] || seqs[s].nSteps == 0) return;
   sqRun[s] = true; sqStep[s] = 0; sqCondWait[s] = false; sqDue[s] = millis();
+  sqStopCnt[s] = 0; sqRounds[s] = 0;
+}
+
+// 시작 신호를 N번 받았는지 (제한 시간 안에). 채워지면 true, 아니면 카운트만 올리고 false
+bool startCountOK(uint8_t s, uint8_t N, uint8_t winSec) {
+  if (N <= 1) { sqStartCnt[s] = 0; return true; }
+  unsigned long now = millis();
+  if (sqStartCnt[s] > 0 && winSec > 0 && (now - sqStartAt[s]) > (unsigned long)winSec * 1000UL) sqStartCnt[s] = 0;   // 시간 초과 → 처음부터
+  if (sqStartCnt[s] == 0) sqStartAt[s] = now;
+  if (++sqStartCnt[s] >= N) { sqStartCnt[s] = 0; return true; }
+  return false;
+}
+
+// 반복 시퀀스를 끝냄(정지 신호 횟수 도달 또는 반복 횟수 완료)
+void endLoop(uint8_t s) {
+  const Seq &S = seqs[s];
+  sqRun[s] = false; sqCondWait[s] = false; sqStep[s] = 0; sqStopCnt[s] = 0; sqRounds[s] = 0;
+  if (sx[s].flags & XF_LOOPOFF) for (uint8_t k = 0; k < S.nSteps; k++) setRelay(stRelay(S.st[k]), false);
+  if (seqOrderMode && s == seqOrderIdx) seqOrderIdx = (uint8_t)((s + 1 < nSeq) ? (s + 1) : 0);
 }
 
 void runSeqs() {
@@ -174,15 +237,30 @@ void runSeqs() {
   bool holding = (now - bootAt) < BOOT_HOLD_MS;   // 전원/모드 시작 직후 3초간은 입력 무시
   for (uint8_t s = 0; s < nSeq; s++) {
     const Seq &S = seqs[s];
+    const SeqX &X = sx[s];
+    bool isLoop = (X.flags & XF_LOOP) && S.trigCh >= 1 && S.trigCh <= N_IN && S.trigCond != 3;
+    bool justStopped = false;
+    if (isLoop) {                                   // 정지 신호(기본: 시작과 같은 신호) — stopN번 받으면 정지
+      uint8_t scCh = X.stopCh ? X.stopCh : S.trigCh;
+      bool scCur = inStable[scCh - 1];
+      if (!enabled || holding) sqStopPrev[s] = scCur;
+      else if (scCur != sqStopPrev[s]) {
+        sqStopPrev[s] = scCur;
+        bool want = X.stopCh ? ((X.flags & XF_STOPREL) == 0) : (S.trigCond != 0);   // 누를 때(true) / 뗄 때(false)
+        if (sqRun[s] && scCur == want && ++sqStopCnt[s] >= X.stopN) { endLoop(s); justStopped = true; }
+      }
+    }
     if (S.trigCh >= 1 && S.trigCh <= N_IN) {
       bool cur = inStable[S.trigCh - 1];
-      if (!enabled || holding) sqPrev[s] = cur;
+      if (!enabled || holding) { sqPrev[s] = cur; sqStartCnt[s] = 0; }
       else if (cur != sqPrev[s]) {
         sqPrev[s] = cur;
         bool fire = cur ? (S.trigCond == 1 || S.trigCond == 2 || S.trigCond == 3)
                         : (S.trigCond == 0 || S.trigCond == 2);
         bool orderOK = !seqOrderMode || (s == seqOrderIdx);
-        if (fire && interlockOK(S) && orderOK) startSeq(s);
+        if (fire && !justStopped && !sqRun[s] && interlockOK(S) && orderOK) {
+          if (startCountOK(s, (S.trigCond == 3) ? 1 : X.startN, X.startWin)) startSeq(s);   // 시작 N번 받아야 시작
+        }
         if (!cur && S.trigCond == 3) {            // 누르고 있는 동안에만: 떼면 즉시 중단 + 관련 릴레이 OFF
           sqRun[s] = false; sqCondWait[s] = false;
           for (uint8_t k = 0; k < S.nSteps; k++) setRelay(stRelay(S.st[k]), false);
@@ -205,6 +283,14 @@ void runSeqs() {
       }
       sqStep[s] = r + 1;
       if (sqStep[s] >= S.nSteps) {
+        if (isLoop) {                                 // 반복: 한 바퀴 끝 → repeatN회면 종료, 아니면 처음부터(마지막 줄 지연만큼 쉼, 최소 50ms)
+          sqRounds[s]++;
+          if (X.repeatN > 0 && sqRounds[s] >= X.repeatN) { endLoop(s); break; }
+          sqStep[s] = 0;
+          unsigned long gap = stWaitCh(st) ? 0 : st.d; if (gap < 50) gap = 50;
+          sqDue[s] = now + gap;
+          break;
+        }
         sqRun[s] = false;
         if (seqOrderMode && s == seqOrderIdx) seqOrderIdx = (uint8_t)((s + 1 < nSeq) ? (s + 1) : 0);
         break;
@@ -287,13 +373,19 @@ void execCmd(char *line) {
     seqOrderMode = (na >= 1 && a[0] != 0); EEPROM.update(EA_ORDER, seqOrderMode ? 1 : 0);
     seqOrderIdx = 0; replyOK();
   } else if (!strcmp(cmd, "SEQCLR")) {
-    staging = true; stopAllSeq(); nSeq = 0; memset(seqs, 0, sizeof(seqs)); replyOK();
+    staging = true; stopAllSeq(); nSeq = 0; memset(seqs, 0, sizeof(seqs)); for (uint8_t i = 0; i < MAX_SEQ; i++) xDefault(sx[i]); replyOK();
   } else if (!strcmp(cmd, "SEQDEF")) {                    // SEQDEF i trigCh trigCond 1 condMode
     if (na < 3 || a[0] < 0 || a[0] >= MAX_SEQ || a[1] < 0 || a[1] > N_IN || a[2] < 0 || a[2] > 3) { replyERR(); return; }
     staging = true; stopAllSeq();
-    Seq &S = seqs[a[0]]; memset(&S, 0, sizeof(S));
+    Seq &S = seqs[a[0]]; memset(&S, 0, sizeof(S)); xDefault(sx[a[0]]);
     S.trigCh = (uint8_t)a[1]; S.trigCond = (uint8_t)a[2]; S.condMode = (na >= 5 && a[4] == 1) ? 1 : 0;
     if (a[0] >= nSeq) nSeq = (uint8_t)(a[0] + 1);
+    replyOK();
+  } else if (!strcmp(cmd, "SEQX")) {                       // SEQX i startN startWin stopN repeatN flags stopCh
+    if (na < 7 || a[0] < 0 || a[0] >= nSeq || a[1] < 1 || a[1] > 99 || a[2] < 0 || a[2] > 250 || a[3] < 1 || a[3] > 99 ||
+        a[4] < 0 || a[4] > 250 || a[5] < 0 || a[5] > 7 || a[6] < 0 || a[6] > N_IN) { replyERR(); return; }
+    SeqX &x = sx[a[0]];
+    x.startN = (uint8_t)a[1]; x.startWin = (uint8_t)a[2]; x.stopN = (uint8_t)a[3]; x.repeatN = (uint8_t)a[4]; x.flags = (uint8_t)a[5]; x.stopCh = (uint8_t)a[6];
     replyOK();
   } else if (!strcmp(cmd, "SEQCOND")) {                   // SEQCOND i ch state
     if (na < 3 || a[0] < 0 || a[0] >= nSeq || a[1] < 1 || a[1] > N_IN || seqs[a[0]].nConds >= MAX_CONDS) { replyERR(); return; }
@@ -315,6 +407,11 @@ void execCmd(char *line) {
       const Seq &S = seqs[i];
       Serial.print(F("SEQD ")); Serial.print(i); Serial.print(' '); Serial.print(S.trigCh); Serial.print(' ');
       Serial.print(S.trigCond); Serial.print(F(" 1 ")); Serial.println(S.condMode);
+      if (!xIsDefault(sx[i])) {                              // v2.1: 기본값이 아닐 때만 SEQX 줄을 보냄
+        const SeqX &x = sx[i];
+        Serial.print(F("SEQX ")); Serial.print(i); Serial.print(' '); Serial.print(x.startN); Serial.print(' '); Serial.print(x.startWin); Serial.print(' ');
+        Serial.print(x.stopN); Serial.print(' '); Serial.print(x.repeatN); Serial.print(' '); Serial.print(x.flags); Serial.print(' '); Serial.println(x.stopCh);
+      }
       for (uint8_t c = 0; c < S.nConds; c++) {
         Serial.print(F("SEQC ")); Serial.print(i); Serial.print(' '); Serial.print(S.cond[c] & 0x7F); Serial.print(' ');
         Serial.println((S.cond[c] & 0x80) ? 1 : 0);
@@ -362,7 +459,7 @@ void setup() {
     inChangedAt[i] = millis();
   }
   stopAllSeq();
-  for (uint8_t s = 0; s < MAX_SEQ; s++) sqPrev[s] = false;
+  for (uint8_t s = 0; s < MAX_SEQ; s++) { sqPrev[s] = false; sqStopPrev[s] = false; }
   bootAt = millis();
 }
 
