@@ -567,6 +567,7 @@ th,td{border-bottom:1px solid var(--line);padding:10px 12px}
   <details class="moreMenu"><summary>⋯ 더보기</summary><div class="menuPanel">
    <div class="mHd">저장</div>
    <div class="mRow"><button class="dBtn" onclick="docSaveAs()">다른 이름으로 저장</button><span class="dragHand" data-ds="doc" title="✋ 끌어서 저장 — 바탕화면이나 폴더로 끌어다 놓으면 파일로 저장됩니다 (Chrome/Edge)">✋</span></div>
+   <button class="dBtn g" onclick="exportCustomer()">👤 고객용 파일 만들기</button>
    <div class="mHd">불러오기</div>
    <button class="dBtn l" onclick="docOpenPlain()">📂 열기 (일반 파일 선택)</button>
    <button class="dBtn l" onclick="docOpenPaste()">📋 내용 붙여넣어 열기</button>
@@ -1078,6 +1079,7 @@ window.addEventListener('load',function(){
    <span id="monitorStatus" class="small">감시 중지됨</span>
    <span style="margin-left:auto"></span>
    <button onclick="withBtnFeedback(this,pushAllSequencesToBoard,{fail:'⚠ 저장 확인 필요'})" class="green">⚡ 전체 시퀀스를 보드에 저장</button>
+    <button onclick="exportCustomer()" class="green">👤 고객용 파일 만들기</button>
   </div>
   <details class="advBox"><summary>⚙ 반복 · 횟수 설정 (고급) <span class="advBadge" id="advBadge"></span></summary><div class="advBody">
    <div class="row" style="margin:0 0 4px"><span class="small">시작·정지 신호 횟수, 반복 실행 동작 설명</span><button type="button" class="qBtn" title="설명 보기" onclick="document.querySelectorAll('.loopHelp').forEach(function(x){x.classList.toggle('hidden')})">?</button></div>
@@ -5541,14 +5543,16 @@ async function pushAllSequencesToBoard(){
  const cntSeqs = sequences.filter(s=>s.countEnabled);
  const loopSeqs = sequences.slice(0,BOARD_MAX_SEQ).filter(s=>s.loop);
  const xSeqs = sequences.slice(0,BOARD_MAX_SEQ).filter(s=>{ const x=xv(s); return x.startN>1 || (s.loop && (x.stopN>1 || x.repeatN>0)) });
+ const waitSeqs = sequences.slice(0,BOARD_MAX_SEQ).filter(s=>(s.steps||[]).some(st=>+st.waitCh>0));
  const codeSeqs = sequences.slice(0,BOARD_MAX_SEQ).filter(s=>s.trigType==='code'||s.trigType==='code20');
- if(overSeq || overStepSeqs.length || unsupSeqs.length || cntSeqs.length || codeSeqs.length || loopSeqs.length || xSeqs.length){
+ if(overSeq || overStepSeqs.length || unsupSeqs.length || cntSeqs.length || codeSeqs.length || loopSeqs.length || xSeqs.length || waitSeqs.length){
   let msg='⚠ 독립 작동(보드 EEPROM) 저장 한계를 초과했거나 지원되지 않는 기능이 있습니다.\n\n';
   if(overSeq) msg+='· 시퀀스 '+sequences.length+'개 중 뒤쪽 '+(sequences.length-BOARD_MAX_SEQ)+'개는 저장되지 않습니다 (최대 '+BOARD_MAX_SEQ+'개).\n';
   if(overStepSeqs.length) msg+=overStepSeqs.map(s=>'· "'+s.name+'" 시퀀스: '+boardStepsOf(s).length+'단계 중 뒤쪽 '+(boardStepsOf(s).length-BOARD_MAX_STEPS)+'단계는 저장되지 않습니다 (최대 '+BOARD_MAX_STEPS+'단계).').join('\n')+'\n';
   if(unsupSeqs.length) msg+=unsupSeqs.map(s=>'· "'+s.name+'" 시퀀스: '+bSteps(s).filter(st=>!isBoardSupportedStep(st)).map(st=>actionTypeLabel(st.type)).join(', ')+' 동작은 독립 작동에서 지원되지 않아 제외됩니다.').join('\n')+'\n';
   if(cntSeqs.length) msg+=cntSeqs.map(s=>'· "'+s.name+'" 시퀀스: 🔢 계수계("'+(s.countTarget||1)+'번째" 조건)는 보드 단독 작동에서 아직 지원되지 않아, 신호가 올 때마다 매번 실행됩니다(횟수를 따지지 않음).').join('\n')+'\n';
   if(codeSeqs.length) msg+=codeSeqs.map(s=>'· "'+s.name+'" 시퀀스: '+(s.trigType==='code'?'🔢 키패드 코드 트리거는 보드 단독 작동에서 지원되지 않아, 보드에 저장해도 시작되지 않습니다.':'🧩 신호 코드 트리거는 보드에 저장하면 추가 조건(인터록)으로만 들어가고 시작 신호가 없어, 보드 단독으로는 시작되지 않습니다. (.ino 스케치로 만들면 신호 코드가 지원됩니다)')).join('\n')+'\n';
+  if(waitSeqs.length) msg+=waitSeqs.map(s=>'· "'+s.name+'" 시퀀스: ⛔ "조건 대기"는 보드 EEPROM 저장에 들어가지 않습니다. 보드 단독으로는 신호를 기다리지 않고 다음 동작으로 넘어가므로 위험할 수 있습니다. (.ino 스케치로 만들면 지원됩니다)').join('\n')+'\n';
   if(loopSeqs.length) msg+=loopSeqs.map(s=>'· "'+s.name+'" 시퀀스: ♾ 반복 실행은 PC 자동 감시와 .ino 스케치에서만 동작합니다. 보드 EEPROM 저장(독립 작동)에서는 신호가 올 때마다 동작 순서를 한 번만 실행합니다.').join('\n')+'\n';
   if(xSeqs.length) msg+=xSeqs.map(s=>'· "'+s.name+'" 시퀀스: 🔢 시작 신호 '+xv(s).startN+'번'+(s.loop?' / 정지 신호 '+xv(s).stopN+'번 / 반복 '+(xv(s).repeatN>0?xv(s).repeatN+'회':'무한'):'')+' 설정은 보드 EEPROM 저장에서 아직 지원되지 않아, 신호가 올 때마다 매번 실행됩니다. (.ino 스케치로 만들면 지원됩니다)').join('\n')+'\n';
   msg+='\n※ PC 자동 감시에서는 문제없이 전체가 작동하지만, 컴퓨터를 끄고 보드 단독으로 돌리면 잘려나가거나 제외되거나 조건이 무시된 부분이 있습니다.\n\n그래도 나머지만 보드에 저장할까요?';
@@ -7776,5 +7780,397 @@ function upd(){try{var L=A.list(true),is=analyze(L),sum=document.getElementById(
  var live=document.getElementById('chConfLive');if(live){var me=A.cur(),mine=is.filter(function(i){return me&&i.t.indexOf('「'+me+'」')>=0&&i.lv>=1});var lh=mine.length?'<b>⚠ 지금 편집 중인 시퀀스의 신호 충돌</b>'+html(mine):'';if(live.innerHTML!==lh){live.innerHTML=lh;live.className='chConf'+(mine.length?'':' hidden')}}}catch(e){}}
 setInterval(upd,600);upd();
 })();</script>
+<script>
+/* =========================================================
+   👤 고객용 파일 만들기 (UNO.html 과 같은 기능, Mega2560 용)
+   - custApp() 함수 전체가 고객용 HTML 안에 그대로 복사됩니다. 바깥 변수/함수를 쓰면 안 됩니다.
+========================================================= */
+function custApp(CFG){
+ const $=id=>document.getElementById(id), sleep=ms=>new Promise(r=>setTimeout(r,ms));
+ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+ let port=null,writer=null,reader=null,rx='',waiter=null,chain=Promise.resolve(),closing=false,busy=false,polling=false,tm=null,tick=0,fails=0;
+ let inS=[],rel=Array(16).fill(0),test={on:false},sensor={u:{},l:{}};
+ const ST=Array.from({length:32},()=>({cnt:0,tr:[]}));
+ const SK='megaCust_'+CFG.title+CFG.made;
+ const vals=[];
+ const nm=ch=>'CH'+ch+(CFG.inNames[ch]?' ('+CFG.inNames[ch]+')':'');
+ const rn=ch=>'R'+ch+(CFG.relNames[ch]?' ('+CFG.relNames[ch]+')':'');
+ const setSt=(t,c)=>{ $('st').textContent=t; $('st').style.color=c||'' };
+
+ /* ---- 통신 ---- */
+ function onLine(l){ if(waiter&&waiter.re.test(l)){ const w=waiter; waiter=null; w.done(l) } }
+ async function readLoop(){
+  const d=new TextDecoder();
+  while(reader){
+   try{ const {value,done}=await reader.read(); if(done) break; rx+=d.decode(value,{stream:true}); let i;
+    while((i=rx.indexOf('\n'))>=0){ const l=rx.slice(0,i).trim(); rx=rx.slice(i+1); if(l) onLine(l) } }
+   catch(e){ break }
+  }
+  if(reader&&!closing) lost('통신이 끊겼습니다. USB를 확인하세요');
+ }
+ const q=fn=>{ const p=chain.then(fn); chain=p.catch(()=>{}); return p };
+ /* 명령 한 줄을 보내고 re 에 맞는 응답 줄을 기다린다. endRe 가 있으면 그 줄이 올 때까지 모든 줄을 모은다. */
+ const cmd=(t,re,ms=600,endRe=null)=>q(async()=>{
+  if(!writer) return null;
+  const lines=[]; let timer;
+  const got=new Promise(res=>{
+   const finish=v=>{ clearTimeout(timer); waiter=null; res(v) };
+   timer=setTimeout(()=>finish(endRe?null:null),ms);
+   const arm=()=>{ waiter={re:endRe?/./:re,done:l=>{ if(!endRe) return finish(l); lines.push(l); if(endRe.test(l)) finish(lines); else arm() }} };
+   arm();
+  });
+  try{ await writer.write(new TextEncoder().encode(t+'\r\n')) }catch(e){ lost('전송 실패(USB 분리 의심)'); return null }
+  return await got;
+ });
+ async function cmdOK(t,ms=600){
+  for(let k=0;k<2;k++){ const r=await cmd(t,/OK|ERR/,ms); if(r&&r.includes('OK')) return true; if(r&&r.includes('ERR')) return false; await sleep(150) }
+  return false;
+ }
+ async function lost(msg){
+  if(closing||(!port&&!writer)) return; closing=true; clearInterval(tm);
+  try{ if(reader){ await reader.cancel().catch(()=>{}); reader.releaseLock() } }catch(e){}
+  try{ writer&&writer.releaseLock() }catch(e){}
+  try{ port&&await port.close() }catch(e){}
+  reader=writer=port=null; if(waiter) waiter=null; rx=''; closing=false; inS=[]; setSt('● '+msg,'#f87171');
+ }
+ const bits=l=>l?l.replace(/^\S+\s+/,'').split(',').map(x=>+x===1?1:0):null;
+ const readRelay=async()=>{ const r=await cmd('STATUS?',/^STATUS\s+[01]/,600); if(r) rel=bits(r); return r };
+ async function disc(){ if(port) await lost('연결 해제됨'); setSt('● 연결 안 됨') }
+ async function conn(){
+  if(!('serial' in navigator)) return alert('이 브라우저는 지원되지 않습니다. Chrome 또는 Edge를 사용하세요.');
+  if(busy) return;
+  if(port) await disc();
+  try{
+   port=await navigator.serial.requestPort(); await port.open({baudRate:CFG.baud});
+   writer=port.writable.getWriter(); reader=port.readable.getReader(); readLoop();
+   setSt('● 연결 중… (약 3초)','#fbbf24'); await sleep(2600);
+   let r=null; for(let k=0;k<5&&!r;k++) r=await readRelay();
+   if(!r){ await lost('응답 없음'); return alert('장비가 응답하지 않습니다.\nUSB 케이블과 포트를 확인하세요.') }
+   if(rel.length<16){ await lost('다른 장비'); return alert('이 파일에 맞는 장비(16채널)가 아닙니다.') }
+   setSt('● 연결됨','#34d399'); fails=0; startPoll();
+  }catch(e){ if(port) { try{ await port.close() }catch(x){} } port=writer=reader=null; setSt('● 연결 실패: '+e.message,'#f87171') }
+ }
+ function startPoll(){
+  clearInterval(tm);
+  tm=setInterval(async()=>{
+   if(!writer||busy||polling) return; polling=true;
+   try{
+    const r=await cmd('INPUT?',/^INPUT\s+[01]/,500);
+    if(r){ const a=bits(r); track(a); inS=a; fails=0 } else fails++;
+    tick++;
+    if(tick%3===0&&!busy){ if(await readRelay()) fails=0; else fails++ }
+    if(tick%5===0&&!busy&&$('t2').classList.contains('on')){
+     for(const [key,c,need] of [['u','ULTRA?',CFG.ultra.length],['l','LOAD?',CFG.load.length]]){
+      if(!need||busy) continue;
+      const s=await cmd(c,key==='u'?/^ULTRA/:/^LOAD/,800); if(!s) continue;
+      sensor[key]={}; s.replace(/^\S+\s*/,'').split(',').forEach(x=>{ const p=x.split(':').map(Number); if(p.length===2&&!p.some(isNaN)) sensor[key][p[0]]=p[1] });
+     }
+    }
+    if(fails>=8) await lost('장비 응답이 없습니다(USB 확인)');
+    renderDiag(); renderRel();
+   }finally{ polling=false }
+  },300);
+ }
+
+ /* ---- 설정값 ---- */
+ const getVal=(s,e)=>e.k==='d'?(+s.steps[e.st].delay||0):e.k==='dist'?(+s.trigDistCm||0):(+s.repeat||1);
+ const inRange=(v,e)=>Number.isFinite(v)&&v>=e.min&&v<=e.max;
+ function initVals(){
+  CFG.edits.forEach((e,j)=>{ vals[j]=getVal(CFG.seqs[e.si],e) });
+  try{ const o=JSON.parse(localStorage.getItem(SK)||'null'); if(o&&o.length===vals.length) o.forEach((v,j)=>{ if(inRange(v,CFG.edits[j])) vals[j]=v }) }catch(e){}
+ }
+ const findE=(si,k,st)=>CFG.edits.findIndex(e=>e.si===si&&e.k===k&&e.st===st);
+ function inp(j){
+  const e=CFG.edits[j], f=e.k==='d'?1000:1, unit=e.k==='d'?'초':e.unit||'';
+  return '<input type="number" data-e="'+j+'" step="'+(f>1?0.1:1)+'" min="'+(e.min/f)+'" max="'+(e.max/f)+'" value="'+(vals[j]/f)+'"> '+unit+' <small>('+(e.min/f)+'~'+(e.max/f)+unit+')</small>';
+ }
+ const COND={ON:'눌릴 때',OFF:'떨어질 때',BOTH:'눌릴 때·떨어질 때'};
+ function trigText(s,i){
+  if(s.trigType==='ultra'||s.trigType==='load'){
+   const u=s.trigType==='ultra', ch=(u?s.ultraCh:s.loadCh)||s.trigCh||1, j=findE(i,'dist');
+   return (u?'초음파 U':'로드셀 L')+ch+(u?' 거리 ':' 무게 ')+(j>=0?inp(j):esc(s.trigDistCm)+(u?'cm':'g'))+(s.trigDistMode==='GE'?' 이상':' 이하')+(s.trigCond==='BOTH'?' (도달·벗어남)':s.trigCond==='OFF'?' (벗어날 때)':' (도달할 때)');
+  }
+  return s.trigCh>0?esc(nm(s.trigCh))+' · '+(COND[s.trigCond]||''):'자동 시작 없음';
+ }
+ function renderSet(){
+  let h='';
+  if(!CFG.canEdit) h='<div class="card s">이 장비는 이 파일에서 설정을 바꾸지 않습니다. <b>신호·배선 점검</b>과 <b>릴레이 시험</b>을 이용하세요.</div>';
+  else if(!CFG.edits.length) h='<div class="card s">고객님이 바꿀 수 있는 설정 항목이 없습니다. 점검 기능을 이용하세요.</div>';
+  h+=CFG.seqs.map((s,i)=>{
+   const rj=findE(i,'repeat');
+   const rep=rj>=0?'<div class="stp">동작 반복 '+inp(rj)+'</div>':(s.repeat>1?'<div class="stp s">동작 반복 '+(+s.repeat)+'번</div>':'');
+   const conds=(s.conds||[]).filter(c=>c.state!=='BOTH').map(c=>esc(nm(c.ch))+(c.state==='OFF'?' 뗌':' 눌림')).join(', ');
+   const steps=(s.steps||[]).map((t,k)=>{
+    const j=findE(i,'d',k);
+    const act=t.type==='STEP'?'모터 M'+(+t.motor)+' '+(+t.steps)+'스텝':(t.type&&t.type!=='RELAY'?'기타 동작':esc(rn(t.relay))+' '+(t.state==='ON'?'켬':'끔'));
+    const after=t.waitCh>0?'→ '+esc(nm(t.waitCh))+(t.waitState==='OFF'?' 떨어짐':' 눌림')+'까지 대기':(j>=0?'→ 대기 '+inp(j):(t.delay?'→ '+(t.delay/1000)+'초 대기':''));
+    return '<div class="stp">'+(k+1)+'. '+act+' '+after+'</div>';
+   }).join('');
+   return '<div class="card"><h3>'+(i+1)+'. '+esc(s.name||'시퀀스')+'</h3><div class="s">시작 신호: '+trigText(s,i)+(conds?'<br>추가 조건: '+conds:'')+'</div>'+rep+steps+'</div>';
+  }).join('');
+  $('setBox').innerHTML=h;
+  $('applyCard').style.display=CFG.canEdit?'':'none';
+ }
+ function onVal(el){
+  const j=+el.dataset.e, e=CFG.edits[j], v=Math.round(parseFloat(el.value)*(e.k==='d'?1000:1));
+  vals[j]=v; el.classList.toggle('bad',!inRange(v,e)); $('applyMsg').textContent='변경됨 — "장비에 적용"을 눌러야 저장됩니다.';
+ }
+ function resetVals(){
+  if(busy||!confirm('모든 값을 처음 값으로 되돌릴까요? (장비 적용은 따로 눌러야 합니다)')) return;
+  try{ localStorage.removeItem(SK) }catch(e){}
+  initVals(); renderSet(); $('applyMsg').textContent='처음 값으로 되돌렸습니다. "장비에 적용"을 눌러야 저장됩니다.';
+ }
+
+ /* ---- 보드 저장 (제작사 프로그램과 같은 명령) ---- */
+ function compose(){
+  const L=JSON.parse(JSON.stringify(CFG.seqs));
+  CFG.edits.forEach((e,j)=>{ const s=L[e.si]; if(e.k==='d') s.steps[e.st].delay=vals[j]; else if(e.k==='dist') s.trigDistCm=vals[j]; else s.repeat=vals[j] });
+  return L;
+ }
+ function plan(list){
+  return list.map(s=>{
+   const src=s.trigType==='ultra'?1:(s.trigType==='load'?2:0);
+   const ch=src===1?(s.ultraCh||s.trigCh||1):(src===2?(s.loadCh||s.trigCh||1):(s.trigCh||0));
+   const cond=s.trigCond==='BOTH'?2:(s.trigCond==='ON'?1:0);
+   let on=0,off=0;
+   (s.conds||[]).forEach(c=>{ if(!(c.ch>=1&&c.ch<=32)||c.state==='BOTH') return; const b=(1<<(c.ch-1))>>>0; if(c.state==='OFF') off=(off|b)>>>0; else on=(on|b)>>>0 });
+   let steps=[]; for(let r=0;r<Math.max(1,s.repeat||1);r++) steps=steps.concat(s.steps||[]);
+   return {src,ch,cond,mode:s.trigDistMode==='GE'?1:0,dist:Math.max(0,+s.trigDistCm||0),on,off,name:s.safeName,
+    steps:steps.map(t=>t.type==='STEP'?[1,+t.motor,0,+t.delay||0,+t.steps,+t.speed]:[0,+t.relay,t.state==='ON'?1:0,+t.delay||0,0,0])};
+  });
+ }
+ /* 보드에 실제로 저장된 값을 읽어 보낸 값과 비교. true=일치 / false=다름 / null=확인 불가 */
+ async function verify(P){
+  const L=await cmd('SEQGET?',null,3500,/SEQGETDONE/); if(!L) return null;
+  const B={},C={};
+  L.forEach(l=>{ const p=l.split(/\s+/);
+   if(p[0]==='SEQ'&&+p[7]>0) B[+p[1]]=p;
+   if(p[0]==='SEQCOND') C[+p[1]]=[Number(p[2])>>>0,Number(p[3])>>>0] });
+  if(Object.keys(B).length!==P.length) return false;
+  return P.every((s,i)=>{
+   const p=B[i]; if(!p) return false;
+   if(+p[2]!==s.src||+p[3]!==s.ch||+p[4]!==s.cond||+p[7]!==s.steps.length) return false;
+   if(s.src&&(+p[5]!==s.mode||+p[6]!==s.dist)) return false;
+   const c=C[i]||[0,0]; if(c[0]!==s.on||c[1]!==s.off) return false;
+   const tk=(p[9]||'').split(';').filter(x=>x).map(x=>x.split(',').map(Number));
+   return s.steps.every((a,k)=>{ const b=tk[k]; if(!b) return false; const n=a[0]===1?[0,1,3,4,5]:[0,1,2,3]; return n.every(m=>a[m]===b[m]) });
+  });
+ }
+ async function apply(){
+  if(busy) return;
+  if(!writer) return alert('먼저 장비를 연결하세요.');
+  if(CFG.edits.some((e,j)=>!inRange(vals[j],e))) return alert('범위를 벗어난 값이 있습니다. 빨간 칸의 허용 범위를 확인하세요.');
+  if(!confirm('설정을 장비에 저장합니다.\n장비(기계)를 정지시킨 상태에서 진행하세요.\n저장 중에는 USB를 뽑거나 전원을 끄지 마세요.\n\n계속할까요?')) return;
+  busy=true; const msg=$('applyMsg'), btn=$('applyBtn'); btn.disabled=true; msg.textContent='⏳ 저장 준비 중…';
+  const fail=t=>{ msg.textContent='❌ '+t };
+  try{
+   await sleep(400);
+   const P=plan(compose());
+   /* 지우기 전에 확인: 외장 메모리, 추가 조건 명령 */
+   const mem=await cmd('EXTMEM?',/^EXTMEM/,2000);
+   if(!mem||!/^EXTMEM\s+CONNECTED/.test(mem)) return fail('장비의 저장 메모리를 확인할 수 없어 저장하지 않았습니다(기존 설정 그대로). 제작사에 문의하세요.');
+   if(P.some(s=>s.on||s.off)&&!await cmdOK('SEQCOND?')) return fail('장비 프로그램이 추가 조건을 지원하지 않아 저장하지 않았습니다(기존 설정 그대로). 제작사에 문의하세요.');
+   msg.textContent='⏳ 저장 중… (USB를 뽑지 마세요)';
+   let ok=await cmdOK('SEQCLR',3000), last='SEQCLR';
+   const send=async c=>{ if(!ok) return; last=c; ok=await cmdOK(c) };
+   for(let i=0;i<P.length&&ok;i++){
+    const s=P[i];
+    await send('SEQTRIG '+[i,s.src,s.ch,s.cond,s.mode,s.dist].join(' '));
+    if(s.on||s.off) await send('SEQCOND '+i+' '+s.on+' '+s.off);
+    for(let k=0;k<s.steps.length;k++){ const a=s.steps[k]; await send('SEQSTEP '+[i,k,a[0],a[1],a[2],a[3],a[4],a[5]].join(' ')) }
+    await send('SEQNAME '+i+' '+s.name);
+    await send('SEQCOUNT '+i+' '+s.steps.length);
+   }
+   const partial=' 장비에 설정이 일부만 저장되었을 수 있으니, 다시 "장비에 적용"이 성공할 때까지 기계를 사용하지 마세요.';
+   if(!ok) return fail('저장 실패('+last+').'+partial);
+   const m2=await cmd('EXTMEM?',/^EXTMEM/,2000);
+   if(!m2||!/CONNECTED/.test(m2)||!/WRITEOK/.test(m2)) return fail('저장 메모리 기록을 확인하지 못했습니다.'+partial);
+   const v=await verify(P);
+   if(v===false) return fail('장비에서 다시 읽은 값이 보낸 값과 다릅니다.'+partial);
+   try{ localStorage.setItem(SK,JSON.stringify(vals)) }catch(e){}
+   msg.textContent=(v?'✅ 적용 완료 (장비에서 다시 읽어 확인함) ':'⚠ 저장 명령은 완료됐지만 다시 읽어 확인하지는 못했습니다. 동작을 직접 확인하세요. ')+new Date().toLocaleTimeString();
+  }finally{ busy=false; btn.disabled=false }
+ }
+
+ /* ---- 입력 점검 ---- */
+ function track(a){
+  const now=Date.now();
+  a.forEach((v,i)=>{ if(i>=32) return; const s=ST[i];
+   if(s.last===undefined){ s.last=v; s.since=now; return }
+   if(v!==s.last){ s.tr.push(now); s.tr=s.tr.filter(t=>now-t<2000); if(v){ s.cnt++; if(test.on) s.t1=1 } else if(test.on&&s.t1) s.t0=1; if(s.tr.length>=8) s.chat=now; s.last=v; s.since=now } });
+ }
+ const chList=()=>CFG.inAll.filter(c=>CFG.inUsed.includes(c)||$('showIn').checked);
+ function toggleTest(){
+  if(!writer&&!test.on) return alert('먼저 장비를 연결하세요.');
+  if(!test.on){ test={on:true}; ST.forEach(s=>{ s.t1=0; s.t0=0 }) }
+  else test={on:false,res:CFG.inUsed.filter(c=>!(ST[c-1].t1&&ST[c-1].t0)).map(nm)};
+  $('tbtn').textContent=test.on?'■ 점검 끝내고 결과 보기':'▶ 배선 점검 시작'; $('tbtn').className=test.on?'r':'g'; renderDiag();
+ }
+ function renderDiag(){
+  if(!$('t2').classList.contains('on')) return;
+  const now=Date.now();
+  $('inGrid').innerHTML=chList().map(c=>{
+   const s=ST[c-1], on=inS[c-1], used=CFG.inUsed.includes(c); let tag='';
+   if(s.chat&&now-s.chat<5000) tag='<div class="w er">⚠ 신호가 떨림 — 접점 불량·헐거운 배선·노이즈 의심</div>';
+   else if(on&&s.since&&now-s.since>60000&&used) tag='<div class="w">계속 눌림 상태(60초↑) — 감지 중이 맞으면 정상, 아니면 단락 의심</div>';
+   if(test.on&&used) tag+='<div>'+(s.t1&&s.t0?'✅ 확인됨':s.t1?'눌림 확인 → 놓아 보세요':'⏳ 눌러 보세요')+'</div>';
+   return '<div class="ch"><span class="dot'+(on?' on':'')+'"></span><b>'+esc(nm(c))+'</b> '+(on===undefined?'—':on?'눌림':'뗌')+'<br>누른 횟수 '+s.cnt+'회'+tag+'</div>';
+  }).join('')||'<div class="s">사용 중인 입력 채널이 없습니다.</div>';
+  let h='';
+  if(test.res) h=!CFG.inUsed.length?'':test.res.length?'<div class="w er">❌ 신호가 확인되지 않은 채널: <b>'+esc(test.res.join(', '))+'</b><br>→ 해당 센서·스위치와 배선(끊김·접속 불량), 전원을 확인하세요.</div>':'<div class="w ok">✅ 사용 중인 모든 입력 채널의 신호가 정상 확인되었습니다.</div>';
+  else if(test.on) h='<div class="w">점검 중 — 사용하는 센서/스위치를 하나씩 눌렀다 놓으세요.</div>';
+  $('diagSum').innerHTML=h;
+  const row=(list,map,pre,unit)=>list.map(c=>{ const v=map[c]; return '<div class="ch"><b>'+pre+c+'</b><br>'+(v===undefined||v<=(unit==='g'?-9999:-1)?'값 없음 — 배선 확인':v+' '+unit)+'</div>' }).join('');
+  $('senGrid').innerHTML=row(CFG.ultra,sensor.u,'초음파 U','(측정값)')+row(CFG.load,sensor.l,'로드셀 L','g');
+ }
+
+ /* ---- 릴레이 시험 ---- */
+ const relList=()=>Array.from({length:16},(_,i)=>i+1).filter(c=>CFG.relUsed.includes(c)||$('showRel').checked);
+ function buildRel(){
+  $('relGrid').innerHTML=relList().map(c=>'<div class="ch"><span class="dot" id="rd'+c+'"></span><b>'+esc(rn(c))+'</b><br><button class="g" data-r="'+c+'" data-on="1">ON</button> <button class="r" data-r="'+c+'" data-on="0">OFF</button></div>').join('')||'<div class="s">사용 중인 릴레이가 없습니다.</div>';
+  renderRel();
+ }
+ function renderRel(){ for(let c=1;c<=16;c++){ const d=$('rd'+c); if(d) d.className='dot'+(writer&&rel[c-1]?' ron':'') } }
+ const relMsg=(c,t)=>{ $('relMsg').innerHTML='<div class="w '+c+'">'+t+'</div>'; renderRel() };
+ const pin=(c,on)=>cmd('PIN '+String(c).padStart(2,'0')+(on?' ON':' OFF'),/OK|ERR/,400);
+ async function rt(c,on){
+  if(busy) return;
+  if(!writer) return alert('먼저 장비를 연결하세요.');
+  if(on&&!confirm(rn(c)+' 출력을 켭니다.\n연결된 기계가 움직일 수 있습니다. 주변이 안전합니까?')) return;
+  await pin(c,on); await sleep(250);
+  if(!await readRelay()) return relMsg('er','⚠ 장비 상태를 읽지 못했습니다(통신 확인).');
+  const same=!!rel[c-1]===on;
+  relMsg(same?'ok':'er',same?esc(rn(c))+' '+(on?'ON':'OFF')+' 확인됨 — 딸깍 소리·표시등·기계 동작도 확인하세요.':'⚠ '+esc(rn(c))+' 명령과 장비 상태가 다릅니다.');
+ }
+ async function allOff(){
+  if(busy) return;
+  if(!writer) return alert('먼저 장비를 연결하세요.');
+  for(let c=1;c<=16;c++) await pin(c,false);
+  await sleep(250);
+  if(!await readRelay()) return relMsg('er','⚠ 장비 상태를 읽지 못했습니다(통신 확인).');
+  relMsg(rel.some(v=>v)?'er':'ok',rel.some(v=>v)?'⚠ 아직 켜져 있는 릴레이가 있습니다(장비의 자동 동작 확인).':'전체 OFF 확인됨');
+ }
+
+ /* ---- 시작 ---- */
+ $('connBtn').onclick=conn; $('discBtn').onclick=()=>{ if(!busy) disc() }; $('applyBtn').onclick=apply; $('resetBtn').onclick=resetVals;
+ $('tbtn').onclick=toggleTest; $('cntBtn').onclick=()=>{ ST.forEach(s=>{ s.cnt=0; s.chat=0 }); renderDiag() };
+ $('showIn').onchange=renderDiag; $('showRel').onchange=buildRel; $('offBtn').onclick=allOff;
+ $('relGrid').onclick=e=>{ const b=e.target.closest('button[data-r]'); if(b) rt(+b.dataset.r,b.dataset.on==='1') };
+ $('setBox').oninput=e=>{ if(e.target.dataset.e!==undefined) onVal(e.target) };
+ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('section').forEach(x=>x.classList.toggle('on',x.id===b.dataset.t));
+  renderDiag(); renderRel();
+ });
+ window.addEventListener('beforeunload',e=>{ if(busy){ e.preventDefault(); e.returnValue='' } });
+ $('ttl').textContent=CFG.title; document.title=CFG.title; $('ft').textContent=CFG.contact?'문의: '+CFG.contact:'';
+ initVals(); renderSet(); buildRel();
+}
+
+function custHtml(cfg){
+ const css='*{box-sizing:border-box}body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#f3f4f6;color:#222}'
+ +'header{background:#1f2937;color:#fff;padding:14px 20px;font-size:20px;font-weight:bold;display:flex;gap:12px;flex-wrap:wrap;align-items:center}#st{font-size:13px;font-weight:normal;margin-left:auto}main{max-width:900px;margin:0 auto;padding:14px}'
+ +'.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px #0002;padding:14px 16px;margin-bottom:12px}h3{margin:0 0 8px;font-size:17px}.s{font-size:13px;color:#64748b;line-height:1.7}small{color:#64748b}'
+ +'button{background:#2563eb;color:#fff;border:0;border-radius:6px;padding:8px 13px;font-size:14px;cursor:pointer}button.g{background:#047857}button.r{background:#dc2626}button.l{background:#e5e7eb;color:#222}button:disabled{opacity:.5}'
+ +'nav{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}nav button{background:#e5e7eb;color:#222}nav button.on{background:#2563eb;color:#fff}'
+ +'input[type=number]{width:90px;padding:6px;border:1px solid #cbd5e1;border-radius:6px;font-size:15px}input.bad{border-color:#dc2626;background:#fef2f2}'
+ +'.stp{padding:6px 0;border-bottom:1px solid #eef0f3;font-size:14px;line-height:2}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:8px}.ch{border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.8}'
+ +'.dot{display:inline-block;width:14px;height:14px;border-radius:50%;background:#cbd5e1;vertical-align:middle;margin-right:6px}.dot.on{background:#f59e0b}.dot.ron{background:#16a34a}'
+ +'.w{background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:7px 10px;margin:6px 0;font-size:13px}.w.ok{background:#dcfce7;border-color:#86efac}.w.er{background:#fee2e2;border-color:#fca5a5}'
+ +'section{display:none}section.on{display:block}footer{text-align:center;font-size:13px;color:#64748b;padding:6px 0 24px}';
+ const body='<header><span id="ttl"></span><span id="st">● 연결 안 됨</span></header><main>'
+ +'<div class="card"><button class="g" id="connBtn">🔌 장비 연결</button> <button class="l" id="discBtn">연결 해제</button><div class="s">Chrome 또는 Edge에서 USB로 연결하세요. 연결하면 장비가 다시 시작됩니다(약 3초).</div></div>'
+ +'<nav><button class="on" data-t="t1">⚙ 설정값</button><button data-t="t2">🩺 신호·배선 점검</button><button data-t="t3">🔧 릴레이 시험</button></nav>'
+ +'<section id="t1" class="on"><div id="setBox"></div><div class="card" id="applyCard"><button class="g" id="applyBtn">⚡ 장비에 적용</button> <button class="l" id="resetBtn">처음 값으로 되돌리기</button><div id="applyMsg" class="s"></div><div class="s">※ 동작 순서와 구성은 제작사가 정한 그대로이며, 입력 칸으로 열려 있는 값만 바꿀 수 있습니다. 적용하면 장비에 저장되어 전원을 껐다 켜도 유지됩니다.</div></div></section>'
+ +'<section id="t2"><div class="card"><h3>입력 신호·배선 점검</h3><div class="w">⚠ 장비에 저장된 동작은 점검 중에도 작동합니다. 센서·스위치를 누르면 기계가 움직일 수 있으니 안전을 먼저 확인하세요.</div>'
+ +'<button class="g" id="tbtn">▶ 배선 점검 시작</button> <button class="l" id="cntBtn">횟수 초기화</button> <label class="s"><input type="checkbox" id="showIn"> 사용하지 않는 채널도 보기</label><div id="diagSum"></div><div class="grid" id="inGrid"></div><div class="grid" id="senGrid"></div></div></section>'
+ +'<section id="t3"><div class="card"><h3>릴레이(출력) 시험</h3><div class="s">버튼을 누르면 해당 출력을 직접 켜고 끕니다. 연결된 기계가 움직일 수 있으니 안전을 확인한 뒤 사용하세요.</div><label class="s"><input type="checkbox" id="showRel"> 사용하지 않는 릴레이도 보기</label><div class="grid" id="relGrid"></div><p><button class="r" id="offBtn">■ 전체 OFF</button></p><div id="relMsg"></div></div></section>'
+ +'</main><footer id="ft"></footer>';
+ const json=JSON.stringify(cfg).replace(/</g,'\\u003c');
+ return '<!DOCTYPE html>\n<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>고객용 설정·점검</title><style>'+css+'</style></head><body>'+body+'\n<script>\n('+custApp.toString()+')('+json+');\n<\/script></body></html>\n';
+}
+
+/* 보드 저장(EEPROM)으로 그대로 옮길 수 없는 내용이 있으면 이유 목록을 돌려준다(있으면 고객 수정 불가). */
+function custBlockers(){
+ const out=[];
+ if(!sequences.length) out.push('시퀀스가 없음');
+ if(sequences.length>BOARD_MAX_SEQ) out.push('시퀀스가 '+sequences.length+'개 (보드 최대 '+BOARD_MAX_SEQ+'개)');
+ sequences.forEach((s,i)=>{
+  const w=[], x=xv(s), st=bSteps(s);
+  if(s.trigType==='code') w.push('키패드 코드 시작');
+  if(s.trigType==='code20') w.push('신호 코드 시작');
+  if(s.countEnabled) w.push('계수계(N번째)');
+  if(s.loop) w.push('♾ 반복 실행');
+  if(x.startN>1) w.push('시작 신호 횟수');
+  if(st.some(t=>+t.waitCh>0)) w.push('조건 대기');
+  if(st.some(t=>!isBoardSupportedStep(t))) w.push('보드 미지원 동작');
+  if(st.length>BOARD_MAX_STEPS) w.push(st.length+'단계 (최대 '+BOARD_MAX_STEPS+')');
+  if(w.length) out.push((i+1)+'. '+(s.name||'시퀀스')+' — '+w.join(', '));
+ });
+ return out;
+}
+
+function exportCustomer(){
+ if(!sequences.length){ alert('시퀀스가 없습니다. 먼저 시퀀스를 만들고 "저장"을 눌러주세요.'); return }
+ document.querySelectorAll('details.moreMenu[open]').forEach(d=>d.open=false);
+ const blockers=custBlockers(), canEdit=!blockers.length;
+ const rows=[];
+ if(canEdit) sequences.forEach((s,i)=>{
+  if(s.trigType==='ultra'||s.trigType==='load'){
+   const unit=s.trigType==='ultra'?'cm':'g', cur=+s.trigDistCm||0;
+   rows.push({si:i,k:'dist',unit,cur,min:0,max:Math.max(100,cur*3),lbl:'시작 기준 '+(unit==='cm'?'거리':'무게')+'('+unit+')'});
+  }
+  const per=(s.steps||[]).length, maxRep=per?Math.min(99,Math.floor(BOARD_MAX_STEPS/per)):1;
+  if(maxRep>1) rows.push({si:i,k:'repeat',unit:'번',cur:+s.repeat||1,min:1,max:maxRep,hard:maxRep,lbl:'동작 반복(번, 보드 한도 '+maxRep+')'});
+  (s.steps||[]).forEach((t,k)=>{ const cur=(+t.delay||0)/1000; rows.push({si:i,k:'d',st:k,cur,min:0,max:Math.max(60,cur*3),lbl:'동작 '+(k+1)+' 대기시간(초)'}) });
+ });
+ const ov=document.createElement('div'); ov.className='docOv'; ov.style.zIndex=20000;
+ let h='<div class="docModal" role="dialog" style="max-width:780px;width:94vw;max-height:92vh;overflow:auto"><h3>👤 고객용 파일 만들기</h3>';
+ if(canEdit) h+='<div class="docMsg">고객이 <b>바꿀 수 있게 할 항목만 체크</b>하고 허용 범위를 정하세요. 체크하지 않은 항목, 동작 순서, 릴레이, 조건은 고객이 바꿀 수 없습니다. 신호·배선 점검과 릴레이 시험은 항상 들어갑니다.<br>목록에 저장한 시퀀스 기준이며, 장비에는 웹 제어용 펌웨어가 올라가 있어야 합니다(.ino 시퀀스 스케치를 올린 보드는 연결되지 않습니다).</div>';
+ else h+='<div class="docWarn"><b>이 문서는 "점검 전용" 고객용 파일로 만들어집니다.</b><br>아래 기능은 보드 저장(EEPROM)에 그대로 담기지 않아, 고객이 설정을 적용하면 동작이 달라질 수 있으므로 설정 변경을 막습니다.<br>'+blockers.map(b=>'· '+esc(b)).join('<br>')+'</div>';
+ h+='<div style="margin:8px 0"><label>제목</label><input id="cxTitle" style="width:100%" value="'+esc(docName||'제어장치').replace(/"/g,'&quot;')+' 설정·점검"><label>문의처</label><input id="cxContact" style="width:100%" value="이진주방산업 010-4273-1972"></div>';
+ if(rows.length){
+  h+='<div style="max-height:40vh;overflow:auto;border:1px solid #8884;margin:8px 0"><table style="width:100%;border-collapse:collapse;font-size:13px"><tr><th>허용</th><th style="text-align:left">시퀀스 · 항목</th><th>현재</th><th>최소</th><th>최대</th></tr>';
+  rows.forEach((r,j)=>{ h+='<tr style="border-top:1px solid #8883"><td style="text-align:center"><input type="checkbox" id="cx'+j+'" style="width:auto"></td><td>'+(r.si+1)+'. '+esc(sequences[r.si].name||'')+' · '+r.lbl+'</td><td style="text-align:center">'+r.cur+'</td><td><input type="number" id="cn'+j+'" value="'+r.min+'" step="any" style="width:80px"></td><td><input type="number" id="cm'+j+'" value="'+r.max+'" step="any" style="width:80px"></td></tr>' });
+  h+='</table></div>';
+ }
+ h+='<div class="docBtns"><button class="dBtn g" id="cxGo">💾 고객용 파일 저장</button><span class="dragHand" id="cxHand" title="✋ 끌어서 저장 — 바탕화면이나 폴더로 끌어다 놓으면 고객용 파일로 저장됩니다 (Chrome/Edge)">✋</span><button class="dBtn" id="cxNo">취소</button></div></div>';
+ ov.innerHTML=h; document.body.appendChild(ov);
+ ov.querySelector('#cxNo').onclick=()=>ov.remove();
+ const build=()=>{
+  const q=id=>ov.querySelector('#'+id), edits=[];
+  rows.forEach((r,j)=>{
+   if(!q('cx'+j).checked) return;
+   const f=r.k==='d'?1000:1, floor=r.k==='repeat'?1:0;
+   let mn=Math.max(floor,Math.min(+q('cn'+j).value||0,r.cur)), mx=Math.max(+q('cm'+j).value||0,r.cur);
+   if(r.hard) mx=Math.min(mx,r.hard);
+   edits.push({si:r.si,k:r.k,st:r.st,unit:r.unit,min:Math.round(mn*f),max:Math.round(mx*f)});
+  });
+  const inNames={}, relNames={}, inUsed=new Set(), relUsed=new Set(), ultra=new Set(), load=new Set();
+  inputMap.forEach(r=>{ if(r.name){ inNames[r.ch]=r.name; inUsed.add(r.ch) } });
+  for(let c=1;c<=16;c++) if(relayNames[c]){ relNames[c]=relayNames[c]; relUsed.add(c) }
+  sequences.forEach(s=>{
+   if((s.trigType||'channel')==='channel'&&s.trigCh>0) inUsed.add(+s.trigCh);
+   if(s.trigType==='ultra') ultra.add(+(s.ultraCh||s.trigCh||1));
+   if(s.trigType==='load') load.add(+(s.loadCh||s.trigCh||1));
+   (s.conds||[]).forEach(c=>inUsed.add(+c.ch));
+   if(s.loop&&s.loopStopCh>0) inUsed.add(+s.loopStopCh);
+   (s.steps||[]).forEach(t=>{ if(+t.waitCh>0) inUsed.add(+t.waitCh); if((t.type||'RELAY')==='RELAY'&&t.relay) relUsed.add(+t.relay) });
+  });
+  const inAll=inputMap.map(r=>r.ch);
+  const seqs=JSON.parse(JSON.stringify(sequences));
+  seqs.forEach((s,i)=>{ s.safeName=truncateUtf8Bytes((s.name||('seq'+(i+1))).replace(/[^\w가-힣\-]/g,''),11)||('seq'+(i+1)) });
+  const cfg={title:q('cxTitle').value.trim()||'제어장치 설정·점검',contact:q('cxContact').value.trim(),made:new Date().toISOString(),
+   baud:+document.getElementById('baud').value||115200,canEdit,edits,seqs,inNames,relNames,inAll,
+   inUsed:[...inUsed].filter(c=>inAll.includes(c)).sort((a,b)=>a-b),relUsed:[...relUsed].sort((a,b)=>a-b),ultra:[...ultra],load:[...load]};
+  return {data:custHtml(cfg),name:String(docName||'메가2560').replace(/[\\/:*?"<>|]/g,'_')+'_고객용.html',mime:'text/html',n:edits.length};
+ };
+ dsInit(ov.querySelector('#cxHand'),build);
+ ov.querySelector('#cxGo').onclick=()=>{
+  const p=build(); dsDownload(p); ov.remove();
+  log('✅ 고객용 파일 저장: '+p.name+(canEdit?' (수정 허용 '+p.n+'개)':' (점검 전용)'));
+ };
+}
+</script>
 </body>
 </html>
